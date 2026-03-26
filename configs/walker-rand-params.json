@@ -2,12 +2,11 @@
     "env_name": "walker-rand-params",
     "n_train_tasks": 10,
     "n_eval_tasks": 10,
-    "latent_size":10,
+    "latent_size": 10,
     "env_params": {
         "n_tasks": 20,
         "randomize_tasks": 0
-    }
-    ,
+    },
     "algo_params": {
         "use_next_obs_in_context": true,
         "meta_batch": 10,
@@ -18,8 +17,8 @@
         "num_train_steps_per_itr": 400,
         "embedding_batch_size": 256,
         "embedding_mini_batch_size": 256,
-        "sample":1,
-        "data_dir": "/data/zhouhongtu/GENTLE/data/walker-rand-params",
+        "sample": 1,
+        "data_dir": "/data/zhouhongtu/GENTLE-consistant/data/walker-rand-params",
         "train_epoch": 1e6,
         "eval_epoch": 1e6,
         "n_trj": 50

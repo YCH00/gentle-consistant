@@ -104,7 +104,7 @@ class RandomEnv(MetaEnv, MujocoEnv):
 
             param_sets.append(new_params)
         #for i in range(n_tasks):
-        #    np.save(f'/data/zhouhongtu/GENTLE/data/hopper-rand-params/goal_idx{i}/log.npy', param_sets[i])
+        #    np.save(f'/data/zhouhongtu/GENTLE-consistant/data/hopper-rand-params/goal_idx{i}/log.npy', param_sets[i])
         return param_sets
     
     def set_task(self, task):

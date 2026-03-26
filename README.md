@@ -8,7 +8,9 @@ First install [MuJoCo](https://www.roboti.us/index.html). For tasks differ in re
 Then create conda environment by:
 
 ```bash
-conda env create -f environment.yaml
+conda env create -n gentle python=3.8
+conda activate gentle
+pip install -r requirements.txt
 ```
 
 **For Hopper and Walker environments**, MuJoCo131 is required. Simply install it the same way as MuJoCo200. To switch between different MuJoCo versions:

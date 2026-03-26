@@ -178,7 +178,7 @@ class MultiTaskDynamics(object):
     
     def load(self, load_path: str) -> None:
         for i in range(self.num_tasks):
-            self.models[i].load_state_dict(torch.load(os.path.join(load_path, f"task{i}_dynamics.pth"), map_location=self.models[i].device))
+            self.models[i].load_state_dict(torch.load(os.path.join(load_path, f"task{i}_dynamics.pth"), map_location=self.models[i].device, weights_only=True))
 
     def to(self, device):
         for i in range(self.num_tasks):

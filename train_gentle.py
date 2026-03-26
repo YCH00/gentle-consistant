@@ -1,11 +1,12 @@
 import os
-import pathlib
 import numpy as np
 import click
 import json
 import torch
 import random
 import multiprocessing as mp
+
+from pathlib import Path
 from itertools import product
 from torch.utils.tensorboard import SummaryWriter
 
@@ -102,7 +103,8 @@ def experiment(variant, seed=None):
                                      use_next_obs_in_context=use_next_obs_in_context,
                                      ensemble_size=variant['algo_params']['ensemble_size'],
                                      dynamics_weight_decay=[2.5e-5, 5e-5, 7.5e-5])
-    task_dynamics.load('/data/zhouhongtu/GENTLE/data/asset/dynamics/'+variant['env_name']+'/'+f'expert_seed{seed}')
+    dynamics_dir_path = Path(__file__).parent.absolute()/'dynamics'/variant['env_name']/f'expert_seed{seed}'
+    task_dynamics.load(str(dynamics_dir_path))
 
     policy = TanhGaussianPolicy(
         hidden_sizes=[net_size, net_size, net_size],
@@ -169,8 +171,7 @@ def deep_update_dict(fr, to):
 @click.option('--gpu', default=0)
 @click.option('--debug', default=0)
 @click.option('--algo_type', default='gentle')  
-# @click.option('--seed_list', multiple=True, type=int, default=[0,1,2,3])
-@click.option('--seed_list', multiple=True, type=int, default=[1,4,5,6,7])
+@click.option('--seed_list', multiple=True, type=int, default=[0,1,2,3])
 @click.option('--output_prefix', default='')
 def main(config, gpu, debug, algo_type, seed_list, output_prefix):
 

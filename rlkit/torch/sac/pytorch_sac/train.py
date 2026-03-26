@@ -17,6 +17,7 @@ from . import utils
 
 # import dmc2gym
 import hydra
+from pathlib import Path
 
 
 # def make_env(cfg):
@@ -40,9 +41,9 @@ import hydra
 
 class Workspace(object):
     def __init__(self, cfg, env_name, env=None, mujoco=False, goal_idx=0, eval=False):
-        self.work_dir = '/data/zhouhongtu/GENTLE'
-        self.work_dir = os.path.join(self.work_dir, 'data', env_name, f'goal_idx{goal_idx}')
-        os.makedirs(self.work_dir, exist_ok=True)
+        work_dir = Path(__file__).absolute().parent.parent.parent.parent.parent / 'data' / env_name / f'goal_idx{goal_idx}'
+        work_dir.mkdir(exist_ok=True, parents=True)
+        self.work_dir = str(work_dir)
         print(f'workspace: {self.work_dir}')
 
         self.cfg = cfg

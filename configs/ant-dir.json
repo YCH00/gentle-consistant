@@ -14,7 +14,7 @@
         "num_train_steps_per_itr": 400,
         "embedding_batch_size": 256,
         "embedding_mini_batch_size": 256,
-        "data_dir": "/data/zhouhongtu/GENTLE/data/ant-dir",
+        "data_dir": "/data/zhouhongtu/GENTLE-consistant/data/ant-dir",
         "sample": 1,
         "train_epoch": 1e6,
         "eval_epoch": 1e6,
@@ -24,4 +24,3 @@
         "use_gpu": 1
     }
 }
-

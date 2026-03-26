@@ -15,7 +15,7 @@
         "num_tasks_sample": 2,
         "embedding_batch_size": 256,
         "embedding_mini_batch_size": 256,
-        "data_dir": "/data/zhouhongtu/GENTLE/data/cheetah-dir", 
+        "data_dir": "/data/zhouhongtu/GENTLE-consistant/data/cheetah-dir",
         "sample": 1,
         "train_epoch": 1e6,
         "eval_epoch": 1e6,
@@ -23,6 +23,6 @@
         "num_aug_neg_tasks": 1
     },
     "util_params": {
-        "use_gpu": 1 
+        "use_gpu": 1
     }
 }

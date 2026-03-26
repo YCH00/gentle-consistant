@@ -16,6 +16,7 @@ import rlkit.torch.pytorch_util as ptu
 from configs.default import default_config
 from numpy.random import default_rng
 from rlkit.data_management.env_replay_buffer import MultiTaskReplayBuffer
+from pathlib import Path
 
 rng = default_rng()
 
@@ -122,8 +123,9 @@ def experiment(variant, seed=None):
         task_dynamics.train(data)
         print(f"Task {task_idx} finished training")
     
-    os.makedirs('/data/zhouhongtu/GENTLE/data/asset/dynamics/'+variant['env_name']+f'/expert_seed{seed}', exist_ok=True)
-    task_dynamics.save('/data/zhouhongtu/GENTLE/data/asset/dynamics/'+variant['env_name']+f'/expert_seed{seed}')
+    save_dir_path = Path(__file__).parent.absolute()/'dynamics'/variant['env_name']/f'/expert_seed{seed}'
+    save_dir_path.mkdir(parents=True, exist_ok=True)
+    task_dynamics.save(str(save_dir_path))
 
 
 def deep_update_dict(fr, to):
