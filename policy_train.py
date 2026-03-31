@@ -24,8 +24,12 @@ def deep_update_dict(fr, to):
             to[k] = v
     return to
 
-initialize(config_dir="rlkit/torch/sac/pytorch_sac/config/")
-cfg = compose("train.yaml")
+# initialize(config_dir="rlkit/torch/sac/pytorch_sac/config/")
+# cfg = compose("train.yaml")
+
+with initialize(config_path="rlkit/torch/sac/pytorch_sac/config"):
+    cfg = compose(config_name="train")
+
 def experiment(variant, cfg=cfg, goal_idx=0, seed=0,  eval=False):
     env = NormalizedBoxEnv(ENVS[variant['env_name']](**variant['env_params']))
     if seed is not None:

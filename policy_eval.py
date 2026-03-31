@@ -33,8 +33,11 @@ def deep_update_dict(fr, to):
 # print(c)
 # cfg = c[0]
 # print(cfg)
-initialize(config_dir="rlkit/torch/sac/pytorch_sac/config/")
-cfg = compose("train.yaml")
+# initialize(config_dir="rlkit/torch/sac/pytorch_sac/config/")
+# cfg = compose("train.yaml")
+
+with initialize(config_path="rlkit/torch/sac/pytorch_sac/config"):
+    cfg = compose(config_name="train")
 print(cfg.agent)
 def experiment(cfg=cfg, env_name=None, env=None, goal_idx=0, checkpoint_step=1e6, num_episodes=10, action_noise=0.0):
     os.environ["CUDA_VISIBLE_DEVICES"] = str(1)
@@ -44,7 +47,7 @@ def experiment(cfg=cfg, env_name=None, env=None, goal_idx=0, checkpoint_step=1e6
 
 # @click.command()
 parser = argparse.ArgumentParser()
-parser.add_argument("config", default="./configs/ant-dir.json")
+parser.add_argument("--config", default="./configs/ant-dir.json")
 parser.add_argument("--action_noise", type=float, default=0.0)
 args = parser.parse_args()
 def main(goal_idx=0):

@@ -122,8 +122,7 @@ def experiment(variant, seed=None):
         task_dynamics.set_task_idx(task_idx)
         task_dynamics.train(data)
         print(f"Task {task_idx} finished training")
-    
-    save_dir_path = Path(__file__).parent.absolute()/'dynamics'/variant['env_name']/f'/expert_seed{seed}'
+    save_dir_path = Path(__file__).parent.absolute()/'dynamics'/variant['env_name']/f'expert_seed{seed}'    
     save_dir_path.mkdir(parents=True, exist_ok=True)
     task_dynamics.save(str(save_dir_path))
 
@@ -141,7 +140,7 @@ def deep_update_dict(fr, to):
 @click.command()
 @click.argument('config', default=None)
 @click.option('--gpu', default=0)
-@click.option('--seed_list', multiple=True, type=int, default=[0,1,2,3,4,5,6,7])
+@click.option('--seed_list', multiple=True, type=int, default=[0,1,2,3])
 
 def main(config, gpu, seed_list):
 
