@@ -33,6 +33,45 @@ def global_seed(seed=0):
     random.seed(seed)
     torch.backends.cudnn.deterministic = True
 
+
+def _resolve_weights_dir(variant, seed):
+    weights_dir = variant.get('path_to_weights')
+    if weights_dir is not None:
+        weights_dir = Path(weights_dir).expanduser()
+        if not weights_dir.is_absolute():
+            weights_dir = Path(__file__).parent.absolute() / weights_dir
+        return weights_dir
+    return Path(__file__).parent.absolute() / 'encoder_decoder' / variant['env_name'] / f'expert_seed{seed}'
+
+
+def _find_weight_file(weights_dir, candidate_filenames):
+    for filename in candidate_filenames:
+        weight_path = weights_dir / filename
+        if weight_path.exists():
+            return weight_path
+    return None
+
+
+def _load_pretrained_context_models(context_encoder, context_decoder, variant, seed):
+    weights_dir = _resolve_weights_dir(variant, seed)
+    encoder_path = _find_weight_file(weights_dir, ['context_encoder.pth', 'encoder.pth'])
+    decoder_path = _find_weight_file(weights_dir, ['context_decoder.pth', 'decoder.pth'])
+
+    if encoder_path is None and decoder_path is None and variant.get('path_to_weights') is None:
+        print(f'No pretrained context weights found at {weights_dir}, continue with random initialization.')
+        return
+
+    if encoder_path is None or decoder_path is None:
+        raise FileNotFoundError(
+            f'Incomplete pretrained context weights in {weights_dir}. '
+            f'Found encoder={encoder_path is not None}, decoder={decoder_path is not None}.'
+        )
+
+    context_encoder.load(encoder_path)
+    context_decoder.load(decoder_path)
+    print(f'Loaded pretrained context encoder from {encoder_path}')
+    print(f'Loaded pretrained context decoder from {decoder_path}')
+
 def experiment(variant, seed=None):
     env = NormalizedBoxEnv(ENVS[variant['env_name']](**variant['env_params']))
     
@@ -82,6 +121,7 @@ def experiment(variant, seed=None):
                                     obs_dim=obs_dim,
                                     reward_dim=1,
                                     use_next_obs_in_context=use_next_obs_in_context)
+    _load_pretrained_context_models(context_encoder, context_decoder, variant, seed)
 
     if use_next_obs_in_context:
         task_dynamics =  MultiTaskDynamics(num_tasks=variant['n_train_tasks'], 
@@ -173,7 +213,8 @@ def deep_update_dict(fr, to):
 @click.option('--algo_type', default='gentle')  
 @click.option('--seed_list', multiple=True, type=int, default=[0,1,2,3])
 @click.option('--output_prefix', default='')
-def main(config, gpu, debug, algo_type, seed_list, output_prefix):
+@click.option('--path_to_weights', default=None)
+def main(config, gpu, debug, algo_type, seed_list, output_prefix, path_to_weights):
 
     variant = default_config
     if config:
@@ -185,6 +226,8 @@ def main(config, gpu, debug, algo_type, seed_list, output_prefix):
     variant['algo_type'] = algo_type
     variant['output_prefix'] = output_prefix
     variant['util_params']['base_log_dir'] = './logs'
+    if path_to_weights is not None:
+        variant['path_to_weights'] = path_to_weights
 
     # multi-processing
     if len(seed_list) > 1:
