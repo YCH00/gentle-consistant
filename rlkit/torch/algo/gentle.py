@@ -7,6 +7,7 @@ import time
 import rlkit.torch.pytorch_util as ptu
 from torch import nn as nn
 import torch.nn.functional as F 
+from torch.distributions import Dirichlet
 from collections import OrderedDict
 from rlkit.core import logger
 from rlkit.core.eval_util import create_stats_ordered_dict
@@ -56,6 +57,10 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.relabel_buffer_size            = kwargs['relabel_buffer_size']
         self.num_aug_neg_tasks              = kwargs['num_aug_neg_tasks']
         self.max_action                     = 1.
+        self.n_vt                           = kwargs.get('n_vt', 0)
+        self.M                              = kwargs.get('M', 2)
+        self.beta                           = kwargs.get('beta', 1.0)
+        self.consistency_loss_weight        = kwargs.get('consistency_loss_weight', 1.0)
 
         self.loss                           = {}
         self.plotter                        = plotter
@@ -71,6 +76,14 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.qf2_optimizer                  = optimizer_class(self.qf2.parameters(), lr=self.qf_lr)
         self.context_optimizer              = optimizer_class(chain(self.agent.context_encoder.parameters(), 
                                                                     self.context_decoder.parameters()), lr=self.context_lr)
+
+        self._set_requires_grad(self.agent.context_encoder, False)
+        self._set_requires_grad(self.context_decoder, False)
+        # self._set_requires_grad(self.qf1, False)
+        # self._set_requires_grad(self.qf2, False)
+        # self._set_requires_grad(self.target_qf1, False)
+        # self._set_requires_grad(self.target_qf2, False)
+        # self._set_requires_grad(self.agent.target_policy, False)
 
         self._num_steps                     = 0
         self._visit_num_steps_train         = 10
@@ -103,6 +116,10 @@ class GENTLE(OfflineMetaRLAlgorithm):
         #print(net)
         print('[Network] Total number of parameters : %.3f M' % (num_params / 1e6))
         print('-----------------------------------------------')
+
+    def _set_requires_grad(self, module, requires_grad):
+        for param in module.parameters():
+            param.requires_grad = requires_grad
 
     ##### Data handling #####
     def unpack_batch(self, batch, sparse_reward=False):
@@ -147,6 +164,67 @@ class GENTLE(OfflineMetaRLAlgorithm):
             context = torch.cat(context[:-2], dim=2)
         # self.meta_batch * self.embedding_batch_size * sum_dim(o, a, r, no, t)
         return context
+
+    def _product_of_gaussians(self, mus, sigmas_squared):
+        sigmas_squared = torch.clamp(sigmas_squared, min=1e-7)
+        sigma_squared = 1. / torch.sum(torch.reciprocal(sigmas_squared), dim=0)
+        mu = sigma_squared * torch.sum(mus / sigmas_squared, dim=0)
+        return mu, sigma_squared
+
+    def _get_context_embedding(self, context, sample=False):
+        params = self.agent.context_encoder(context)
+        params = params.view(context.size(0), -1, self.agent.context_encoder.output_size)
+
+        if self.agent.use_ib:
+            mu = params[..., :self.latent_dim]
+            sigma_squared = F.softplus(params[..., self.latent_dim:])
+            z_params = [self._product_of_gaussians(m, s) for m, s in zip(torch.unbind(mu), torch.unbind(sigma_squared))]
+            z_means = torch.stack([p[0] for p in z_params])
+            z_vars = torch.stack([p[1] for p in z_params])
+            if sample:
+                posteriors = [torch.distributions.Normal(m, torch.sqrt(s)) for m, s in zip(torch.unbind(z_means), torch.unbind(z_vars))]
+                z = [d.rsample() for d in posteriors]
+                return torch.stack(z)
+            return z_means
+
+        return torch.mean(params, dim=1)
+
+    def _sample_virtual_task_embeddings(self, batch_size):
+        if self.n_vt <= 0:
+            return None
+
+        c_off_alpha = []
+        for _ in range(self.n_vt):
+            mixing_task_indices = np.random.choice(self.train_tasks, self.M, replace=True)
+            mixing_off_ctxt_batch = self.sample_context(mixing_task_indices, b_size=batch_size)
+            c_off_mixing = self._get_context_embedding(mixing_off_ctxt_batch, sample=False)
+            alpha = Dirichlet(torch.ones(self.M, device=ptu.device)).sample().unsqueeze(0)
+            alpha = alpha * self.beta - (self.beta - 1) / self.M
+            c_off_alpha.append(alpha @ c_off_mixing)
+        return torch.cat(c_off_alpha, dim=0)
+
+    def _compute_consistency_loss(self, virtual_task_z, batch_size):
+        if virtual_task_z is None:
+            return ptu.zeros(1).squeeze()
+
+        anchor_task_indices = np.random.choice(self.train_tasks, size=len(virtual_task_z), replace=True)
+        anchor_context = self.sample_context(anchor_task_indices, b_size=batch_size)
+        anchor_obs = anchor_context[:, :, :self.obs_dim]
+        # anchor_actions = anchor_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
+        repeated_virtual_task_z = virtual_task_z.unsqueeze(1).expand(-1, batch_size, -1)
+        policy_inputs = torch.cat([anchor_obs.reshape(-1, self.obs_dim), repeated_virtual_task_z.reshape(-1, self.latent_dim)], dim=-1)
+        fake_actions = self.agent.policy(
+            len(virtual_task_z),
+            batch_size,
+            policy_inputs,
+            reparameterize=True,
+            return_log_prob=True,
+        )[0].reshape(len(virtual_task_z), batch_size, self.action_dim)
+
+        fake_r_next_s = self.context_decoder(anchor_obs, fake_actions, repeated_virtual_task_z)
+        fake_context = torch.cat([anchor_obs, fake_actions, fake_r_next_s], dim=-1)
+        fake_virtual_task_z = self._get_context_embedding(fake_context, sample=False)
+        return F.mse_loss(fake_virtual_task_z, virtual_task_z)
     
     def get_relabel_output(self, obs, actions, task_indices):
         with torch.no_grad():
@@ -273,7 +351,6 @@ class GENTLE(OfflineMetaRLAlgorithm):
 
         policy_outputs, task_z, task_z_vars= self.agent(obs, context, task_indices=indices)
         new_actions, policy_mean, policy_log_std, log_pi = policy_outputs[:4]
-
         with torch.no_grad():
             next_actions = self.agent.get_target_policy_action(next_obs, context, task_indices=indices)	
             noise = (torch.randn_like(next_actions) * self.policy_noise).clamp(-self.noise_clip, self.noise_clip)
@@ -292,12 +369,17 @@ class GENTLE(OfflineMetaRLAlgorithm):
         r_next_s = context[...,obs_dim+action_dim:]
         pred_r_next_s = self.context_decoder(context[...,:obs_dim], context[...,obs_dim:obs_dim+action_dim], task_z.reshape(c_mb,c_b,-1))
         recon_loss = torch.mean((r_next_s - pred_r_next_s)**2)
-        context_loss = self.recon_loss_weight * recon_loss
+        virtual_task_z = self._sample_virtual_task_embeddings(c_b)
+        if virtual_task_z is not None:
+            virtual_task_z = virtual_task_z.detach()
+        consistency_loss = self._compute_consistency_loss(virtual_task_z, c_b)
+        # context_loss = self.recon_loss_weight * recon_loss
         self.loss['recon_loss'] = recon_loss.item()
+        self.loss['consistency_loss'] = consistency_loss.item()
         
-        self.context_optimizer.zero_grad()
-        context_loss.backward(retain_graph=True)
-        self.context_optimizer.step()
+        # self.context_optimizer.zero_grad()
+        # context_loss.backward(retain_graph=True)
+        # self.context_optimizer.step()
         
         q1_pred = self.qf1(t, b, obs, actions, task_z.detach())
         q2_pred = self.qf2(t, b, obs, actions, task_z.detach())
@@ -320,22 +402,21 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.loss["q2_pred"] = torch.mean(q2_pred).item()
         self.qf1_optimizer.step()
         self.qf2_optimizer.step()
-        if self._num_steps % self.policy_freq == 0:
-            Q = self._min_q(t, b, obs, new_actions, task_z)
-            lmbda = self.bc_weight/Q.abs().mean().detach()
-            policy_loss = -lmbda * Q.mean()
-            bc_loss = F.mse_loss(new_actions, actions)
-            policy_total_loss = policy_loss + bc_loss
-            self.loss["policy_loss"] = policy_loss.item()
-            self.loss["bc_loss"] = bc_loss.item()
-            self.loss['policy_total_loss'] = policy_total_loss.item()
-            self.policy_optimizer.zero_grad()
-            policy_total_loss.backward()
-            self.policy_optimizer.step()
+        Q = self._min_q(t, b, obs, new_actions, task_z)
+        lmbda = self.bc_weight/Q.abs().mean().detach()
+        policy_loss = -lmbda * Q.mean()
+        bc_loss = F.mse_loss(new_actions, actions)
+        policy_total_loss = consistency_loss + policy_loss + bc_loss
+        self.loss["policy_loss"] = policy_loss.item()
+        self.loss["bc_loss"] = bc_loss.item()
+        self.loss['policy_total_loss'] = policy_total_loss.item()
+        self.policy_optimizer.zero_grad()
+        policy_total_loss.backward()
+        self.policy_optimizer.step()
 
-            self._update_target_network(self.qf1, self.target_qf1)
-            self._update_target_network(self.qf2, self.target_qf2)
-            self._update_target_network(self.agent.policy, self.agent.target_policy)
+        self._update_target_network(self.qf1, self.target_qf1)
+        self._update_target_network(self.qf2, self.target_qf2)
+        self._update_target_network(self.agent.policy, self.agent.target_policy)
 
         # save some statistics for eval
         if self.eval_statistics is None:
@@ -349,8 +430,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
             self.eval_statistics['Z variance train'] = z_sig
             self.eval_statistics['task idx'] = indices[0]
             self.eval_statistics['Recon Loss'] = ptu.get_numpy(recon_loss)
-
-            self.eval_statistics['QF Loss'] = np.mean(ptu.get_numpy(qf_loss))
+            self.eval_statistics['Consistency Loss'] = ptu.get_numpy(consistency_loss)
             self.eval_statistics['Policy Loss'] = np.mean(ptu.get_numpy(
                 policy_loss
             ))
@@ -360,6 +440,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
             self.eval_statistics['BC Loss'] = np.mean(ptu.get_numpy(
                 bc_loss
             ))
+            self.eval_statistics['QF Loss'] = np.mean(ptu.get_numpy(qf_loss))
             self.eval_statistics.update(create_stats_ordered_dict('Q Predictions',  ptu.get_numpy(q1_pred)))
             self.eval_statistics.update(create_stats_ordered_dict('Policy mu',      ptu.get_numpy(policy_mean)))
         return ptu.get_numpy(self.agent.z_means), ptu.get_numpy(self.agent.z_vars)

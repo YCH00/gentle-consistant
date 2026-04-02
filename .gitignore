@@ -22,3 +22,4 @@ build.yml
 data/
 logs/
 dynamics/
+encoder_decoder/
