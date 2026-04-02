@@ -20,7 +20,11 @@
         "train_epoch": 1e6,
         "eval_epoch": 1e6,
         "n_trj": 100,
-        "num_aug_neg_tasks": 1
+        "num_aug_neg_tasks": 1,
+        "n_vt": 2,
+        "M": 2,
+        "beta": 1.0,
+        "consistency_loss_weight": 0.25
     },
     "util_params": {
         "use_gpu": 1

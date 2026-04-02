@@ -58,6 +58,10 @@ default_config = dict(
         recon_loss_weight=10,
         relabel_data_ratio=0.95,
         num_aug_neg_tasks=3,
+        n_vt=4,
+        M=3,
+        beta=1.0,
+        consistency_loss_weight=0.5,
     ),
     util_params=dict(
         base_log_dir='./logs',

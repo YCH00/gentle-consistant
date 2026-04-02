@@ -406,7 +406,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         lmbda = self.bc_weight/Q.abs().mean().detach()
         policy_loss = -lmbda * Q.mean()
         bc_loss = F.mse_loss(new_actions, actions)
-        policy_total_loss = consistency_loss + policy_loss + bc_loss
+        policy_total_loss = self.consistency_loss_weight * consistency_loss + policy_loss + bc_loss
         self.loss["policy_loss"] = policy_loss.item()
         self.loss["bc_loss"] = bc_loss.item()
         self.loss['policy_total_loss'] = policy_total_loss.item()
