@@ -59,6 +59,21 @@ python train_gentle.py ./configs/ant-dir.json
 
 Logs will be written to `./logs/ant-dir/gentle/`
 
+visualize
+```
+python replot_tsne.py ^
+  --real "logs/<env_name>/<algo_name>/seed0/<timestamp>/saved_zs/offline_z_train_itr_499.npy" ^
+  --virtual "logs/<env_name>/<algo_name>/seed0/<timestamp>/saved_zs/offline_virtual_z_train_itr_499.npy" ^
+  --output "logs/<env_name>/<algo_name>/seed0/<timestamp>/figures/offline_z_train_itr_499_replot.png" ^
+  --title "offline_z_train_itr_499" ^
+  --tsne-seed 0
+
+python export_virtual_embeddings.py \
+  --log-dir /root/tievnas/YinCH/GENTLE-consistant/logs/point-robot/gentle/seed0/2026_04_02_11_17_00 \
+  --epoch 499 \
+  --gpu 0
+```
+
 ## Reference
 
 ```bash

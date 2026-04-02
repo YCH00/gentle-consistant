@@ -616,8 +616,19 @@ class OfflineMetaRLAlgorithm(metaclass=abc.ABCMeta):
             offline_zs = np.concatenate(offline_zs)
 
             logger.save_contexts(epoch, offline_zs, f'offline_z_train_itr_{epoch}.npy')
+            offline_virtual_zs = self.get_virtual_task_embeddings_for_vis(n_points)
+            if offline_virtual_zs is not None:
+                logger.save_contexts(epoch, offline_virtual_zs, f'offline_virtual_z_train_itr_{epoch}.npy')
             fig_save_dir = logger._snapshot_dir + '/figures'
-            self.vis_task_embeddings(save_dir = fig_save_dir, fig_name=f'offline_z_train_itr_{epoch}.png', zs=[offline_zs], subplot_title_lst=[f'offline_z_train_itr_{epoch}'])
+            self.vis_task_embeddings(
+                save_dir=fig_save_dir,
+                fig_name=f'offline_z_train_itr_{epoch}.png',
+                zs=[offline_zs],
+                subplot_title_lst=[f'offline_z_train_itr_{epoch}'],
+                virtual_zs_lst=[offline_virtual_zs],
+                real_legend_label_lst=['Real tasks'],
+                virtual_legend_label_lst=['Virtual tasks'],
+            )
             
     def collect_paths(self, idx, epoch, run, buffer, context_buffer=None):
         self.task_idx = idx
@@ -735,35 +746,90 @@ class OfflineMetaRLAlgorithm(metaclass=abc.ABCMeta):
         """
         pass
 
+    def get_virtual_task_embeddings_for_vis(self, n_points):
+        return None
+
     def vis_task_embeddings(self, save_dir, fig_name, zs, rows=1, cols=1, n_figs=1,
-                subplot_title_lst = ["train_itr_0"],  goals_name_lst=None, figsize=[12, 6], fontsize=15):
+                subplot_title_lst = ["train_itr_0"],  goals_name_lst=None, virtual_zs_lst=None,
+                real_legend_label_lst=None, virtual_legend_label_lst=None, figsize=[12, 6], fontsize=15):
         if figsize is None:
             fig = plt.figure(figsize=(8, 10))
         else:
             fig = plt.figure(figsize=figsize)
         fig.subplots_adjust(hspace=0.5, wspace=0.3)
         if goals_name_lst is None:
-            goals_name_lst = [None]*n_figs
-            legend = False
-        else:
-            legend = True
+            goals_name_lst = [None] * n_figs
+        if virtual_zs_lst is None:
+            virtual_zs_lst = [None] * n_figs
+        if real_legend_label_lst is None:
+            real_legend_label_lst = [None] * n_figs
+        if virtual_legend_label_lst is None:
+            virtual_legend_label_lst = [None] * n_figs
 
-        for z, n_fig, subplot_title, goals_name in zip(zs, range(1, n_figs+1), subplot_title_lst, goals_name_lst):
+        for z, virtual_z, n_fig, subplot_title, goals_name, real_legend_label, virtual_legend_label in zip(
+            zs,
+            virtual_zs_lst,
+            range(1, n_figs+1),
+            subplot_title_lst,
+            goals_name_lst,
+            real_legend_label_lst,
+            virtual_legend_label_lst,
+        ):
+            z = np.asarray(z)
             n_tasks, n_points, _ = z.shape
-            proj = TSNE(n_components=2).fit_transform(X=z.reshape(n_tasks*n_points, -1))
+            plot_arrays = [z.reshape(n_tasks * n_points, -1)]
+            if virtual_z is not None:
+                virtual_z = np.asarray(virtual_z)
+                if virtual_z.ndim == 2:
+                    virtual_z = virtual_z[np.newaxis, ...]
+                plot_arrays.append(virtual_z.reshape(-1, virtual_z.shape[-1]))
+
+            proj = TSNE(n_components=2).fit_transform(X=np.concatenate(plot_arrays, axis=0))
             ax = fig.add_subplot(rows, cols, n_fig)
+            real_proj = proj[:n_tasks * n_points]
+            real_colors = plt.cm.tab20(np.linspace(0, 1, max(n_tasks, 1)))
             for task_idx in range(n_tasks):
                 idxs = np.arange(task_idx*n_points, (task_idx+1)*n_points)
-                if goals_name is None:
-                    ax.scatter(proj[idxs, 0], proj[idxs, 1], s=1, alpha=0.3, cmap=plt.cm.Spectral)
-                else:
-                    ax.scatter(proj[idxs, 0], proj[idxs, 1], s=1, alpha=0.3, cmap=plt.cm.Spectral, label=goals_name[task_idx])
+                label = None
+                if goals_name is not None:
+                    label = goals_name[task_idx]
+                ax.scatter(
+                    real_proj[idxs, 0],
+                    real_proj[idxs, 1],
+                    s=6,
+                    alpha=0.35,
+                    color=real_colors[task_idx],
+                    marker='o',
+                    label=label,
+                )
+
+            if virtual_z is not None:
+                n_virtual_groups, n_virtual_points, _ = virtual_z.shape
+                virtual_proj = proj[n_tasks * n_points:]
+                for virtual_idx in range(n_virtual_groups):
+                    start = virtual_idx * n_virtual_points
+                    end = (virtual_idx + 1) * n_virtual_points
+                    ax.scatter(
+                        virtual_proj[start:end, 0],
+                        virtual_proj[start:end, 1],
+                        s=18,
+                        alpha=0.85,
+                        color='black',
+                        marker='x',
+                        linewidths=0.9,
+                    )
+
+            if goals_name is None and real_legend_label is not None:
+                ax.scatter([], [], s=18, alpha=0.35, color='gray', marker='o', label=real_legend_label)
+            if virtual_z is not None and virtual_legend_label is not None:
+                ax.scatter([], [], s=28, alpha=0.85, color='black', marker='x', linewidths=0.9, label=virtual_legend_label)
 
             ax.set_title(subplot_title, fontsize=fontsize)
             ax.set_xlabel('t-SNE dimension 1', fontsize=fontsize)
             ax.set_ylabel('t-SNE dimension 2', fontsize=fontsize)
-            if legend:
-                ax.legend(loc='best')
+            handles, labels = ax.get_legend_handles_labels()
+            if len(labels) > 0:
+                ax.legend(loc='best', fontsize=max(fontsize - 3, 8))
         
         os.makedirs(save_dir, exist_ok=True)
         plt.savefig(os.path.join(save_dir, fig_name), dpi=200)

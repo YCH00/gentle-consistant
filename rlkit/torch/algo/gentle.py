@@ -203,6 +203,24 @@ class GENTLE(OfflineMetaRLAlgorithm):
             c_off_alpha.append(alpha @ c_off_mixing)
         return torch.cat(c_off_alpha, dim=0)
 
+    @torch.no_grad()
+    def get_virtual_task_embeddings_for_vis(self, n_points):
+        if self.n_vt <= 0:
+            return None
+
+        virtual_zs = []
+        for _ in range(n_points):
+            virtual_task_z = self._sample_virtual_task_embeddings(self.online_sample_num)
+            if virtual_task_z is None:
+                return None
+            virtual_zs.append(ptu.get_numpy(virtual_task_z))
+
+        if len(virtual_zs) == 0:
+            return None
+
+        virtual_zs = np.concatenate(virtual_zs, axis=0)
+        return virtual_zs[np.newaxis, ...]
+
     def _compute_consistency_loss(self, virtual_task_z, batch_size):
         if virtual_task_z is None:
             return ptu.zeros(1).squeeze()
