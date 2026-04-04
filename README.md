@@ -12,9 +12,9 @@ conda create -n gentle python=3.8
 conda activate gentle
 pip install -r requirements.txt
 apt-get update
-apt-get install -y libosmesa6-dev
-apt-get install -y libosmesa6-dev libgl1-mesa-dev libgl1-mesa-glx libglew-dev patchelf
-apt-get install -y gcc g++ libglfw3 libglfw3-dev
+apt-get install -y libosmesa6-dev libosmesa6-dev libgl1-mesa-dev libgl1-mesa-glx libglew-dev patchelf gcc g++ libglfw3 libglfw3-dev
+# apt-get install -y libosmesa6-dev libgl1-mesa-dev libgl1-mesa-glx libglew-dev patchelf
+# apt-get install -y gcc g++ libglfw3 libglfw3-dev
 python -m pip install "pip<24.1"
 pip install hydra-core==1.0.7 omegaconf==2.0.6
 pip install termcolor cffi lockfile
@@ -24,6 +24,10 @@ pip install --no-build-isolation mujoco-py==1.50.1.68
 **For Hopper and Walker environments**, MuJoCo131 is required. Simply install it the same way as MuJoCo200. To switch between different MuJoCo versions:
 
 ```bash
+cp -r ./pkg/.mujoco ~/
+vim ~/.bashrc
+source ~/.bashrc
+
 export MUJOCO_PY_MJPRO_PATH=~/.mujoco/mjpro${VERSION_NUM}
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/.mujoco/mjpro${VERSION_NUM}/bin
 ```
@@ -67,6 +71,9 @@ python replot_tsne.py ^
   --output "logs/<env_name>/<algo_name>/seed0/<timestamp>/figures/offline_z_train_itr_499_replot.png" ^
   --title "offline_z_train_itr_499" ^
   --tsne-seed 0
+
+python replot_tsne.py --real ./logs/point-robot/gentle/seed0/2026_04_02_20_10_56/saved_zs/offline_z_train_itr_499.npy --virtual ./logs/point-robot/gentle/seed0/2026_04_02_20_10_56/saved_zs/offline_virtual_z_train_itr_499.npy --output ./logs/point-robot/gentle/seed0/2026_04_02_20_10_56/figures/offline_z_train_itr_499_replot.png --title "offline_z_train_itr_499" --tsne-seed 0 
+
 
 python export_virtual_embeddings.py \
   --log-dir /root/tievnas/YinCH/GENTLE-consistant/logs/point-robot/gentle/seed0/2026_04_02_11_17_00 \
