@@ -77,8 +77,8 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.context_optimizer              = optimizer_class(chain(self.agent.context_encoder.parameters(), 
                                                                     self.context_decoder.parameters()), lr=self.context_lr)
 
-        self._set_requires_grad(self.agent.context_encoder, False)
-        self._set_requires_grad(self.context_decoder, False)
+        for param in self.context_decoder.parameters():
+            param.requires_grad = False
         # self._set_requires_grad(self.qf1, False)
         # self._set_requires_grad(self.qf2, False)
         # self._set_requires_grad(self.target_qf1, False)
@@ -387,17 +387,17 @@ class GENTLE(OfflineMetaRLAlgorithm):
         r_next_s = context[...,obs_dim+action_dim:]
         pred_r_next_s = self.context_decoder(context[...,:obs_dim], context[...,obs_dim:obs_dim+action_dim], task_z.reshape(c_mb,c_b,-1))
         recon_loss = torch.mean((r_next_s - pred_r_next_s)**2)
-        virtual_task_z = self._sample_virtual_task_embeddings(c_b)
-        if virtual_task_z is not None:
-            virtual_task_z = virtual_task_z.detach()
-        consistency_loss = self._compute_consistency_loss(virtual_task_z, c_b)
-        # context_loss = self.recon_loss_weight * recon_loss
+        # virtual_task_z = self._sample_virtual_task_embeddings(c_b)
+        # if virtual_task_z is not None:
+        #     virtual_task_z = virtual_task_z.detach()
+        # consistency_loss = self._compute_consistency_loss(virtual_task_z, c_b)
+        context_loss = self.recon_loss_weight * recon_loss
         self.loss['recon_loss'] = recon_loss.item()
-        self.loss['consistency_loss'] = consistency_loss.item()
+        # self.loss['consistency_loss'] = consistency_loss.item()
         
-        # self.context_optimizer.zero_grad()
-        # context_loss.backward(retain_graph=True)
-        # self.context_optimizer.step()
+        self.context_optimizer.zero_grad()
+        context_loss.backward(retain_graph=True)
+        self.context_optimizer.step()
         
         q1_pred = self.qf1(t, b, obs, actions, task_z.detach())
         q2_pred = self.qf2(t, b, obs, actions, task_z.detach())
@@ -424,7 +424,8 @@ class GENTLE(OfflineMetaRLAlgorithm):
         lmbda = self.bc_weight/Q.abs().mean().detach()
         policy_loss = -lmbda * Q.mean()
         bc_loss = F.mse_loss(new_actions, actions)
-        policy_total_loss = self.consistency_loss_weight * consistency_loss + policy_loss + bc_loss
+        # policy_total_loss = self.consistency_loss_weight * consistency_loss + policy_loss + bc_loss
+        policy_total_loss = policy_loss + bc_loss
         self.loss["policy_loss"] = policy_loss.item()
         self.loss["bc_loss"] = bc_loss.item()
         self.loss['policy_total_loss'] = policy_total_loss.item()
@@ -448,7 +449,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
             self.eval_statistics['Z variance train'] = z_sig
             self.eval_statistics['task idx'] = indices[0]
             self.eval_statistics['Recon Loss'] = ptu.get_numpy(recon_loss)
-            self.eval_statistics['Consistency Loss'] = ptu.get_numpy(consistency_loss)
+            # self.eval_statistics['Consistency Loss'] = ptu.get_numpy(consistency_loss)
             self.eval_statistics['Policy Loss'] = np.mean(ptu.get_numpy(
                 policy_loss
             ))
