@@ -387,7 +387,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         r_next_s = context[...,obs_dim+action_dim:]
         pred_r_next_s = self.context_decoder(context[...,:obs_dim], context[...,obs_dim:obs_dim+action_dim], task_z.reshape(c_mb,c_b,-1))
         recon_loss = torch.mean((r_next_s - pred_r_next_s)**2)
-        virtual_task_z = self._sample_virtual_task_embeddings(c_b)
+        # virtual_task_z = self._sample_virtual_task_embeddings(c_b)
         # if virtual_task_z is not None:
         #     virtual_task_z = virtual_task_z.detach()
         # consistency_loss = self._compute_consistency_loss(virtual_task_z, c_b)
