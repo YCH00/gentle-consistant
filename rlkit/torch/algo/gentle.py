@@ -79,6 +79,9 @@ class GENTLE(OfflineMetaRLAlgorithm):
 
         for param in self.agent.context_encoder.parameters():
             param.requires_grad = False
+        for param in self.context_decoder.parameters():
+            param.requires_grad = False
+        
         # self._set_requires_grad(self.qf1, False)
         # self._set_requires_grad(self.qf2, False)
         # self._set_requires_grad(self.target_qf1, False)
