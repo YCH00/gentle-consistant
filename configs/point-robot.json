@@ -25,7 +25,7 @@
         "max_path_length": 20,
         "data_dir": "/root/tievnas2/YinCH/GENTLE-consistant/data/point-robot",
         "online_sample_num": 20,
-        "n_vt": 4,
+        "n_vt": 0,
         "M": 3,
         "beta": 1.0,
         "consistency_loss_weight": 0.75

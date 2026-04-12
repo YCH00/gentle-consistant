@@ -394,13 +394,13 @@ class GENTLE(OfflineMetaRLAlgorithm):
         # if virtual_task_z is not None:
         #     virtual_task_z = virtual_task_z.detach()
         # consistency_loss = self._compute_consistency_loss(virtual_task_z, c_b)
-        context_loss = self.recon_loss_weight * recon_loss
+        # context_loss = self.recon_loss_weight * recon_loss
         self.loss['recon_loss'] = recon_loss.item()
         # self.loss['consistency_loss'] = consistency_loss.item()
         
-        self.context_optimizer.zero_grad()
-        context_loss.backward(retain_graph=True)
-        self.context_optimizer.step()
+        # self.context_optimizer.zero_grad()
+        # context_loss.backward(retain_graph=True)
+        # self.context_optimizer.step()
         
         q1_pred = self.qf1(t, b, obs, actions, task_z.detach())
         q2_pred = self.qf2(t, b, obs, actions, task_z.detach())
