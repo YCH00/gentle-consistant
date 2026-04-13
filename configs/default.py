@@ -62,6 +62,7 @@ default_config = dict(
         M=3,
         beta=1.0,
         consistency_loss_weight=0.5,
+        context_target_update_tau=1.0, # 1.0 hard-copies context targets; smaller values use soft target updates
     ),
     util_params=dict(
         base_log_dir='./logs',

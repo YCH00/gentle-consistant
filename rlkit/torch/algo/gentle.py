@@ -13,7 +13,6 @@ from rlkit.core import logger
 from rlkit.core.eval_util import create_stats_ordered_dict
 from rlkit.core.rl_algorithm import OfflineMetaRLAlgorithm
 from rlkit.data_management.env_replay_buffer import MultiTaskContextBuffer
-from itertools import chain
 
 class GENTLE(OfflineMetaRLAlgorithm):
     def __init__(
@@ -61,6 +60,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.M                              = kwargs.get('M', 2)
         self.beta                           = kwargs.get('beta', 1.0)
         self.consistency_loss_weight        = kwargs.get('consistency_loss_weight', 1.0)
+        self.context_target_update_tau      = kwargs.get('context_target_update_tau', 1.0)
 
         self.loss                           = {}
         self.plotter                        = plotter
@@ -70,17 +70,19 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.target_qf1 = copy.deepcopy(self.qf1)
         self.target_qf2 = copy.deepcopy(self.qf2)
         self.context_decoder = nets[3]
+        self.target_context_encoder = copy.deepcopy(self.agent.context_encoder)
+        self.target_context_decoder = copy.deepcopy(self.context_decoder)
         self.task_dynamics = nets[4]
         self.policy_optimizer               = optimizer_class(self.agent.policy.parameters(), lr=self.policy_lr)
         self.qf1_optimizer                  = optimizer_class(self.qf1.parameters(), lr=self.qf_lr)
         self.qf2_optimizer                  = optimizer_class(self.qf2.parameters(), lr=self.qf_lr)
-        self.context_optimizer              = optimizer_class(chain(self.agent.context_encoder.parameters(), 
-                                                                    self.context_decoder.parameters()), lr=self.context_lr)
+        self.context_encoder_optimizer      = optimizer_class(self.agent.context_encoder.parameters(), lr=self.context_lr)
+        self.context_decoder_optimizer      = optimizer_class(self.context_decoder.parameters(), lr=self.context_lr)
 
-        for param in self.agent.context_encoder.parameters():
-            param.requires_grad = False
-        for param in self.context_decoder.parameters():
-            param.requires_grad = False
+        self._set_requires_grad(self.agent.context_encoder, True)
+        self._set_requires_grad(self.context_decoder, True)
+        self._set_requires_grad(self.target_context_encoder, False)
+        self._set_requires_grad(self.target_context_decoder, False)
         
         # self._set_requires_grad(self.qf1, False)
         # self._set_requires_grad(self.qf2, False)
@@ -96,7 +98,15 @@ class GENTLE(OfflineMetaRLAlgorithm):
     ###### Torch stuff #####
     @property
     def networks(self):
-        nets = self.agent.networks + [self.agent] + [self.context_policy, self.context_policy.policy] + [self.qf1, self.qf2, self.target_qf1, self.target_qf2, self.context_decoder]
+        nets = self.agent.networks + [self.agent] + [self.context_policy, self.context_policy.policy] + [
+            self.qf1,
+            self.qf2,
+            self.target_qf1,
+            self.target_qf2,
+            self.context_decoder,
+            self.target_context_encoder,
+            self.target_context_decoder,
+        ]
         return nets
 
     def training_mode(self, mode):
@@ -174,9 +184,11 @@ class GENTLE(OfflineMetaRLAlgorithm):
         mu = sigma_squared * torch.sum(mus / sigmas_squared, dim=0)
         return mu, sigma_squared
 
-    def _get_context_embedding(self, context, sample=False):
-        params = self.agent.context_encoder(context)
-        params = params.view(context.size(0), -1, self.agent.context_encoder.output_size)
+    def _get_context_embedding(self, context, sample=False, context_encoder=None):
+        if context_encoder is None:
+            context_encoder = self.agent.context_encoder
+        params = context_encoder(context)
+        params = params.view(context.size(0), -1, context_encoder.output_size)
 
         if self.agent.use_ib:
             mu = params[..., :self.latent_dim]
@@ -331,6 +343,15 @@ class GENTLE(OfflineMetaRLAlgorithm):
     def _update_target_network(self, f, target_f):
         ptu.soft_update_from_to(f, target_f, self.soft_target_tau)
 
+    def _update_context_target_networks(self, hard=False):
+        if hard or self.context_target_update_tau >= 1.0:
+            self.target_context_encoder.load_state_dict(self.agent.context_encoder.state_dict())
+            self.target_context_decoder.load_state_dict(self.context_decoder.state_dict())
+            return
+
+        ptu.soft_update_from_to(self.agent.context_encoder, self.target_context_encoder, self.context_target_update_tau)
+        ptu.soft_update_from_to(self.context_decoder, self.target_context_decoder, self.context_target_update_tau)
+
     def get_epoch_snapshot(self, epoch):
         # NOTE: overriding parent method which also optionally saves the env
         snapshot = OrderedDict(
@@ -341,7 +362,9 @@ class GENTLE(OfflineMetaRLAlgorithm):
             policy=self.agent.policy.state_dict(),
             target_policy=self.agent.target_policy.state_dict(),
             context_encoder=self.agent.context_encoder.state_dict(),
-            context_decoder=self.context_decoder.state_dict()
+            context_decoder=self.context_decoder.state_dict(),
+            target_context_encoder=self.target_context_encoder.state_dict(),
+            target_context_decoder=self.target_context_decoder.state_dict(),
         )
         return snapshot
 
@@ -355,6 +378,14 @@ class GENTLE(OfflineMetaRLAlgorithm):
             self.qf2.load_state_dict(torch.load(os.path.join(path, 'qf2_itr_{}.pth'.format(epoch))))
             self.target_qf1.load_state_dict(torch.load(os.path.join(path, 'target_qf1_itr_{}.pth'.format(epoch))))
             self.target_qf2.load_state_dict(torch.load(os.path.join(path, 'target_qf2_itr_{}.pth'.format(epoch))))
+            self.context_decoder.load_state_dict(torch.load(os.path.join(path, 'context_decoder_itr_{}.pth'.format(epoch))))
+            target_encoder_path = os.path.join(path, 'target_context_encoder_itr_{}.pth'.format(epoch))
+            target_decoder_path = os.path.join(path, 'target_context_decoder_itr_{}.pth'.format(epoch))
+            if os.path.exists(target_encoder_path) and os.path.exists(target_decoder_path):
+                self.target_context_encoder.load_state_dict(torch.load(target_encoder_path))
+                self.target_context_decoder.load_state_dict(torch.load(target_decoder_path))
+            else:
+                self._update_context_target_networks(hard=True)
             return True
         except:
             print("epoch: {} is not ready".format(epoch))
@@ -387,20 +418,45 @@ class GENTLE(OfflineMetaRLAlgorithm):
         c_mb, c_b, _ = context.size()
 
 
-        r_next_s = context[...,obs_dim+action_dim:]
-        pred_r_next_s = self.context_decoder(context[...,:obs_dim], context[...,obs_dim:obs_dim+action_dim], task_z.reshape(c_mb,c_b,-1))
-        recon_loss = torch.mean((r_next_s - pred_r_next_s)**2)
+        context_obs = context[..., :obs_dim]
+        context_actions = context[..., obs_dim:obs_dim+action_dim]
+        r_next_s = context[..., obs_dim+action_dim:]
+
+        with torch.no_grad():
+            decoder_task_z = self._get_context_embedding(
+                context,
+                sample=False,
+                context_encoder=self.target_context_encoder,
+            )
+        decoder_task_z = decoder_task_z.unsqueeze(1).expand(-1, c_b, -1)
+        decoder_pred_r_next_s = self.context_decoder(context_obs, context_actions, decoder_task_z)
+        decoder_recon_loss = torch.mean((r_next_s - decoder_pred_r_next_s)**2)
+
+        encoder_task_z = self._get_context_embedding(context, sample=False)
+        encoder_task_z = encoder_task_z.unsqueeze(1).expand(-1, c_b, -1)
+        encoder_pred_r_next_s = self.target_context_decoder(context_obs, context_actions, encoder_task_z)
+        encoder_recon_loss = torch.mean((r_next_s - encoder_pred_r_next_s)**2)
+
+        recon_loss = 0.5 * (decoder_recon_loss + encoder_recon_loss)
         # virtual_task_z = self._sample_virtual_task_embeddings(c_b)
         # if virtual_task_z is not None:
         #     virtual_task_z = virtual_task_z.detach()
         # consistency_loss = self._compute_consistency_loss(virtual_task_z, c_b)
-        # context_loss = self.recon_loss_weight * recon_loss
+        decoder_context_loss = self.recon_loss_weight * decoder_recon_loss
+        encoder_context_loss = self.recon_loss_weight * encoder_recon_loss
         self.loss['recon_loss'] = recon_loss.item()
+        self.loss['decoder_recon_loss'] = decoder_recon_loss.item()
+        self.loss['encoder_recon_loss'] = encoder_recon_loss.item()
         # self.loss['consistency_loss'] = consistency_loss.item()
         
-        # self.context_optimizer.zero_grad()
-        # context_loss.backward(retain_graph=True)
-        # self.context_optimizer.step()
+        self.context_decoder_optimizer.zero_grad()
+        decoder_context_loss.backward()
+        self.context_decoder_optimizer.step()
+
+        self.context_encoder_optimizer.zero_grad()
+        encoder_context_loss.backward()
+        self.context_encoder_optimizer.step()
+        self._update_context_target_networks()
         
         q1_pred = self.qf1(t, b, obs, actions, task_z.detach())
         q2_pred = self.qf2(t, b, obs, actions, task_z.detach())
