@@ -13,7 +13,6 @@ from rlkit.core import logger
 from rlkit.core.eval_util import create_stats_ordered_dict
 from rlkit.core.rl_algorithm import OfflineMetaRLAlgorithm
 from rlkit.data_management.env_replay_buffer import MultiTaskContextBuffer
-from itertools import chain
 
 class GENTLE(OfflineMetaRLAlgorithm):
     def __init__(
@@ -75,17 +74,11 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.policy_optimizer               = optimizer_class(self.agent.policy.parameters(), lr=self.policy_lr)
         self.qf1_optimizer                  = optimizer_class(self.qf1.parameters(), lr=self.qf_lr)
         self.qf2_optimizer                  = optimizer_class(self.qf2.parameters(), lr=self.qf_lr)
-        self.context_optimizer              = optimizer_class(chain(self.agent.context_encoder.parameters(), 
-                                                                    self.context_decoder.parameters()), lr=self.context_lr)
+        self.context_optimizer              = optimizer_class(self.agent.context_encoder.parameters(), lr=self.context_lr)
 
-        self._set_requires_grad(self.agent.context_encoder, self.consistency_update_encoder_decoder)
-        self._set_requires_grad(self.context_decoder, self.consistency_update_encoder_decoder)
+        self._set_requires_grad(self.agent.context_encoder, True)
+        self._set_requires_grad(self.context_decoder, False)
         
-        # self._set_requires_grad(self.qf1, False)
-        # self._set_requires_grad(self.qf2, False)
-        # self._set_requires_grad(self.target_qf1, False)
-        # self._set_requires_grad(self.target_qf2, False)
-        # self._set_requires_grad(self.agent.target_policy, False)
 
         self._num_steps                     = 0
         self._visit_num_steps_train         = 10
@@ -243,15 +236,16 @@ class GENTLE(OfflineMetaRLAlgorithm):
         # anchor_actions = anchor_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
         repeated_task_z = task_z.unsqueeze(1).expand(-1, batch_size, -1)
         policy_inputs = torch.cat([anchor_obs.reshape(-1, self.obs_dim), repeated_task_z.reshape(-1, self.latent_dim)], dim=-1)
-        fake_actions = self.agent.policy(
-            len(task_z),
-            batch_size,
-            policy_inputs,
-            reparameterize=True,
-            return_log_prob=True,
-        )[0].reshape(len(task_z), batch_size, self.action_dim)
+        with torch.no_grad():
+            fake_actions = self.agent.policy(
+                len(task_z),
+                batch_size,
+                policy_inputs,
+                reparameterize=True,
+                return_log_prob=True,
+            )[0].reshape(len(task_z), batch_size, self.action_dim)
+            fake_r_next_s = self.context_decoder(anchor_obs, fake_actions, repeated_task_z)
 
-        fake_r_next_s = self.context_decoder(anchor_obs, fake_actions, repeated_task_z)
         fake_context = torch.cat([anchor_obs, fake_actions, fake_r_next_s], dim=-1)
         fake_task_z = self._get_context_embedding(fake_context, sample=False)
         return F.mse_loss(fake_task_z, task_z)
@@ -400,13 +394,15 @@ class GENTLE(OfflineMetaRLAlgorithm):
         pred_r_next_s = self.context_decoder(context[...,:obs_dim], context[...,obs_dim:obs_dim+action_dim], task_z.reshape(c_mb,c_b,-1))
         recon_loss = torch.mean((r_next_s - pred_r_next_s)**2)
         consistency_loss = self._compute_consistency_loss(self.agent.z_means, c_b, anchor_task_indices=indices)
-        # context_loss = self.recon_loss_weight * recon_loss
+        context_loss = self.recon_loss_weight * recon_loss
         self.loss['recon_loss'] = recon_loss.item()
+        self.loss['context_loss'] = context_loss.item()
         self.loss['consistency_loss'] = consistency_loss.item()
+        encoder_total_loss = context_loss + self.consistency_loss_weight * consistency_loss
         
-        # self.context_optimizer.zero_grad()
-        # context_loss.backward(retain_graph=True)
-        # self.context_optimizer.step()
+        self.context_optimizer.zero_grad()
+        encoder_total_loss.backward()
+        self.context_optimizer.step()
         
         q1_pred = self.qf1(t, b, obs, actions, task_z.detach())
         q2_pred = self.qf2(t, b, obs, actions, task_z.detach())
@@ -429,21 +425,24 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.loss["q2_pred"] = torch.mean(q2_pred).item()
         self.qf1_optimizer.step()
         self.qf2_optimizer.step()
+        self._set_requires_grad(self.qf1, False)
+        self._set_requires_grad(self.qf2, False)
         Q = self._min_q(t, b, obs, new_actions, task_z)
         lmbda = self.bc_weight/Q.abs().mean().detach()
         policy_loss = -lmbda * Q.mean()
         bc_loss = F.mse_loss(new_actions, actions)
-        policy_total_loss = self.consistency_loss_weight * consistency_loss + policy_loss + bc_loss
+        
+        policy_total_loss = policy_loss + bc_loss
         self.loss["policy_loss"] = policy_loss.item()
         self.loss["bc_loss"] = bc_loss.item()
+        self.loss['encoder_total_loss'] = encoder_total_loss.item()
         self.loss['policy_total_loss'] = policy_total_loss.item()
+
         self.policy_optimizer.zero_grad()
-        if self.consistency_update_encoder_decoder:
-            self.context_optimizer.zero_grad()
         policy_total_loss.backward()
         self.policy_optimizer.step()
-        if self.consistency_update_encoder_decoder:
-            self.context_optimizer.step()
+        self._set_requires_grad(self.qf1, True)
+        self._set_requires_grad(self.qf2, True)
 
         self._update_target_network(self.qf1, self.target_qf1)
         self._update_target_network(self.qf2, self.target_qf2)
