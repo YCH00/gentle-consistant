@@ -393,11 +393,31 @@ class GENTLE(OfflineMetaRLAlgorithm):
         r_next_s = context[...,obs_dim+action_dim:]
         pred_r_next_s = self.context_decoder(context[...,:obs_dim], context[...,obs_dim:obs_dim+action_dim], task_z.reshape(c_mb,c_b,-1))
         recon_loss = torch.mean((r_next_s - pred_r_next_s)**2)
-        consistency_loss = self._compute_consistency_loss(self.agent.z_means, c_b, anchor_task_indices=indices)
+        consistency_task_z = self.agent.z_means
+        consistency_anchor_task_indices = np.asarray(indices)
+        with torch.no_grad():
+            virtual_task_z = self._sample_virtual_task_embeddings(c_b)
+        if virtual_task_z is not None:
+            virtual_anchor_task_indices = np.random.choice(
+                self.train_tasks,
+                size=len(virtual_task_z),
+                replace=True,
+            )
+            consistency_task_z = torch.cat([consistency_task_z, virtual_task_z], dim=0)
+            consistency_anchor_task_indices = np.concatenate([
+                consistency_anchor_task_indices,
+                virtual_anchor_task_indices,
+            ])
+        consistency_loss = self._compute_consistency_loss(
+            consistency_task_z,
+            c_b,
+            anchor_task_indices=consistency_anchor_task_indices,
+        )
         context_loss = self.recon_loss_weight * recon_loss
         self.loss['recon_loss'] = recon_loss.item()
         self.loss['context_loss'] = context_loss.item()
         self.loss['consistency_loss'] = consistency_loss.item()
+        self.loss['num_virtual_tasks'] = 0 if virtual_task_z is None else len(virtual_task_z)
         encoder_total_loss = context_loss + self.consistency_loss_weight * consistency_loss
         
         self.context_optimizer.zero_grad()
