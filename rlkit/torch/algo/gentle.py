@@ -250,6 +250,16 @@ class GENTLE(OfflineMetaRLAlgorithm):
         fake_task_z = self._get_context_embedding(fake_context, sample=False)
         return F.mse_loss(fake_task_z, task_z)
     
+    def _sample_mismatched_task_indices(self, task_indices):
+        task_indices = np.asarray(task_indices)
+        train_tasks = np.asarray(self.train_tasks)
+        if len(train_tasks) <= 1:
+            return np.random.choice(train_tasks, size=len(task_indices), replace=True)
+        return np.asarray([
+            np.random.choice(train_tasks[train_tasks != task_idx])
+            for task_idx in task_indices
+        ])    
+    
     def get_relabel_output(self, obs, actions, task_indices):
         with torch.no_grad():
             relabel_output, relabel_std = self.task_dynamics.step(obs, actions, task_indices, return_std=True)
@@ -394,7 +404,8 @@ class GENTLE(OfflineMetaRLAlgorithm):
         pred_r_next_s = self.context_decoder(context[...,:obs_dim], context[...,obs_dim:obs_dim+action_dim], task_z.reshape(c_mb,c_b,-1))
         recon_loss = torch.mean((r_next_s - pred_r_next_s)**2)
         consistency_task_z = self.agent.z_means
-        consistency_anchor_task_indices = np.asarray(indices)
+        # consistency_anchor_task_indices = np.asarray(indices)
+        consistency_anchor_task_indices = self._sample_mismatched_task_indices(indices)
         with torch.no_grad():
             virtual_task_z = self._sample_virtual_task_embeddings(c_b)
         if virtual_task_z is not None:
