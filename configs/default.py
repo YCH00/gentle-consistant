@@ -14,7 +14,7 @@ default_config = dict(
     ),
     algo_params=dict(
         meta_batch=10, # number of tasks to average the gradient across
-        batch_size=256, # number of transitions in the RL batch
+        batch_size=512, # number of transitions in the RL batch
         num_iterations=500, # number of data sampling / training iterates
         num_initial_steps=2000, # number of transitions collected per task before training
         num_tasks_sample=5, # number of randomly sampled tasks to collect data for each iteration
