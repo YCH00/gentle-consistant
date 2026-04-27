@@ -62,7 +62,7 @@ default_config = dict(
         M=3,
         beta=1.0,
         consistency_loss_weight=0.5,
-        consistency_update_encoder_decoder=False,
+        virtual_policy_weight=0.0, # weight for policy optimization under virtual task embeddings
     ),
     util_params=dict(
         base_log_dir='./logs',

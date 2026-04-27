@@ -60,7 +60,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.M                              = kwargs.get('M', 2)
         self.beta                           = kwargs.get('beta', 1.0)
         self.consistency_loss_weight        = kwargs.get('consistency_loss_weight', 1.0)
-        self.consistency_update_encoder_decoder = kwargs.get('consistency_update_encoder_decoder', False)
+        self.virtual_policy_weight          = kwargs.get('virtual_policy_weight', 0.0)
 
         self.loss                           = {}
         self.plotter                        = plotter
@@ -249,6 +249,43 @@ class GENTLE(OfflineMetaRLAlgorithm):
         fake_context = torch.cat([anchor_obs, fake_actions, fake_r_next_s], dim=-1)
         fake_task_z = self._get_context_embedding(fake_context, sample=False)
         return F.mse_loss(fake_task_z, task_z)
+
+    def _compute_virtual_policy_loss(self, virtual_task_z, batch_size):
+        if virtual_task_z is None:
+            return ptu.zeros(1).squeeze()
+
+        virtual_task_z = virtual_task_z.detach()
+        num_virtual_tasks = len(virtual_task_z)
+        if num_virtual_tasks == 0:
+            return ptu.zeros(1).squeeze()
+
+        anchor_task_indices = np.random.choice(self.train_tasks, size=num_virtual_tasks, replace=True)
+        anchor_context = self.sample_context(anchor_task_indices, b_size=batch_size)
+        anchor_obs = anchor_context[:, :, :self.obs_dim]
+        repeated_virtual_z = virtual_task_z.unsqueeze(1).expand(-1, batch_size, -1)
+
+        policy_inputs = torch.cat(
+            [
+                anchor_obs.reshape(-1, self.obs_dim),
+                repeated_virtual_z.reshape(-1, self.latent_dim),
+            ],
+            dim=-1,
+        )
+        virtual_actions = self.agent.policy(
+            num_virtual_tasks,
+            batch_size,
+            policy_inputs,
+            reparameterize=True,
+            return_log_prob=True,
+        )[0]
+        virtual_q = self._min_q(
+            num_virtual_tasks,
+            batch_size,
+            anchor_obs.reshape(-1, self.obs_dim),
+            virtual_actions,
+            repeated_virtual_z.reshape(-1, self.latent_dim),
+        )
+        return -virtual_q.mean()
     
     def _sample_mismatched_task_indices(self, task_indices):
         task_indices = np.asarray(task_indices)
@@ -462,10 +499,14 @@ class GENTLE(OfflineMetaRLAlgorithm):
         lmbda = self.bc_weight/Q.abs().mean().detach()
         policy_loss = -lmbda * Q.mean()
         bc_loss = F.mse_loss(new_actions, actions)
-        
-        policy_total_loss = policy_loss + bc_loss
+        virtual_policy_loss = ptu.zeros(1).squeeze()
+        if self.virtual_policy_weight > 0 and virtual_task_z is not None:
+            virtual_policy_loss = self._compute_virtual_policy_loss(virtual_task_z, c_b)
+
+        policy_total_loss = policy_loss + bc_loss + self.virtual_policy_weight * virtual_policy_loss
         self.loss["policy_loss"] = policy_loss.item()
         self.loss["bc_loss"] = bc_loss.item()
+        self.loss["virtual_policy_loss"] = virtual_policy_loss.item()
         self.loss['encoder_total_loss'] = encoder_total_loss.item()
         self.loss['policy_total_loss'] = policy_total_loss.item()
 
@@ -500,6 +541,9 @@ class GENTLE(OfflineMetaRLAlgorithm):
             ))
             self.eval_statistics['BC Loss'] = np.mean(ptu.get_numpy(
                 bc_loss
+            ))
+            self.eval_statistics['Virtual Policy Loss'] = np.mean(ptu.get_numpy(
+                virtual_policy_loss
             ))
             self.eval_statistics['QF Loss'] = np.mean(ptu.get_numpy(qf_loss))
             self.eval_statistics.update(create_stats_ordered_dict('Q Predictions',  ptu.get_numpy(q1_pred)))
