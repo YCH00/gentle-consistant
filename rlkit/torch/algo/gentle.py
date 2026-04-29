@@ -61,6 +61,8 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.beta                           = kwargs.get('beta', 1.0)
         self.consistency_loss_weight        = kwargs.get('consistency_loss_weight', 1.0)
         self.virtual_policy_weight          = kwargs.get('virtual_policy_weight', 0.0)
+        self.consistency_use_policy_relabel_data = kwargs.get('consistency_use_policy_relabel_data', True)
+        self.virtual_policy_use_policy_relabel_data = kwargs.get('virtual_policy_use_policy_relabel_data', True)
 
         self.loss                           = {}
         self.plotter                        = plotter
@@ -216,7 +218,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         virtual_zs = np.concatenate(virtual_zs, axis=0)
         return virtual_zs[np.newaxis, ...]
 
-    def _compute_consistency_loss(self, task_z, batch_size, anchor_task_indices=None):
+    def _compute_consistency_loss(self, task_z, batch_size, anchor_task_indices=None, use_policy_relabel_data=None):
         if task_z is None:
             return ptu.zeros(1).squeeze()
 
@@ -233,24 +235,38 @@ class GENTLE(OfflineMetaRLAlgorithm):
 
         anchor_context = self.sample_context(anchor_task_indices, b_size=batch_size)
         anchor_obs = anchor_context[:, :, :self.obs_dim]
-        # anchor_actions = anchor_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
+        anchor_actions = anchor_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
+        anchor_r_next_s = anchor_context[:, :, self.obs_dim + self.action_dim:]
         repeated_task_z = task_z.unsqueeze(1).expand(-1, batch_size, -1)
-        policy_inputs = torch.cat([anchor_obs.reshape(-1, self.obs_dim), repeated_task_z.reshape(-1, self.latent_dim)], dim=-1)
-        with torch.no_grad():
-            fake_actions = self.agent.policy(
-                len(task_z),
-                batch_size,
-                policy_inputs,
-                reparameterize=True,
-                return_log_prob=True,
-            )[0].reshape(len(task_z), batch_size, self.action_dim)
-            fake_r_next_s = self.context_decoder(anchor_obs, fake_actions, repeated_task_z)
+        if use_policy_relabel_data is None:
+            use_policy_relabel_data = self.consistency_use_policy_relabel_data
+
+        if use_policy_relabel_data:
+            policy_inputs = torch.cat(
+                [
+                    anchor_obs.reshape(-1, self.obs_dim),
+                    repeated_task_z.reshape(-1, self.latent_dim),
+                ],
+                dim=-1,
+            )
+            with torch.no_grad():
+                fake_actions = self.agent.policy(
+                    len(task_z),
+                    batch_size,
+                    policy_inputs,
+                    reparameterize=True,
+                    return_log_prob=True,
+                )[0].reshape(len(task_z), batch_size, self.action_dim)
+                fake_r_next_s = self.context_decoder(anchor_obs, fake_actions, repeated_task_z)
+        else:
+            fake_actions = anchor_actions
+            fake_r_next_s = anchor_r_next_s
 
         fake_context = torch.cat([anchor_obs, fake_actions, fake_r_next_s], dim=-1)
         fake_task_z = self._get_context_embedding(fake_context, sample=False)
         return F.mse_loss(fake_task_z, task_z)
 
-    def _compute_virtual_policy_loss(self, virtual_task_z, batch_size):
+    def _compute_virtual_policy_loss(self, virtual_task_z, batch_size, use_policy_relabel_data=None):
         if virtual_task_z is None:
             return ptu.zeros(1).squeeze()
 
@@ -262,22 +278,29 @@ class GENTLE(OfflineMetaRLAlgorithm):
         anchor_task_indices = np.random.choice(self.train_tasks, size=num_virtual_tasks, replace=True)
         anchor_context = self.sample_context(anchor_task_indices, b_size=batch_size)
         anchor_obs = anchor_context[:, :, :self.obs_dim]
+        anchor_actions = anchor_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
         repeated_virtual_z = virtual_task_z.unsqueeze(1).expand(-1, batch_size, -1)
 
-        policy_inputs = torch.cat(
-            [
-                anchor_obs.reshape(-1, self.obs_dim),
-                repeated_virtual_z.reshape(-1, self.latent_dim),
-            ],
-            dim=-1,
-        )
-        virtual_actions = self.agent.policy(
-            num_virtual_tasks,
-            batch_size,
-            policy_inputs,
-            reparameterize=True,
-            return_log_prob=True,
-        )[0]
+        if use_policy_relabel_data is None:
+            use_policy_relabel_data = self.virtual_policy_use_policy_relabel_data
+
+        if use_policy_relabel_data:
+            policy_inputs = torch.cat(
+                [
+                    anchor_obs.reshape(-1, self.obs_dim),
+                    repeated_virtual_z.reshape(-1, self.latent_dim),
+                ],
+                dim=-1,
+            )
+            virtual_actions = self.agent.policy(
+                num_virtual_tasks,
+                batch_size,
+                policy_inputs,
+                reparameterize=True,
+                return_log_prob=True,
+            )[0]
+        else:
+            virtual_actions = anchor_actions.reshape(-1, self.action_dim)
         virtual_q = self._min_q(
             num_virtual_tasks,
             batch_size,
