@@ -65,6 +65,9 @@ default_config = dict(
         consistency_use_policy_relabel_data=True, # True: relabel virtual data; False: sampled real context data
         virtual_policy_weight=0.0, # weight for policy optimization under virtual task embeddings
         virtual_policy_use_policy_relabel_data=True, # True: relabel virtual data; False: sampled real context data
+        virtual_policy_adaptive_lambda=True, # scale virtual policy loss by inverse mean abs Q, similar to TD3+BC style
+        virtual_policy_q_clip=50.0, # clip virtual Q values before actor loss to avoid outlier-driven explosions
+        virtual_policy_warmup_steps=200, # delay virtual policy training until critic/encoder are moderately stable
     ),
     util_params=dict(
         base_log_dir='./logs',

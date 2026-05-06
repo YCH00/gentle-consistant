@@ -63,6 +63,9 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.virtual_policy_weight          = kwargs.get('virtual_policy_weight', 0.0)
         self.consistency_use_policy_relabel_data = kwargs.get('consistency_use_policy_relabel_data', True)
         self.virtual_policy_use_policy_relabel_data = kwargs.get('virtual_policy_use_policy_relabel_data', True)
+        self.virtual_policy_adaptive_lambda = kwargs.get('virtual_policy_adaptive_lambda', True)
+        self.virtual_policy_q_clip          = kwargs.get('virtual_policy_q_clip', None)
+        self.virtual_policy_warmup_steps    = int(kwargs.get('virtual_policy_warmup_steps', 0))
 
         self.loss                           = {}
         self.plotter                        = plotter
@@ -268,12 +271,14 @@ class GENTLE(OfflineMetaRLAlgorithm):
 
     def _compute_virtual_policy_loss(self, virtual_task_z, batch_size, use_policy_relabel_data=None):
         if virtual_task_z is None:
-            return ptu.zeros(1).squeeze()
+            zero = ptu.zeros(1).squeeze()
+            return zero, zero, zero, zero
 
         virtual_task_z = virtual_task_z.detach()
         num_virtual_tasks = len(virtual_task_z)
         if num_virtual_tasks == 0:
-            return ptu.zeros(1).squeeze()
+            zero = ptu.zeros(1).squeeze()
+            return zero, zero, zero, zero
 
         anchor_task_indices = np.random.choice(self.train_tasks, size=num_virtual_tasks, replace=True)
         anchor_context = self.sample_context(anchor_task_indices, b_size=batch_size)
@@ -308,7 +313,17 @@ class GENTLE(OfflineMetaRLAlgorithm):
             virtual_actions,
             repeated_virtual_z.reshape(-1, self.latent_dim),
         )
-        return -virtual_q.mean()
+        if self.virtual_policy_q_clip is not None:
+            virtual_q = torch.clamp(virtual_q, -self.virtual_policy_q_clip, self.virtual_policy_q_clip)
+
+        virtual_q_mean = virtual_q.mean()
+        virtual_q_abs_mean = virtual_q.abs().mean()
+        if self.virtual_policy_adaptive_lambda:
+            virtual_policy_lambda = self.bc_weight / virtual_q_abs_mean.detach().clamp(min=1e-6)
+        else:
+            virtual_policy_lambda = torch.ones(1, device=virtual_q.device).squeeze()
+        virtual_policy_loss = -virtual_policy_lambda * virtual_q_mean
+        return virtual_policy_loss, virtual_q_mean, virtual_q_abs_mean, virtual_policy_lambda
     
     def _sample_mismatched_task_indices(self, task_indices):
         task_indices = np.asarray(task_indices)
@@ -523,13 +538,19 @@ class GENTLE(OfflineMetaRLAlgorithm):
         policy_loss = -lmbda * Q.mean()
         bc_loss = F.mse_loss(new_actions, actions)
         virtual_policy_loss = ptu.zeros(1).squeeze()
-        if self.virtual_policy_weight > 0 and virtual_task_z is not None:
-            virtual_policy_loss = self._compute_virtual_policy_loss(virtual_task_z, c_b)
+        virtual_q_mean = ptu.zeros(1).squeeze()
+        virtual_q_abs_mean = ptu.zeros(1).squeeze()
+        virtual_policy_lambda = ptu.zeros(1).squeeze()
+        if self.virtual_policy_weight > 0 and virtual_task_z is not None and self._n_train_steps_total >= self.virtual_policy_warmup_steps:
+            virtual_policy_loss, virtual_q_mean, virtual_q_abs_mean, virtual_policy_lambda = self._compute_virtual_policy_loss(virtual_task_z, c_b)
 
         policy_total_loss = policy_loss + bc_loss + self.virtual_policy_weight * virtual_policy_loss
         self.loss["policy_loss"] = policy_loss.item()
         self.loss["bc_loss"] = bc_loss.item()
         self.loss["virtual_policy_loss"] = virtual_policy_loss.item()
+        self.loss["virtual_q_mean"] = virtual_q_mean.item()
+        self.loss["virtual_q_abs_mean"] = virtual_q_abs_mean.item()
+        self.loss["virtual_policy_lambda"] = virtual_policy_lambda.item()
         self.loss['encoder_total_loss'] = encoder_total_loss.item()
         self.loss['policy_total_loss'] = policy_total_loss.item()
 
@@ -567,6 +588,15 @@ class GENTLE(OfflineMetaRLAlgorithm):
             ))
             self.eval_statistics['Virtual Policy Loss'] = np.mean(ptu.get_numpy(
                 virtual_policy_loss
+            ))
+            self.eval_statistics['Virtual Q Mean'] = np.mean(ptu.get_numpy(
+                virtual_q_mean
+            ))
+            self.eval_statistics['Virtual Q Abs Mean'] = np.mean(ptu.get_numpy(
+                virtual_q_abs_mean
+            ))
+            self.eval_statistics['Virtual Policy Lambda'] = np.mean(ptu.get_numpy(
+                virtual_policy_lambda
             ))
             self.eval_statistics['QF Loss'] = np.mean(ptu.get_numpy(qf_loss))
             self.eval_statistics.update(create_stats_ordered_dict('Q Predictions',  ptu.get_numpy(q1_pred)))
