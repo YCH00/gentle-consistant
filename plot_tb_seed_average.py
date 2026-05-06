@@ -91,7 +91,7 @@ def load_event_accumulator(run_dir):
     return accumulator
 
 
-def list_scalar_tags(runs):
+def collect_scalar_tags(runs):
     run_tags = {}
     for seed_name, run_dir in runs:
         accumulator = load_event_accumulator(run_dir)
@@ -100,6 +100,11 @@ def list_scalar_tags(runs):
 
     common_tags = sorted(set.intersection(*run_tags.values())) if run_tags else []
     all_tags = sorted(set.union(*run_tags.values())) if run_tags else []
+    return run_tags, common_tags, all_tags
+
+
+def list_scalar_tags(runs):
+    _, common_tags, all_tags = collect_scalar_tags(runs)
 
     print("Matched runs:")
     for seed_name, run_dir in runs:
@@ -213,6 +218,13 @@ def save_csv(csv_path, steps, mean, std, counts):
             writer.writerow(row)
 
 
+def default_output_path(experiment, tag, output_dir=None):
+    output_name = f"{sanitize_filename(experiment)}_{sanitize_filename(tag)}_mean.png"
+    if output_dir is None:
+        return Path("figures") / output_name
+    return Path(output_dir) / output_name
+
+
 def plot_average(
     output_path,
     series,
@@ -286,6 +298,16 @@ def parse_args():
         help="TensorBoard scalar tag to average.",
     )
     parser.add_argument(
+        "--all-tags",
+        action="store_true",
+        help="Plot every scalar tag that is present in all matched seed runs.",
+    )
+    parser.add_argument(
+        "--tag-regex",
+        default=None,
+        help="Optional regular expression used to filter tags when --all-tags is set.",
+    )
+    parser.add_argument(
         "--seed-pattern",
         default="seed*",
         help="Glob for seed directories under --root. Default: seed*.",
@@ -306,6 +328,14 @@ def parse_args():
         "--output",
         default=None,
         help="Output figure path. Default: figures/<experiment>_<tag>_mean.png.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=None,
+        help=(
+            "Output directory used with --all-tags. "
+            "Default: figures/<experiment>_all_tags."
+        ),
     )
     parser.add_argument(
         "--csv-output",
@@ -333,22 +363,14 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
-    args = parse_args()
-    runs = find_seed_runs(args.root, args.experiment, args.seed_pattern, args.pick)
-
-    if args.list_tags:
-        list_scalar_tags(runs)
-        return
-
-    series = [load_scalar_series(seed_name, run_dir, args.tag) for seed_name, run_dir in runs]
+def plot_one_tag(args, runs, tag, output_path=None, csv_path=None):
+    series = [load_scalar_series(seed_name, run_dir, tag) for seed_name, run_dir in runs]
     steps, matrix, mean, std, counts = summarize(series, args.align)
 
-    if args.output is None:
-        output_name = f"{sanitize_filename(args.experiment)}_{sanitize_filename(args.tag)}_mean.png"
-        output_path = Path("figures") / output_name
+    if output_path is None:
+        output_path = default_output_path(args.experiment, tag)
     else:
-        output_path = Path(args.output)
+        output_path = Path(output_path)
 
     plot_average(
         output_path=output_path,
@@ -357,19 +379,83 @@ def main():
         matrix=matrix,
         mean=mean,
         std=std,
-        tag=args.tag,
+        tag=tag,
         title=args.title,
         ylabel=args.ylabel,
         show_seeds=args.show_seeds,
         smooth_window=args.smooth_window,
     )
 
-    csv_path = Path(args.csv_output) if args.csv_output else output_path.with_suffix(".csv")
+    if csv_path is None:
+        csv_path = output_path.with_suffix(".csv")
+    else:
+        csv_path = Path(csv_path)
     save_csv(csv_path, steps, mean, std, counts)
+    return output_path, csv_path
+
+
+def plot_all_tags(args, runs):
+    _, common_tags, _ = collect_scalar_tags(runs)
+    if args.tag_regex is not None:
+        pattern = re.compile(args.tag_regex)
+        common_tags = [tag for tag in common_tags if pattern.search(tag)]
+
+    if not common_tags:
+        raise ValueError("No common scalar tags matched the requested filters.")
+
+    output_dir = args.output_dir
+    if output_dir is None:
+        output_dir = Path("figures") / f"{sanitize_filename(args.experiment)}_all_tags"
+
+    saved = []
+    failed = []
+    for tag in common_tags:
+        output_path = default_output_path(args.experiment, tag, output_dir=output_dir)
+        try:
+            csv_path = output_path.with_suffix(".csv")
+            saved.append(plot_one_tag(args, runs, tag, output_path, csv_path))
+        except Exception as exc:
+            failed.append((tag, exc))
 
     print("Matched runs:")
-    for item in series:
-        print(f"  {item['seed']}: {item['run_dir']}")
+    for seed_name, run_dir in runs:
+        print(f"  {seed_name}: {run_dir}")
+    print(f"Saved {len(saved)} tag plots under: {output_dir}")
+
+    if failed:
+        print(f"Failed to plot {len(failed)} tags:")
+        for tag, exc in failed:
+            print(f"  {tag}: {exc}")
+
+    if not saved:
+        raise RuntimeError("No tag plots were saved.")
+
+
+def main():
+    args = parse_args()
+    runs = find_seed_runs(args.root, args.experiment, args.seed_pattern, args.pick)
+
+    if args.list_tags:
+        list_scalar_tags(runs)
+        return
+
+    if args.all_tags:
+        if args.output is not None or args.csv_output is not None:
+            raise ValueError("--output and --csv-output are only valid for a single --tag.")
+        plot_all_tags(args, runs)
+        return
+
+    output_path, csv_path = plot_one_tag(
+        args,
+        runs,
+        args.tag,
+        output_path=args.output,
+        csv_path=args.csv_output,
+    )
+
+    print("Matched runs:")
+    for seed_name, run_dir in runs:
+        print(f"  {seed_name}: {run_dir}")
     print(f"Saved figure: {output_path}")
     print(f"Saved CSV: {csv_path}")
 
