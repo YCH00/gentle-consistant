@@ -79,6 +79,9 @@ python export_virtual_embeddings.py \
   --log-dir /root/tievnas/YinCH/GENTLE-consistant/logs/point-robot/gentle/seed0/2026_04_02_11_17_00 \
   --epoch 499 \
   --gpu 0
+
+python plot_tb_seed_average.py --root logs/point-robot/gentle --experiment "2026_04_20_12_55_45_batch512"  --all-tags --show-seeds --output-dir figures/point-tobot_batch512_all_tags
+
 ```
 
 ## Reference
