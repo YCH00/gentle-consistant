@@ -14,7 +14,7 @@
         "num_train_steps_per_itr": 400,
         "embedding_batch_size": 256,
         "embedding_mini_batch_size": 256,
-        "data_dir": "/root/tievnas/YinCH/GENTLE-consistant/data/cheetah-vel/",
+        "data_dir": "/root/tievnas2/YinCH/GENTLE-consistant/data/cheetah-vel/",
         "sample": 1,
         "train_epoch": 1e6,
         "eval_epoch": 1e6,

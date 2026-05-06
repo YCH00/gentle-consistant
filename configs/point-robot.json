@@ -23,7 +23,7 @@
         "eval_epoch": 1e5,
         "sample": 1,
         "max_path_length": 20,
-        "data_dir": "/data/zhouhongtu/GENTLE-consistant/data/point-robot",
+        "data_dir": "/root/tievnas2/YinCH/GENTLE-consistant/data/point-robot",
         "online_sample_num": 20
     }
 }
