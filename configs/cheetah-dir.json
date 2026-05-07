@@ -23,7 +23,7 @@
         "num_aug_neg_tasks": 1,
         "n_vt": 2,
         "M": 2,
-        "beta": 1.0,
+        "beta": 2.0,
         "consistency_loss_weight": 0.25
     },
     "util_params": {
