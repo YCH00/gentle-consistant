@@ -3,12 +3,14 @@ import csv
 import re
 from pathlib import Path
 
-import matplotlib
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
-from tensorboard.backend.event_processing import event_accumulator
+def get_pyplot():
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    return plt
 
 
 def natural_key(text):
@@ -84,6 +86,8 @@ def find_seed_runs(root, experiment_pattern, seed_pattern, pick):
 
 
 def load_event_accumulator(run_dir):
+    from tensorboard.backend.event_processing import event_accumulator
+
     accumulator = event_accumulator.EventAccumulator(
         str(run_dir), size_guidance={event_accumulator.SCALARS: 0}
     )
@@ -213,6 +217,32 @@ def save_csv(csv_path, steps, mean, std, counts):
             writer.writerow(row)
 
 
+def save_compare_csv(csv_path, summaries):
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    with csv_path.open("w", newline="") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(["experiment", "label", "step", "mean", "std", "num_seeds"])
+        for summary in summaries:
+            for row in zip(
+                summary["steps"].astype(int),
+                summary["mean"],
+                summary["std"],
+                summary["counts"].astype(int),
+            ):
+                writer.writerow([summary["experiment"], summary["label"], *row])
+
+
+def default_output_path(experiment, tag):
+    output_name = f"{sanitize_filename(experiment)}_{sanitize_filename(tag)}_mean.png"
+    return Path("figures") / output_name
+
+
+def default_compare_output_path(experiments, tag):
+    experiment_text = "_vs_".join(sanitize_filename(experiment) for experiment in experiments)
+    output_name = f"{experiment_text}_{sanitize_filename(tag)}_compare.png"
+    return Path("figures") / output_name
+
+
 def plot_average(
     output_path,
     series,
@@ -226,6 +256,7 @@ def plot_average(
     show_seeds,
     smooth_window,
 ):
+    plt = get_pyplot()
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     plot_mean = moving_average(mean, smooth_window)
@@ -263,6 +294,40 @@ def plot_average(
     plt.close(fig)
 
 
+def plot_compare(output_path, summaries, tag, title, ylabel, smooth_window, no_std_shade):
+    plt = get_pyplot()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    for summary in summaries:
+        steps = summary["steps"]
+        plot_mean = moving_average(summary["mean"], smooth_window)
+        plot_std = moving_average(summary["std"], smooth_window)
+        line = ax.plot(
+            steps,
+            plot_mean,
+            linewidth=2.3,
+            label=summary["label"],
+        )[0]
+        if not no_std_shade:
+            ax.fill_between(
+                steps,
+                plot_mean - plot_std,
+                plot_mean + plot_std,
+                color=line.get_color(),
+                alpha=0.14,
+            )
+
+    ax.set_xlabel("Step")
+    ax.set_ylabel(ylabel or tag.split("/")[-1])
+    ax.set_title(title or tag)
+    ax.grid(True, alpha=0.25)
+    ax.legend(frameon=False)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=200)
+    plt.close(fig)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Average TensorBoard scalar curves across seed directories."
@@ -275,10 +340,18 @@ def parse_args():
     parser.add_argument(
         "--experiment",
         required=True,
+        action="append",
         help=(
             "Run directory name or glob under each seed directory. "
-            "Use quotes for wildcards, e.g. '*vt_policy_loss'."
+            "Use quotes for wildcards, e.g. '*vt_policy_loss'. "
+            "Pass this option multiple times to compare experiments."
         ),
+    )
+    parser.add_argument(
+        "--label",
+        action="append",
+        default=None,
+        help="Legend label for one experiment. Repeat once per --experiment.",
     )
     parser.add_argument(
         "--tag",
@@ -321,7 +394,12 @@ def parse_args():
     parser.add_argument(
         "--show-seeds",
         action="store_true",
-        help="Also draw individual seed curves in light gray.",
+        help="Also draw individual seed curves in light gray for single-experiment plots.",
+    )
+    parser.add_argument(
+        "--no-std-shade",
+        action="store_true",
+        help="Do not draw standard-deviation shading in multi-experiment compare plots.",
     )
     parser.add_argument("--title", default=None, help="Optional plot title.")
     parser.add_argument("--ylabel", default=None, help="Optional y-axis label.")
@@ -333,30 +411,54 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
-    args = parse_args()
-    runs = find_seed_runs(args.root, args.experiment, args.seed_pattern, args.pick)
+def labels_for_experiments(experiments, labels):
+    if labels is None:
+        return experiments
+    if len(labels) != len(experiments):
+        raise ValueError("--label must be provided once for each --experiment.")
+    return labels
+
+
+def summarize_experiment(args, experiment, label, runs=None):
+    if runs is None:
+        runs = find_seed_runs(args.root, experiment, args.seed_pattern, args.pick)
+    series = [load_scalar_series(seed_name, run_dir, args.tag) for seed_name, run_dir in runs]
+    steps, matrix, mean, std, counts = summarize(series, args.align)
+    return {
+        "experiment": experiment,
+        "label": label,
+        "runs": runs,
+        "series": series,
+        "steps": steps,
+        "matrix": matrix,
+        "mean": mean,
+        "std": std,
+        "counts": counts,
+    }
+
+
+def run_single_experiment(args):
+    experiment = args.experiment[0]
+    runs = find_seed_runs(args.root, experiment, args.seed_pattern, args.pick)
 
     if args.list_tags:
         list_scalar_tags(runs)
         return
 
-    series = [load_scalar_series(seed_name, run_dir, args.tag) for seed_name, run_dir in runs]
-    steps, matrix, mean, std, counts = summarize(series, args.align)
+    summary = summarize_experiment(args, experiment, experiment, runs=runs)
 
     if args.output is None:
-        output_name = f"{sanitize_filename(args.experiment)}_{sanitize_filename(args.tag)}_mean.png"
-        output_path = Path("figures") / output_name
+        output_path = default_output_path(experiment, args.tag)
     else:
         output_path = Path(args.output)
 
     plot_average(
         output_path=output_path,
-        series=series,
-        steps=steps,
-        matrix=matrix,
-        mean=mean,
-        std=std,
+        series=summary["series"],
+        steps=summary["steps"],
+        matrix=summary["matrix"],
+        mean=summary["mean"],
+        std=summary["std"],
         tag=args.tag,
         title=args.title,
         ylabel=args.ylabel,
@@ -365,13 +467,70 @@ def main():
     )
 
     csv_path = Path(args.csv_output) if args.csv_output else output_path.with_suffix(".csv")
-    save_csv(csv_path, steps, mean, std, counts)
+    save_csv(csv_path, summary["steps"], summary["mean"], summary["std"], summary["counts"])
 
     print("Matched runs:")
-    for item in series:
-        print(f"  {item['seed']}: {item['run_dir']}")
+    for seed_name, run_dir in runs:
+        print(f"  {seed_name}: {run_dir}")
     print(f"Saved figure: {output_path}")
     print(f"Saved CSV: {csv_path}")
+
+
+def run_compare_experiments(args):
+    experiments = args.experiment
+    labels = labels_for_experiments(experiments, args.label)
+    experiment_runs = {
+        experiment: find_seed_runs(args.root, experiment, args.seed_pattern, args.pick)
+        for experiment in experiments
+    }
+
+    if args.list_tags:
+        for experiment in experiments:
+            print(f"\n=== {experiment} ===")
+            list_scalar_tags(experiment_runs[experiment])
+        return
+
+    summaries = [
+        summarize_experiment(args, experiment, label, runs=experiment_runs[experiment])
+        for experiment, label in zip(experiments, labels)
+    ]
+
+    if args.output is None:
+        output_path = default_compare_output_path(experiments, args.tag)
+    else:
+        output_path = Path(args.output)
+
+    plot_compare(
+        output_path=output_path,
+        summaries=summaries,
+        tag=args.tag,
+        title=args.title,
+        ylabel=args.ylabel,
+        smooth_window=args.smooth_window,
+        no_std_shade=args.no_std_shade,
+    )
+
+    csv_path = Path(args.csv_output) if args.csv_output else output_path.with_suffix(".csv")
+    save_compare_csv(csv_path, summaries)
+
+    print("Matched runs:")
+    for experiment, label in zip(experiments, labels):
+        print(f"  {label} ({experiment}):")
+        for seed_name, run_dir in experiment_runs[experiment]:
+            print(f"    {seed_name}: {run_dir}")
+    print(f"Saved compare figure: {output_path}")
+    print(f"Saved compare CSV: {csv_path}")
+
+
+def main():
+    args = parse_args()
+    global np
+    import numpy as np
+
+    if len(args.experiment) == 1:
+        run_single_experiment(args)
+    else:
+        run_compare_experiments(args)
 
 
 if __name__ == "__main__":
