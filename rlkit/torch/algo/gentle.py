@@ -235,14 +235,10 @@ class GENTLE(OfflineMetaRLAlgorithm):
                     'anchor_task_indices must have the same length as task_z: '
                     '{} vs {}'.format(len(anchor_task_indices), len(task_z))
                 )
-        fake_task_indices = np.random.choice(self.train_tasks, size=len(task_z), replace=True)
+        # fake_task_indices = np.random.choice(self.train_tasks, size=len(task_z), replace=True)
 
         anchor_context = self.sample_context(anchor_task_indices, b_size=batch_size)
-        fake_context = self.sample_context(fake_task_indices, b_size=batch_size)
-        
         anchor_obs = anchor_context[:, :, :self.obs_dim]
-        anchor_actions = anchor_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
-        fake_actions = fake_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
         anchor_r_next_s = anchor_context[:, :, self.obs_dim + self.action_dim:]
         repeated_task_z = task_z.unsqueeze(1).expand(-1, batch_size, -1)
         if use_policy_relabel_data is None:
@@ -264,11 +260,12 @@ class GENTLE(OfflineMetaRLAlgorithm):
                     reparameterize=True,
                     return_log_prob=True,
                 )[0].reshape(len(task_z), batch_size, self.action_dim)
-                fake_r_next_s = self.context_decoder(anchor_obs, fake_actions, repeated_task_z)
         else:
+            fake_task_indices = self._sample_mismatched_task_indices(anchor_task_indices)
+            fake_context = self.sample_context(fake_task_indices, b_size=batch_size)
+            fake_actions = fake_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
             # fake_actions = anchor_actions
-            fake_r_next_s = anchor_r_next_s
-
+        fake_r_next_s = self.context_decoder(anchor_obs, fake_actions, repeated_task_z)
         fake_context = torch.cat([anchor_obs, fake_actions, fake_r_next_s], dim=-1)
         fake_task_z = self._get_context_embedding(fake_context, sample=False)
         return F.mse_loss(fake_task_z, task_z)
@@ -287,9 +284,8 @@ class GENTLE(OfflineMetaRLAlgorithm):
         anchor_task_indices = np.random.choice(self.train_tasks, size=num_virtual_tasks, replace=True)
         anchor_context = self.sample_context(anchor_task_indices, b_size=batch_size)
         anchor_obs = anchor_context[:, :, :self.obs_dim]
-        anchor_actions = anchor_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
+        # anchor_actions = anchor_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
         repeated_virtual_z = virtual_task_z.unsqueeze(1).expand(-1, batch_size, -1)
-
         if use_policy_relabel_data is None:
             use_policy_relabel_data = self.virtual_policy_use_policy_relabel_data
 
@@ -309,7 +305,10 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 return_log_prob=True,
             )[0]
         else:
-            virtual_actions = anchor_actions.reshape(-1, self.action_dim)
+            fake_task_indices = self._sample_mismatched_task_indices(anchor_task_indices)
+            fake_context = self.sample_context(fake_task_indices, b_size=batch_size)
+            fake_actions = fake_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
+            virtual_actions = fake_actions.reshape(-1, self.action_dim)
         virtual_q = self._min_q(
             num_virtual_tasks,
             batch_size,
