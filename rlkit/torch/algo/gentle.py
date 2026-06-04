@@ -235,10 +235,14 @@ class GENTLE(OfflineMetaRLAlgorithm):
                     'anchor_task_indices must have the same length as task_z: '
                     '{} vs {}'.format(len(anchor_task_indices), len(task_z))
                 )
+        fake_task_indices = np.random.choice(self.train_tasks, size=len(task_z), replace=True)
 
         anchor_context = self.sample_context(anchor_task_indices, b_size=batch_size)
+        fake_context = self.sample_context(fake_task_indices, b_size=batch_size)
+        
         anchor_obs = anchor_context[:, :, :self.obs_dim]
         anchor_actions = anchor_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
+        fake_actions = fake_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
         anchor_r_next_s = anchor_context[:, :, self.obs_dim + self.action_dim:]
         repeated_task_z = task_z.unsqueeze(1).expand(-1, batch_size, -1)
         if use_policy_relabel_data is None:
@@ -262,7 +266,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 )[0].reshape(len(task_z), batch_size, self.action_dim)
                 fake_r_next_s = self.context_decoder(anchor_obs, fake_actions, repeated_task_z)
         else:
-            fake_actions = anchor_actions
+            # fake_actions = anchor_actions
             fake_r_next_s = anchor_r_next_s
 
         fake_context = torch.cat([anchor_obs, fake_actions, fake_r_next_s], dim=-1)
@@ -476,11 +480,12 @@ class GENTLE(OfflineMetaRLAlgorithm):
 
 
         r_next_s = context[...,obs_dim+action_dim:]
-        pred_r_next_s = self.context_decoder(context[...,:obs_dim], context[...,obs_dim:obs_dim+action_dim], task_z.reshape(c_mb,c_b,-1))
+        context_task_z = self.agent.z.unsqueeze(1).expand(-1, c_b, -1)
+        pred_r_next_s = self.context_decoder(context[...,:obs_dim], context[...,obs_dim:obs_dim+action_dim], context_task_z)
         recon_loss = torch.mean((r_next_s - pred_r_next_s)**2)
         consistency_task_z = self.agent.z_means
-        # consistency_anchor_task_indices = np.asarray(indices)
-        consistency_anchor_task_indices = self._sample_mismatched_task_indices(indices)
+        consistency_anchor_task_indices = np.asarray(indices)
+        # consistency_anchor_task_indices = self._sample_mismatched_task_indices(indices)
         with torch.no_grad():
             virtual_task_z = self._sample_virtual_task_embeddings(c_b)
         if virtual_task_z is not None:
