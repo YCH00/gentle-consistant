@@ -7,7 +7,6 @@ import time
 import rlkit.torch.pytorch_util as ptu
 from torch import nn as nn
 import torch.nn.functional as F 
-from torch.distributions import Dirichlet
 from collections import OrderedDict
 from rlkit.core import logger
 from rlkit.core.eval_util import create_stats_ordered_dict
@@ -59,6 +58,8 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.n_vt                           = kwargs.get('n_vt', 0)
         self.M                              = kwargs.get('M', 2)
         self.beta                           = kwargs.get('beta', 1.0)
+        self.virtual_interpolation_lambda_max = kwargs.get('virtual_interpolation_lambda_max', 0.3)
+        self.virtual_interpolation_max_distance = kwargs.get('virtual_interpolation_max_distance', None)
         self.consistency_loss_weight        = kwargs.get('consistency_loss_weight', 1.0)
         self.virtual_policy_weight          = kwargs.get('virtual_policy_weight', 0.0)
         self.consistency_use_policy_relabel_data = kwargs.get('consistency_use_policy_relabel_data', True)
@@ -189,19 +190,55 @@ class GENTLE(OfflineMetaRLAlgorithm):
 
         return torch.mean(params, dim=1)
 
+    @torch.no_grad()
     def _sample_virtual_task_embeddings(self, batch_size):
-        if self.n_vt <= 0:
+        if self.n_vt <= 0 or len(self.train_tasks) <= 1:
             return None
 
-        c_off_alpha = []
-        for _ in range(self.n_vt):
-            mixing_task_indices = np.random.choice(self.train_tasks, self.M, replace=True)
-            mixing_off_ctxt_batch = self.sample_context(mixing_task_indices, b_size=batch_size)
-            c_off_mixing = self._get_context_embedding(mixing_off_ctxt_batch, sample=False)
-            alpha = Dirichlet(torch.ones(self.M, device=ptu.device)).sample().unsqueeze(0)
-            alpha = alpha * self.beta - (self.beta - 1) / self.M
-            c_off_alpha.append(alpha @ c_off_mixing)
-        return torch.cat(c_off_alpha, dim=0)
+        real_task_indices = np.asarray(self.train_tasks)
+        real_context = self.sample_context(real_task_indices, b_size=batch_size)
+        real_task_z = self._get_context_embedding(real_context, sample=False)
+        num_real_tasks = real_task_z.size(0)
+        if num_real_tasks <= 1:
+            return None
+
+        neighbor_k = min(max(1, int(self.M)), num_real_tasks - 1)
+        pairwise_dist = torch.cdist(real_task_z, real_task_z)
+        pairwise_dist.fill_diagonal_(float('inf'))
+        nearest_neighbors = torch.topk(
+            pairwise_dist,
+            k=neighbor_k,
+            dim=1,
+            largest=False,
+        ).indices
+
+        lambda_max = max(0.0, float(self.virtual_interpolation_lambda_max))
+        max_distance = self.virtual_interpolation_max_distance
+        if max_distance is not None:
+            max_distance = float(max_distance)
+
+        virtual_zs = []
+        max_attempts = max(self.n_vt * 4, self.n_vt)
+        attempts = 0
+        while len(virtual_zs) < self.n_vt and attempts < max_attempts:
+            attempts += 1
+            anchor_idx = np.random.randint(num_real_tasks)
+            neighbor_choices = nearest_neighbors[anchor_idx]
+            neighbor_idx = neighbor_choices[np.random.randint(neighbor_k)].item()
+            interpolation = torch.rand(1, 1, device=real_task_z.device) * lambda_max
+            candidate_z = (
+                (1.0 - interpolation) * real_task_z[anchor_idx:anchor_idx + 1]
+                + interpolation * real_task_z[neighbor_idx:neighbor_idx + 1]
+            )
+            if max_distance is not None:
+                nearest_dist = torch.norm(real_task_z - candidate_z, dim=-1).min()
+                if nearest_dist.item() > max_distance:
+                    continue
+            virtual_zs.append(candidate_z)
+
+        if len(virtual_zs) == 0:
+            return None
+        return torch.cat(virtual_zs, dim=0)
 
     @torch.no_grad()
     def get_virtual_task_embeddings_for_vis(self, n_points):
