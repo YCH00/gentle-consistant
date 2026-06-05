@@ -58,8 +58,11 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.n_vt                           = kwargs.get('n_vt', 0)
         self.M                              = kwargs.get('M', 2)
         self.beta                           = kwargs.get('beta', 1.0)
-        self.virtual_interpolation_lambda_max = kwargs.get('virtual_interpolation_lambda_max', 0.3)
+        self.virtual_interpolation_lambda_max = kwargs.get('virtual_interpolation_lambda_max', 0.2)
         self.virtual_interpolation_max_distance = kwargs.get('virtual_interpolation_max_distance', None)
+        self.virtual_task_warmup_steps      = int(kwargs.get('virtual_task_warmup_steps', 200))
+        self.virtual_cycle_filter_pool_factor = int(kwargs.get('virtual_cycle_filter_pool_factor', 4))
+        self.virtual_cycle_filter_threshold = kwargs.get('virtual_cycle_filter_threshold', None)
         self.consistency_loss_weight        = kwargs.get('consistency_loss_weight', 1.0)
         self.virtual_policy_weight          = kwargs.get('virtual_policy_weight', 0.0)
         self.consistency_use_policy_relabel_data = kwargs.get('consistency_use_policy_relabel_data', True)
@@ -191,8 +194,83 @@ class GENTLE(OfflineMetaRLAlgorithm):
         return torch.mean(params, dim=1)
 
     @torch.no_grad()
+    def _build_consistency_context(self, task_z, batch_size, anchor_task_indices=None, use_policy_relabel_data=None):
+        if task_z is None or len(task_z) == 0:
+            return None
+
+        task_z = task_z.detach()
+        num_tasks = task_z.size(0)
+        if anchor_task_indices is None:
+            anchor_task_indices = np.random.choice(self.train_tasks, size=num_tasks, replace=True)
+        else:
+            anchor_task_indices = np.asarray(anchor_task_indices)
+            if len(anchor_task_indices) != num_tasks:
+                raise ValueError(
+                    'anchor_task_indices must have the same length as task_z: '
+                    '{} vs {}'.format(len(anchor_task_indices), num_tasks)
+                )
+
+        anchor_context = self.sample_context(anchor_task_indices, b_size=batch_size)
+        anchor_obs = anchor_context[:, :, :self.obs_dim]
+        repeated_task_z = task_z.unsqueeze(1).expand(-1, batch_size, -1)
+        if use_policy_relabel_data is None:
+            use_policy_relabel_data = self.consistency_use_policy_relabel_data
+
+        if use_policy_relabel_data:
+            policy_inputs = torch.cat(
+                [
+                    anchor_obs.reshape(-1, self.obs_dim),
+                    repeated_task_z.reshape(-1, self.latent_dim),
+                ],
+                dim=-1,
+            )
+            fake_actions = self.agent.policy(
+                num_tasks,
+                batch_size,
+                policy_inputs,
+                reparameterize=True,
+                return_log_prob=True,
+            )[0].reshape(num_tasks, batch_size, self.action_dim)
+        else:
+            fake_task_indices = self._sample_mismatched_task_indices(anchor_task_indices)
+            fake_context = self.sample_context(fake_task_indices, b_size=batch_size)
+            fake_actions = fake_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
+
+        fake_r_next_s = self.context_decoder(anchor_obs, fake_actions, repeated_task_z)
+        return torch.cat([anchor_obs, fake_actions, fake_r_next_s], dim=-1)
+
+    @torch.no_grad()
+    def _score_virtual_task_embeddings(self, virtual_task_z, batch_size):
+        if virtual_task_z is None or len(virtual_task_z) == 0:
+            return None
+
+        anchor_task_indices = np.random.choice(
+            self.train_tasks,
+            size=virtual_task_z.size(0),
+            replace=True,
+        )
+        fake_context = self._build_consistency_context(
+            virtual_task_z,
+            batch_size,
+            anchor_task_indices=anchor_task_indices,
+        )
+        if fake_context is None:
+            return None
+
+        reencoded_z = self._get_context_embedding(fake_context, sample=False)
+        return torch.mean((reencoded_z - virtual_task_z) ** 2, dim=-1)
+
+    @torch.no_grad()
     def _sample_virtual_task_embeddings(self, batch_size):
+        self.loss['virtual_warmup_active'] = 0
+        self.loss['virtual_candidate_pool_size'] = 0
+        self.loss['virtual_cycle_error_mean'] = 0.0
+        self.loss['virtual_cycle_error_max'] = 0.0
+
         if self.n_vt <= 0 or len(self.train_tasks) <= 1:
+            return None
+        if self._n_train_steps_total < self.virtual_task_warmup_steps:
+            self.loss['virtual_warmup_active'] = 1
             return None
 
         real_task_indices = np.asarray(self.train_tasks)
@@ -218,9 +296,11 @@ class GENTLE(OfflineMetaRLAlgorithm):
             max_distance = float(max_distance)
 
         virtual_zs = []
-        max_attempts = max(self.n_vt * 4, self.n_vt)
+        pool_factor = max(1, int(self.virtual_cycle_filter_pool_factor))
+        target_pool_size = max(self.n_vt, self.n_vt * pool_factor)
+        max_attempts = max(target_pool_size * 4, target_pool_size)
         attempts = 0
-        while len(virtual_zs) < self.n_vt and attempts < max_attempts:
+        while len(virtual_zs) < target_pool_size and attempts < max_attempts:
             attempts += 1
             anchor_idx = np.random.randint(num_real_tasks)
             neighbor_choices = nearest_neighbors[anchor_idx]
@@ -238,7 +318,36 @@ class GENTLE(OfflineMetaRLAlgorithm):
 
         if len(virtual_zs) == 0:
             return None
-        return torch.cat(virtual_zs, dim=0)
+
+        candidate_pool = torch.cat(virtual_zs, dim=0)
+        self.loss['virtual_candidate_pool_size'] = candidate_pool.size(0)
+        cycle_threshold = self.virtual_cycle_filter_threshold
+        if cycle_threshold is not None:
+            cycle_threshold = float(cycle_threshold)
+
+        if pool_factor > 1 or cycle_threshold is not None:
+            cycle_errors = self._score_virtual_task_embeddings(candidate_pool, batch_size)
+            if cycle_errors is None:
+                return None
+            if cycle_threshold is not None:
+                keep_mask = cycle_errors <= cycle_threshold
+                if not torch.any(keep_mask):
+                    self.loss['virtual_cycle_error_mean'] = cycle_errors.mean().item()
+                    self.loss['virtual_cycle_error_max'] = cycle_errors.max().item()
+                    return None
+                candidate_pool = candidate_pool[keep_mask]
+                cycle_errors = cycle_errors[keep_mask]
+
+            order = torch.argsort(cycle_errors)
+            selected_count = min(self.n_vt, candidate_pool.size(0))
+            selected_order = order[:selected_count]
+            selected_z = candidate_pool[selected_order]
+            selected_errors = cycle_errors[selected_order]
+            self.loss['virtual_cycle_error_mean'] = selected_errors.mean().item()
+            self.loss['virtual_cycle_error_max'] = selected_errors.max().item()
+            return selected_z
+
+        return candidate_pool[:self.n_vt]
 
     @torch.no_grad()
     def get_virtual_task_embeddings_for_vis(self, n_points):
@@ -263,47 +372,14 @@ class GENTLE(OfflineMetaRLAlgorithm):
             return ptu.zeros(1).squeeze()
 
         task_z = task_z.detach()
-        if anchor_task_indices is None:
-            anchor_task_indices = np.random.choice(self.train_tasks, size=len(task_z), replace=True)
-        else:
-            anchor_task_indices = np.asarray(anchor_task_indices)
-            if len(anchor_task_indices) != len(task_z):
-                raise ValueError(
-                    'anchor_task_indices must have the same length as task_z: '
-                    '{} vs {}'.format(len(anchor_task_indices), len(task_z))
-                )
-        # fake_task_indices = np.random.choice(self.train_tasks, size=len(task_z), replace=True)
-
-        anchor_context = self.sample_context(anchor_task_indices, b_size=batch_size)
-        anchor_obs = anchor_context[:, :, :self.obs_dim]
-        anchor_r_next_s = anchor_context[:, :, self.obs_dim + self.action_dim:]
-        repeated_task_z = task_z.unsqueeze(1).expand(-1, batch_size, -1)
-        if use_policy_relabel_data is None:
-            use_policy_relabel_data = self.consistency_use_policy_relabel_data
-
-        if use_policy_relabel_data:
-            policy_inputs = torch.cat(
-                [
-                    anchor_obs.reshape(-1, self.obs_dim),
-                    repeated_task_z.reshape(-1, self.latent_dim),
-                ],
-                dim=-1,
-            )
-            with torch.no_grad():
-                fake_actions = self.agent.policy(
-                    len(task_z),
-                    batch_size,
-                    policy_inputs,
-                    reparameterize=True,
-                    return_log_prob=True,
-                )[0].reshape(len(task_z), batch_size, self.action_dim)
-        else:
-            fake_task_indices = self._sample_mismatched_task_indices(anchor_task_indices)
-            fake_context = self.sample_context(fake_task_indices, b_size=batch_size)
-            fake_actions = fake_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
-            # fake_actions = anchor_actions
-        fake_r_next_s = self.context_decoder(anchor_obs, fake_actions, repeated_task_z)
-        fake_context = torch.cat([anchor_obs, fake_actions, fake_r_next_s], dim=-1)
+        fake_context = self._build_consistency_context(
+            task_z,
+            batch_size,
+            anchor_task_indices=anchor_task_indices,
+            use_policy_relabel_data=use_policy_relabel_data,
+        )
+        if fake_context is None:
+            return ptu.zeros(1).squeeze()
         fake_task_z = self._get_context_embedding(fake_context, sample=False)
         return F.mse_loss(fake_task_z, task_z)
 
