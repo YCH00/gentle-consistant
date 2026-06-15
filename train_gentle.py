@@ -214,7 +214,19 @@ def deep_update_dict(fr, to):
 @click.option('--seed_list', multiple=True, type=int, default=[0,1,2,3])
 @click.option('--output_prefix', default='')
 @click.option('--path_to_weights', default=None)
-def main(config, gpu, debug, algo_type, seed_list, output_prefix, path_to_weights):
+@click.option('--M', 'virtual_neighbor_candidates', type=int, default=None)
+@click.option('--virtual_interpolation_lambda_max', type=float, default=None)
+def main(
+    config,
+    gpu,
+    debug,
+    algo_type,
+    seed_list,
+    output_prefix,
+    path_to_weights,
+    virtual_neighbor_candidates,
+    virtual_interpolation_lambda_max,
+):
 
     variant = default_config
     if config:
@@ -228,6 +240,10 @@ def main(config, gpu, debug, algo_type, seed_list, output_prefix, path_to_weight
     variant['util_params']['base_log_dir'] = './logs'
     if path_to_weights is not None:
         variant['path_to_weights'] = path_to_weights
+    if virtual_neighbor_candidates is not None:
+        variant['algo_params']['M'] = virtual_neighbor_candidates
+    if virtual_interpolation_lambda_max is not None:
+        variant['algo_params']['virtual_interpolation_lambda_max'] = virtual_interpolation_lambda_max
 
     # multi-processing
     if len(seed_list) > 1:

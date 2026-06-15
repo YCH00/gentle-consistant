@@ -60,7 +60,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.beta                           = kwargs.get('beta', 1.0)
         self.virtual_interpolation_lambda_max = kwargs.get('virtual_interpolation_lambda_max', 0.2)
         self.virtual_interpolation_max_distance = kwargs.get('virtual_interpolation_max_distance', None)
-        self.virtual_task_warmup_steps      = int(kwargs.get('virtual_task_warmup_steps', 200))
+        self.virtual_task_warmup_steps      = int(kwargs.get('virtual_task_warmup_steps', 50))
         self.virtual_cycle_filter_pool_factor = int(kwargs.get('virtual_cycle_filter_pool_factor', 4))
         self.virtual_cycle_filter_threshold = kwargs.get('virtual_cycle_filter_threshold', None)
         self.consistency_loss_weight        = kwargs.get('consistency_loss_weight', 1.0)
