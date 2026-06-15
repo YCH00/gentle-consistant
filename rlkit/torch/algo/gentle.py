@@ -304,11 +304,14 @@ class GENTLE(OfflineMetaRLAlgorithm):
             attempts += 1
             anchor_idx = np.random.randint(num_real_tasks)
             neighbor_choices = nearest_neighbors[anchor_idx]
-            neighbor_idx = neighbor_choices[np.random.randint(neighbor_k)].item()
+            neighbor_z = real_task_z[neighbor_choices]
+            neighbor_weights = torch.rand(1, neighbor_k, device=real_task_z.device)
+            neighbor_weights = neighbor_weights / neighbor_weights.sum(dim=1, keepdim=True).clamp(min=1e-8)
+            mixed_neighbor_z = neighbor_weights @ neighbor_z
             interpolation = torch.rand(1, 1, device=real_task_z.device) * lambda_max
             candidate_z = (
                 (1.0 - interpolation) * real_task_z[anchor_idx:anchor_idx + 1]
-                + interpolation * real_task_z[neighbor_idx:neighbor_idx + 1]
+                + interpolation * mixed_neighbor_z
             )
             if max_distance is not None:
                 nearest_dist = torch.norm(real_task_z - candidate_z, dim=-1).min()
