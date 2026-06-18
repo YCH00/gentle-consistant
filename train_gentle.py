@@ -196,7 +196,9 @@ def experiment(variant, seed=None):
 
     # create logging directory
     # TODO support Docker
-    exp_id = 'debug' if DEBUG else None
+    exp_id = variant.get('exp_name')
+    if exp_id is None and DEBUG:
+        exp_id = 'debug'
     experiment_log_dir = setup_logger(
         variant['env_name'],
         variant=variant,
@@ -227,6 +229,7 @@ def deep_update_dict(fr, to):
 @click.option('--algo_type', default='gentle')  
 @click.option('--seed_list', multiple=True, type=int, default=[0,1,2,3])
 @click.option('--output_prefix', default='')
+@click.option('--exp_name', default=None)
 @click.option('--path_to_weights', default=None)
 @click.option('--M', 'virtual_neighbor_candidates', type=int, default=None)
 @click.option('--virtual_interpolation_lambda_max', type=float, default=None)
@@ -240,6 +243,7 @@ def main(
     algo_type,
     seed_list,
     output_prefix,
+    exp_name,
     path_to_weights,
     virtual_neighbor_candidates,
     virtual_interpolation_lambda_max,
@@ -257,6 +261,7 @@ def main(
     variant['util_params']['debug'] = debug
     variant['algo_type'] = algo_type
     variant['output_prefix'] = output_prefix
+    variant['exp_name'] = exp_name
     variant['util_params']['base_log_dir'] = './logs'
     if path_to_weights is not None:
         variant['path_to_weights'] = path_to_weights
