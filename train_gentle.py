@@ -67,8 +67,15 @@ def _load_pretrained_context_models(context_encoder, context_decoder, variant, s
             f'Found encoder={encoder_path is not None}, decoder={decoder_path is not None}.'
         )
 
-    context_encoder.load(encoder_path)
-    context_decoder.load(decoder_path)
+    try:
+        context_encoder.load(encoder_path)
+        context_decoder.load(decoder_path)
+    except RuntimeError as error:
+        raise RuntimeError(
+            'Failed to load pretrained context encoder/decoder. '
+            'If use_next_obs_in_context was changed, rerun pretrain_encoder_decoder.py '
+            'with the same config before training GENTLE.'
+        ) from error
     print(f'Loaded pretrained context encoder from {encoder_path}')
     print(f'Loaded pretrained context decoder from {decoder_path}')
 
@@ -144,7 +151,14 @@ def experiment(variant, seed=None):
                                      ensemble_size=variant['algo_params']['ensemble_size'],
                                      dynamics_weight_decay=[2.5e-5, 5e-5, 7.5e-5])
     dynamics_dir_path = Path(__file__).parent.absolute()/'dynamics'/variant['env_name']/f'expert_seed{seed}'
-    task_dynamics.load(str(dynamics_dir_path))
+    try:
+        task_dynamics.load(str(dynamics_dir_path))
+    except RuntimeError as error:
+        raise RuntimeError(
+            'Failed to load pretrained task dynamics. '
+            'If use_next_obs_in_context was changed, rerun pretrain_dynamics.py '
+            'with the same config before training GENTLE.'
+        ) from error
 
     policy = TanhGaussianPolicy(
         hidden_sizes=[net_size, net_size, net_size],
@@ -216,6 +230,9 @@ def deep_update_dict(fr, to):
 @click.option('--path_to_weights', default=None)
 @click.option('--M', 'virtual_neighbor_candidates', type=int, default=None)
 @click.option('--virtual_interpolation_lambda_max', type=float, default=None)
+@click.option('--consistency_use_policy_relabel_data', type=bool, default=None)
+@click.option('--virtual_transition_use_policy_actions', type=bool, default=None)
+@click.option('--virtual_task_generation_mode', type=click.Choice(['local', 'global']), default=None)
 def main(
     config,
     gpu,
@@ -226,6 +243,9 @@ def main(
     path_to_weights,
     virtual_neighbor_candidates,
     virtual_interpolation_lambda_max,
+    consistency_use_policy_relabel_data,
+    virtual_transition_use_policy_actions,
+    virtual_task_generation_mode,
 ):
 
     variant = default_config
@@ -244,6 +264,12 @@ def main(
         variant['algo_params']['M'] = virtual_neighbor_candidates
     if virtual_interpolation_lambda_max is not None:
         variant['algo_params']['virtual_interpolation_lambda_max'] = virtual_interpolation_lambda_max
+    if consistency_use_policy_relabel_data is not None:
+        variant['algo_params']['consistency_use_policy_relabel_data'] = consistency_use_policy_relabel_data
+    if virtual_transition_use_policy_actions is not None:
+        variant['algo_params']['virtual_transition_use_policy_actions'] = virtual_transition_use_policy_actions
+    if virtual_task_generation_mode is not None:
+        variant['algo_params']['virtual_task_generation_mode'] = virtual_task_generation_mode
 
     # multi-processing
     if len(seed_list) > 1:

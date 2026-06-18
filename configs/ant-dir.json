@@ -23,9 +23,6 @@
         "M": 1,
         "beta": 2.0,
         "virtual_interpolation_lambda_max": 0.2,
-        "virtual_task_warmup_steps": 50,
-        "virtual_cycle_filter_pool_factor": 4,
-        "virtual_cycle_filter_threshold": null,
         "consistency_loss_weight": 0.5
     },
     "util_params": {

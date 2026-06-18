@@ -222,37 +222,21 @@ def infer_task_embedding(
     return torch.mean(params, dim=1)
 
 
-def metric_loss(z: torch.Tensor, tasks: Sequence[int], epsilon: float = 1e-3) -> torch.Tensor:
-    pos_z_loss = z.new_tensor(0.0)
-    neg_z_loss = z.new_tensor(0.0)
-    pos_cnt = 0
-    neg_cnt = 0
-    for i in range(len(tasks)):
-        for j in range(i + 1, len(tasks)):
-            if tasks[i] == tasks[j]:
-                pos_z_loss = pos_z_loss + torch.sqrt(torch.mean((z[i] - z[j]) ** 2) + epsilon)
-                pos_cnt += 1
-            else:
-                neg_z_loss = neg_z_loss + 1 / (torch.mean((z[i] - z[j]) ** 2) + epsilon * 100)
-                neg_cnt += 1
-    return pos_z_loss / (pos_cnt + epsilon) + neg_z_loss / (neg_cnt + epsilon)
-
-
-def supervised_loss(
+def reconstruction_loss(
     context_decoder: MlpDecoder,
     task_embedding: torch.Tensor,
-    obs: torch.Tensor,
-    actions: torch.Tensor,
-    rewards: torch.Tensor,
-    next_obs: torch.Tensor,
-    use_next_obs_in_context: bool,
+    context: torch.Tensor,
+    obs_dim: int,
+    action_dim: int,
 ) -> torch.Tensor:
-    repeated_task_embedding = task_embedding.unsqueeze(1).expand(-1, obs.size(1), -1)
-    predictions = context_decoder(obs, actions, repeated_task_embedding)
-    if use_next_obs_in_context:
-        targets = torch.cat([rewards, next_obs], dim=-1)
-    else:
-        targets = rewards
+    _, context_batch_size, _ = context.size()
+    targets = context[..., obs_dim + action_dim:]
+    repeated_task_embedding = task_embedding.unsqueeze(1).expand(-1, context_batch_size, -1)
+    predictions = context_decoder(
+        context[..., :obs_dim],
+        context[..., obs_dim:obs_dim + action_dim],
+        repeated_task_embedding,
+    )
     return torch.mean((targets - predictions) ** 2)
 
 
@@ -262,7 +246,7 @@ def resolve_pretrain_hparams(variant):
         num_iters=int(variant.get("num_iters", algo_params.get("num_iterations", 500))),
         decoder_iter=int(variant.get("decoder_iter", 1)),
         encoder_lr=float(variant.get("encoder_lr", algo_params.get("context_lr", 3e-4))),
-        beta_encoder=float(variant.get("beta_encoder", 1.0)),
+        recon_loss_weight=float(algo_params.get("recon_loss_weight", 1.0)),
         log_interval=int(variant.get("pretrain_log_interval", 100)),
         context_batch_size=int(algo_params.get("embedding_batch_size", 256)),
         meta_batch=int(algo_params.get("meta_batch", variant["n_train_tasks"])),
@@ -304,7 +288,7 @@ def experiment(variant, seed=None):
         sampled_task_indices = np.random.choice(train_tasks, size=hparams["meta_batch"], replace=True)
 
         for step2 in range(hparams["decoder_iter"]):
-            obs, actions, rewards, next_obs, terms = sample_context_batch(
+            obs, actions, rewards, next_obs, _terms = sample_context_batch(
                 train_buffer=train_buffer,
                 task_indices=sampled_task_indices,
                 batch_size=hparams["context_batch_size"],
@@ -317,29 +301,25 @@ def experiment(variant, seed=None):
                 use_information_bottleneck=use_information_bottleneck,
             )
 
-            metric_loss_value = metric_loss(task_embedding, sampled_task_indices)
-            supervised_loss_value = supervised_loss(
+            recon_loss_value = reconstruction_loss(
                 context_decoder=context_decoder,
                 task_embedding=task_embedding,
-                obs=obs,
-                actions=actions,
-                rewards=rewards,
-                next_obs=next_obs,
-                use_next_obs_in_context=use_next_obs_in_context,
+                context=context,
+                obs_dim=obs_dim,
+                action_dim=action_dim,
             )
-            total_loss = hparams["beta_encoder"] * metric_loss_value + supervised_loss_value
+            context_loss = hparams["recon_loss_weight"] * recon_loss_value
 
             optimizer.zero_grad()
-            total_loss.backward()
+            context_loss.backward()
             optimizer.step()
 
             global_step = step1 * hparams["decoder_iter"] + step2 + 1
             if global_step == 1 or global_step % hparams["log_interval"] == 0:
                 print(
                     f"[Step {global_step}] "
-                    f"total_loss={total_loss.item():.6f}, "
-                    f"metric_loss={metric_loss_value.item():.6f}, "
-                    f"supervised_loss={supervised_loss_value.item():.6f}, "
+                    f"context_loss={context_loss.item():.6f}, "
+                    f"recon_loss={recon_loss_value.item():.6f}, "
                     f"context_batch={hparams['context_batch_size']}"
                 )
 
@@ -362,7 +342,7 @@ def experiment(variant, seed=None):
         "num_iters": hparams["num_iters"],
         "decoder_iter": hparams["decoder_iter"],
         "encoder_lr": hparams["encoder_lr"],
-        "beta_encoder": hparams["beta_encoder"],
+        "recon_loss_weight": hparams["recon_loss_weight"],
         "context_batch_size": hparams["context_batch_size"],
         "meta_batch": hparams["meta_batch"],
     }

@@ -7,11 +7,68 @@ import time
 import rlkit.torch.pytorch_util as ptu
 from torch import nn as nn
 import torch.nn.functional as F 
+from torch.distributions import Dirichlet
 from collections import OrderedDict
 from rlkit.core import logger
 from rlkit.core.eval_util import create_stats_ordered_dict
 from rlkit.core.rl_algorithm import OfflineMetaRLAlgorithm
 from rlkit.data_management.env_replay_buffer import MultiTaskContextBuffer
+
+class VirtualTaskReplayBuffer(object):
+    def __init__(self, max_replay_buffer_size, obs_dim, action_dim, latent_dim):
+        self._max_replay_buffer_size = int(max_replay_buffer_size)
+        self._observations = np.zeros((self._max_replay_buffer_size, obs_dim), dtype=np.float32)
+        self._actions = np.zeros((self._max_replay_buffer_size, action_dim), dtype=np.float32)
+        self._rewards = np.zeros((self._max_replay_buffer_size, 1), dtype=np.float32)
+        self._next_obs = np.zeros((self._max_replay_buffer_size, obs_dim), dtype=np.float32)
+        self._terminals = np.zeros((self._max_replay_buffer_size, 1), dtype='uint8')
+        self._task_z = np.zeros((self._max_replay_buffer_size, latent_dim), dtype=np.float32)
+        self.clear()
+
+    def clear(self):
+        self._top = 0
+        self._size = 0
+
+    def size(self):
+        return self._size
+
+    def num_steps_can_sample(self):
+        return self._size
+
+    def add_batch(self, observations, actions, rewards, next_observations, terminals, task_z):
+        n_samples = observations.shape[0]
+        if n_samples <= 0:
+            return
+        if n_samples > self._max_replay_buffer_size:
+            observations = observations[-self._max_replay_buffer_size:]
+            actions = actions[-self._max_replay_buffer_size:]
+            rewards = rewards[-self._max_replay_buffer_size:]
+            next_observations = next_observations[-self._max_replay_buffer_size:]
+            terminals = terminals[-self._max_replay_buffer_size:]
+            task_z = task_z[-self._max_replay_buffer_size:]
+            n_samples = self._max_replay_buffer_size
+
+        indices = (np.arange(n_samples) + self._top) % self._max_replay_buffer_size
+        self._observations[indices] = observations
+        self._actions[indices] = actions
+        self._rewards[indices] = rewards
+        self._next_obs[indices] = next_observations
+        self._terminals[indices] = terminals
+        self._task_z[indices] = task_z
+        self._top = (self._top + n_samples) % self._max_replay_buffer_size
+        self._size = min(self._size + n_samples, self._max_replay_buffer_size)
+
+    def random_batch(self, batch_size):
+        assert self._size > 0
+        indices = np.random.randint(0, self._size, batch_size)
+        return dict(
+            observations=self._observations[indices],
+            actions=self._actions[indices],
+            rewards=self._rewards[indices],
+            next_observations=self._next_obs[indices],
+            terminals=self._terminals[indices],
+            task_z=self._task_z[indices],
+        )
 
 class GENTLE(OfflineMetaRLAlgorithm):
     def __init__(
@@ -58,18 +115,26 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.n_vt                           = kwargs.get('n_vt', 0)
         self.M                              = kwargs.get('M', 2)
         self.beta                           = kwargs.get('beta', 1.0)
+        self.virtual_task_generation_mode   = kwargs.get('virtual_task_generation_mode', 'local').lower()
+        if self.virtual_task_generation_mode not in ('local', 'global'):
+            raise ValueError(
+                "virtual_task_generation_mode must be either 'local' or 'global', "
+                "got '{}'".format(self.virtual_task_generation_mode)
+            )
         self.virtual_interpolation_lambda_max = kwargs.get('virtual_interpolation_lambda_max', 0.2)
         self.virtual_interpolation_max_distance = kwargs.get('virtual_interpolation_max_distance', None)
-        self.virtual_task_warmup_steps      = int(kwargs.get('virtual_task_warmup_steps', 50))
-        self.virtual_cycle_filter_pool_factor = int(kwargs.get('virtual_cycle_filter_pool_factor', 4))
-        self.virtual_cycle_filter_threshold = kwargs.get('virtual_cycle_filter_threshold', None)
         self.consistency_loss_weight        = kwargs.get('consistency_loss_weight', 1.0)
-        self.virtual_policy_weight          = kwargs.get('virtual_policy_weight', 0.0)
         self.consistency_use_policy_relabel_data = kwargs.get('consistency_use_policy_relabel_data', True)
-        self.virtual_policy_use_policy_relabel_data = kwargs.get('virtual_policy_use_policy_relabel_data', True)
-        self.virtual_policy_adaptive_lambda = kwargs.get('virtual_policy_adaptive_lambda', True)
-        self.virtual_policy_q_clip          = kwargs.get('virtual_policy_q_clip', None)
-        self.virtual_policy_warmup_steps    = int(kwargs.get('virtual_policy_warmup_steps', 0))
+        self.virtual_transition_buffer_size = int(kwargs.get('virtual_transition_buffer_size', 50000))
+        self.virtual_transition_batch_size  = int(kwargs.get('virtual_transition_batch_size', 256))
+        self.virtual_transition_loss_weight = kwargs.get('virtual_transition_loss_weight', 1.0)
+        self.virtual_transition_use_policy_actions = kwargs.get('virtual_transition_use_policy_actions', False)
+        if self.virtual_transition_use_policy_actions and not self.use_next_obs_in_context:
+            print(
+                'Warning: virtual_transition_use_policy_actions=True with '
+                'use_next_obs_in_context=False reuses real next_obs, so generated virtual '
+                'transitions may pair policy actions with unmatched next observations.'
+            )
 
         self.loss                           = {}
         self.plotter                        = plotter
@@ -93,6 +158,14 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self._visit_num_steps_train         = 10
 
         self.relabel_buffer     = MultiTaskContextBuffer(self.relabel_buffer_size, env, self.train_tasks, kwargs['context_dim'])
+        self.virtual_transition_buffer = None
+        if self.virtual_transition_buffer_size > 0 and self.virtual_transition_batch_size > 0:
+            self.virtual_transition_buffer = VirtualTaskReplayBuffer(
+                self.virtual_transition_buffer_size,
+                self.obs_dim,
+                self.action_dim,
+                self.latent_dim,
+            )
 
     ###### Torch stuff #####
     @property
@@ -169,6 +242,88 @@ class GENTLE(OfflineMetaRLAlgorithm):
         # self.meta_batch * self.embedding_batch_size * sum_dim(o, a, r, no, t)
         return context
 
+    def sample_transition_batch(self, indices, b_size):
+        if not hasattr(indices, '__iter__'):
+            indices = [indices]
+        batches = [ptu.np_to_pytorch_batch(self.train_buffer.random_batch(idx, batch_size=b_size)) for idx in indices]
+        unpacked = [self.unpack_batch(batch) for batch in batches]
+        unpacked = [[x[i] for x in unpacked] for i in range(len(unpacked[0]))]
+        unpacked = [torch.cat(x, dim=0) for x in unpacked]
+        return unpacked
+
+    def sample_virtual_sac(self, batch_size):
+        if self.virtual_transition_buffer is None:
+            return None
+        if self.virtual_transition_buffer.num_steps_can_sample() <= 0:
+            return None
+        batch_size = min(batch_size, self.virtual_transition_buffer.num_steps_can_sample())
+        batch = ptu.np_to_pytorch_batch(self.virtual_transition_buffer.random_batch(batch_size))
+        obs = batch['observations'][None, ...]
+        actions = batch['actions'][None, ...]
+        rewards = batch['rewards'][None, ...]
+        next_obs = batch['next_observations'][None, ...]
+        terms = batch['terminals'][None, ...]
+        task_z = batch['task_z']
+        return obs, actions, rewards, next_obs, terms, task_z
+
+    @torch.no_grad()
+    def add_virtual_transitions_to_buffer(self, virtual_task_z, batch_size):
+        if self.virtual_transition_buffer is None or virtual_task_z is None:
+            return 0
+        if len(virtual_task_z) == 0:
+            return 0
+
+        num_virtual_tasks = virtual_task_z.size(0)
+        anchor_task_indices = np.random.choice(self.train_tasks, size=num_virtual_tasks, replace=True)
+        anchor_obs, anchor_actions, _, anchor_next_obs, anchor_terms = self.sample_transition_batch(
+            anchor_task_indices,
+            batch_size,
+        )
+        repeated_virtual_z = virtual_task_z.detach().unsqueeze(1).expand(-1, batch_size, -1)
+
+        if self.virtual_transition_use_policy_actions:
+            policy_inputs = torch.cat(
+                [
+                    anchor_obs.reshape(-1, self.obs_dim),
+                    repeated_virtual_z.reshape(-1, self.latent_dim),
+                ],
+                dim=-1,
+            )
+            virtual_actions = self.agent.policy(
+                num_virtual_tasks,
+                batch_size,
+                policy_inputs,
+                reparameterize=True,
+                return_log_prob=True,
+            )[0].reshape(num_virtual_tasks, batch_size, self.action_dim)
+        else:
+            virtual_actions = anchor_actions
+
+        decoder_output = self.context_decoder(anchor_obs, virtual_actions, repeated_virtual_z)
+        if self.use_next_obs_in_context:
+            virtual_rewards = decoder_output[:, :, :1]
+            virtual_next_obs = decoder_output[:, :, 1:]
+        else:
+            virtual_rewards = decoder_output
+            virtual_next_obs = anchor_next_obs
+
+        flat_obs = anchor_obs.reshape(-1, self.obs_dim)
+        flat_actions = virtual_actions.reshape(-1, self.action_dim)
+        flat_rewards = virtual_rewards.reshape(-1, 1)
+        flat_next_obs = virtual_next_obs.reshape(-1, self.obs_dim)
+        flat_terms = anchor_terms.reshape(-1, 1)
+        flat_task_z = repeated_virtual_z.reshape(-1, self.latent_dim)
+
+        self.virtual_transition_buffer.add_batch(
+            ptu.get_numpy(flat_obs),
+            ptu.get_numpy(flat_actions),
+            ptu.get_numpy(flat_rewards),
+            ptu.get_numpy(flat_next_obs),
+            ptu.get_numpy(flat_terms),
+            ptu.get_numpy(flat_task_z),
+        )
+        return flat_obs.size(0)
+
     def _product_of_gaussians(self, mus, sigmas_squared):
         sigmas_squared = torch.clamp(sigmas_squared, min=1e-7)
         sigma_squared = 1. / torch.sum(torch.reciprocal(sigmas_squared), dim=0)
@@ -240,37 +395,40 @@ class GENTLE(OfflineMetaRLAlgorithm):
         return torch.cat([anchor_obs, fake_actions, fake_r_next_s], dim=-1)
 
     @torch.no_grad()
-    def _score_virtual_task_embeddings(self, virtual_task_z, batch_size):
-        if virtual_task_z is None or len(virtual_task_z) == 0:
-            return None
-
-        anchor_task_indices = np.random.choice(
-            self.train_tasks,
-            size=virtual_task_z.size(0),
-            replace=True,
-        )
-        fake_context = self._build_consistency_context(
-            virtual_task_z,
-            batch_size,
-            anchor_task_indices=anchor_task_indices,
-        )
-        if fake_context is None:
-            return None
-
-        reencoded_z = self._get_context_embedding(fake_context, sample=False)
-        return torch.mean((reencoded_z - virtual_task_z) ** 2, dim=-1)
+    def _sample_virtual_task_embeddings(self, batch_size):
+        if self.virtual_task_generation_mode == 'global':
+            return self._sample_global_virtual_task_embeddings(batch_size)
+        return self._sample_local_virtual_task_embeddings(batch_size)
 
     @torch.no_grad()
-    def _sample_virtual_task_embeddings(self, batch_size):
-        self.loss['virtual_warmup_active'] = 0
-        self.loss['virtual_candidate_pool_size'] = 0
-        self.loss['virtual_cycle_error_mean'] = 0.0
-        self.loss['virtual_cycle_error_max'] = 0.0
-
-        if self.n_vt <= 0 or len(self.train_tasks) <= 1:
+    def _sample_global_virtual_task_embeddings(self, batch_size):
+        if self.n_vt <= 0 or len(self.train_tasks) == 0:
             return None
-        if self._n_train_steps_total < self.virtual_task_warmup_steps:
-            self.loss['virtual_warmup_active'] = 1
+
+        mixing_num_tasks = max(1, int(self.M))
+        beta = float(self.beta)
+        virtual_zs = []
+        for _ in range(self.n_vt):
+            mixing_task_indices = np.random.choice(
+                self.train_tasks,
+                mixing_num_tasks,
+                replace=True,
+            )
+            mixing_context = self.sample_context(mixing_task_indices, b_size=batch_size)
+            mixing_task_z = self._get_context_embedding(mixing_context, sample=False)
+            alpha = Dirichlet(
+                torch.ones(mixing_num_tasks, device=mixing_task_z.device)
+            ).sample().unsqueeze(0)
+            alpha = alpha * beta - (beta - 1.0) / mixing_num_tasks
+            virtual_zs.append(alpha @ mixing_task_z)
+
+        if len(virtual_zs) == 0:
+            return None
+        return torch.cat(virtual_zs, dim=0)
+
+    @torch.no_grad()
+    def _sample_local_virtual_task_embeddings(self, batch_size):
+        if self.n_vt <= 0 or len(self.train_tasks) <= 1:
             return None
 
         real_task_indices = np.asarray(self.train_tasks)
@@ -296,11 +454,9 @@ class GENTLE(OfflineMetaRLAlgorithm):
             max_distance = float(max_distance)
 
         virtual_zs = []
-        pool_factor = max(1, int(self.virtual_cycle_filter_pool_factor))
-        target_pool_size = max(self.n_vt, self.n_vt * pool_factor)
-        max_attempts = max(target_pool_size * 4, target_pool_size)
+        max_attempts = max(self.n_vt * 4, self.n_vt)
         attempts = 0
-        while len(virtual_zs) < target_pool_size and attempts < max_attempts:
+        while len(virtual_zs) < self.n_vt and attempts < max_attempts:
             attempts += 1
             anchor_idx = np.random.randint(num_real_tasks)
             neighbor_choices = nearest_neighbors[anchor_idx]
@@ -322,35 +478,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         if len(virtual_zs) == 0:
             return None
 
-        candidate_pool = torch.cat(virtual_zs, dim=0)
-        self.loss['virtual_candidate_pool_size'] = candidate_pool.size(0)
-        cycle_threshold = self.virtual_cycle_filter_threshold
-        if cycle_threshold is not None:
-            cycle_threshold = float(cycle_threshold)
-
-        if pool_factor > 1 or cycle_threshold is not None:
-            cycle_errors = self._score_virtual_task_embeddings(candidate_pool, batch_size)
-            if cycle_errors is None:
-                return None
-            if cycle_threshold is not None:
-                keep_mask = cycle_errors <= cycle_threshold
-                if not torch.any(keep_mask):
-                    self.loss['virtual_cycle_error_mean'] = cycle_errors.mean().item()
-                    self.loss['virtual_cycle_error_max'] = cycle_errors.max().item()
-                    return None
-                candidate_pool = candidate_pool[keep_mask]
-                cycle_errors = cycle_errors[keep_mask]
-
-            order = torch.argsort(cycle_errors)
-            selected_count = min(self.n_vt, candidate_pool.size(0))
-            selected_order = order[:selected_count]
-            selected_z = candidate_pool[selected_order]
-            selected_errors = cycle_errors[selected_order]
-            self.loss['virtual_cycle_error_mean'] = selected_errors.mean().item()
-            self.loss['virtual_cycle_error_max'] = selected_errors.max().item()
-            return selected_z
-
-        return candidate_pool[:self.n_vt]
+        return torch.cat(virtual_zs, dim=0)
 
     @torch.no_grad()
     def get_virtual_task_embeddings_for_vis(self, n_points):
@@ -385,64 +513,6 @@ class GENTLE(OfflineMetaRLAlgorithm):
             return ptu.zeros(1).squeeze()
         fake_task_z = self._get_context_embedding(fake_context, sample=False)
         return F.mse_loss(fake_task_z, task_z)
-
-    def _compute_virtual_policy_loss(self, virtual_task_z, batch_size, use_policy_relabel_data=None):
-        if virtual_task_z is None:
-            zero = ptu.zeros(1).squeeze()
-            return zero, zero, zero, zero
-
-        virtual_task_z = virtual_task_z.detach()
-        num_virtual_tasks = len(virtual_task_z)
-        if num_virtual_tasks == 0:
-            zero = ptu.zeros(1).squeeze()
-            return zero, zero, zero, zero
-
-        anchor_task_indices = np.random.choice(self.train_tasks, size=num_virtual_tasks, replace=True)
-        anchor_context = self.sample_context(anchor_task_indices, b_size=batch_size)
-        anchor_obs = anchor_context[:, :, :self.obs_dim]
-        # anchor_actions = anchor_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
-        repeated_virtual_z = virtual_task_z.unsqueeze(1).expand(-1, batch_size, -1)
-        if use_policy_relabel_data is None:
-            use_policy_relabel_data = self.virtual_policy_use_policy_relabel_data
-
-        if use_policy_relabel_data:
-            policy_inputs = torch.cat(
-                [
-                    anchor_obs.reshape(-1, self.obs_dim),
-                    repeated_virtual_z.reshape(-1, self.latent_dim),
-                ],
-                dim=-1,
-            )
-            virtual_actions = self.agent.policy(
-                num_virtual_tasks,
-                batch_size,
-                policy_inputs,
-                reparameterize=True,
-                return_log_prob=True,
-            )[0]
-        else:
-            fake_task_indices = self._sample_mismatched_task_indices(anchor_task_indices)
-            fake_context = self.sample_context(fake_task_indices, b_size=batch_size)
-            fake_actions = fake_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
-            virtual_actions = fake_actions.reshape(-1, self.action_dim)
-        virtual_q = self._min_q(
-            num_virtual_tasks,
-            batch_size,
-            anchor_obs.reshape(-1, self.obs_dim),
-            virtual_actions,
-            repeated_virtual_z.reshape(-1, self.latent_dim),
-        )
-        if self.virtual_policy_q_clip is not None:
-            virtual_q = torch.clamp(virtual_q, -self.virtual_policy_q_clip, self.virtual_policy_q_clip)
-
-        virtual_q_mean = virtual_q.mean()
-        virtual_q_abs_mean = virtual_q.abs().mean()
-        if self.virtual_policy_adaptive_lambda:
-            virtual_policy_lambda = self.bc_weight / virtual_q_abs_mean.detach().clamp(min=1e-6)
-        else:
-            virtual_policy_lambda = torch.ones(1, device=virtual_q.device).squeeze()
-        virtual_policy_loss = -virtual_policy_lambda * virtual_q_mean
-        return virtual_policy_loss, virtual_q_mean, virtual_q_abs_mean, virtual_policy_lambda
     
     def _sample_mismatched_task_indices(self, task_indices):
         task_indices = np.asarray(task_indices)
@@ -603,6 +673,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         # consistency_anchor_task_indices = self._sample_mismatched_task_indices(indices)
         with torch.no_grad():
             virtual_task_z = self._sample_virtual_task_embeddings(c_b)
+        num_virtual_transitions_added = self.add_virtual_transitions_to_buffer(virtual_task_z, c_b)
         if virtual_task_z is not None:
             virtual_anchor_task_indices = np.random.choice(
                 self.train_tasks,
@@ -624,28 +695,109 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.loss['context_loss'] = context_loss.item()
         self.loss['consistency_loss'] = consistency_loss.item()
         self.loss['num_virtual_tasks'] = 0 if virtual_task_z is None else len(virtual_task_z)
+        self.loss['num_virtual_transitions_added'] = num_virtual_transitions_added
+        self.loss['virtual_transition_buffer_size'] = (
+            0 if self.virtual_transition_buffer is None else self.virtual_transition_buffer.size()
+        )
         encoder_total_loss = context_loss + self.consistency_loss_weight * consistency_loss
         
         self.context_optimizer.zero_grad()
         encoder_total_loss.backward()
         self.context_optimizer.step()
         
-        q1_pred = self.qf1(t, b, obs, actions, task_z.detach())
-        q2_pred = self.qf2(t, b, obs, actions, task_z.detach())
+        real_sac_batch_size = t * b
+        td3_obs = obs
+        td3_actions = actions
+        td3_rewards = rewards.view(real_sac_batch_size, -1)
+        td3_next_obs = next_obs
+        td3_terms = terms.view(real_sac_batch_size, -1)
+        td3_task_z = task_z
+        td3_next_actions = next_actions
+        td3_new_actions = new_actions
+        td3_weights = ptu.ones(real_sac_batch_size, 1)
+        virtual_qf_loss = ptu.zeros(1).squeeze()
+        virtual_bc_loss = ptu.zeros(1).squeeze()
+
+        virtual_batch = self.sample_virtual_sac(self.virtual_transition_batch_size)
+        virtual_batch_size = 0
+        if virtual_batch is not None:
+            v_obs, v_actions, v_rewards, v_next_obs, v_terms, v_task_z = virtual_batch
+            _, virtual_batch_size, _ = v_obs.size()
+            flat_v_obs = v_obs.view(virtual_batch_size, -1)
+            flat_v_actions = v_actions.view(virtual_batch_size, -1)
+            flat_v_rewards = v_rewards.view(virtual_batch_size, -1)
+            flat_v_next_obs = v_next_obs.view(virtual_batch_size, -1)
+            flat_v_terms = v_terms.view(virtual_batch_size, -1)
+
+            with torch.no_grad():
+                virtual_next_actions = self.agent.get_target_policy_action(
+                    v_next_obs,
+                    None,
+                    given_z=v_task_z,
+                )
+                virtual_noise = (
+                    torch.randn_like(virtual_next_actions) * self.policy_noise
+                ).clamp(-self.noise_clip, self.noise_clip)
+                virtual_next_actions = (
+                    virtual_next_actions + virtual_noise
+                ).clamp(-self.max_action, self.max_action)
+
+            virtual_actor_inputs = torch.cat([flat_v_obs, v_task_z.detach()], dim=-1)
+            virtual_new_actions = self.agent.policy(
+                1,
+                virtual_batch_size,
+                virtual_actor_inputs,
+                reparameterize=True,
+                return_log_prob=True,
+            )[0]
+
+            td3_obs = torch.cat([td3_obs, flat_v_obs], dim=0)
+            td3_actions = torch.cat([td3_actions, flat_v_actions], dim=0)
+            td3_rewards = torch.cat([td3_rewards, flat_v_rewards], dim=0)
+            td3_next_obs = torch.cat([td3_next_obs, flat_v_next_obs], dim=0)
+            td3_terms = torch.cat([td3_terms, flat_v_terms], dim=0)
+            td3_task_z = torch.cat([td3_task_z, v_task_z], dim=0)
+            td3_next_actions = torch.cat([td3_next_actions, virtual_next_actions], dim=0)
+            td3_new_actions = torch.cat([td3_new_actions, virtual_new_actions], dim=0)
+            virtual_weights = ptu.ones(virtual_batch_size, 1) * self.virtual_transition_loss_weight
+            td3_weights = torch.cat([td3_weights, virtual_weights], dim=0)
+
+        td3_batch_size = td3_obs.size(0)
+        td3_weight_sum = td3_weights.sum().clamp(min=1e-6)
+
+        q1_pred = self.qf1(1, td3_batch_size, td3_obs, td3_actions, td3_task_z.detach())
+        q2_pred = self.qf2(1, td3_batch_size, td3_obs, td3_actions, td3_task_z.detach())
         with torch.no_grad():
-            target_q1 = self.target_qf1(t, b, next_obs, next_actions, task_z)
-            target_q2 = self.target_qf2(t, b, next_obs, next_actions, task_z)
+            target_q1 = self.target_qf1(
+                1,
+                td3_batch_size,
+                td3_next_obs,
+                td3_next_actions,
+                td3_task_z,
+            )
+            target_q2 = self.target_qf2(
+                1,
+                td3_batch_size,
+                td3_next_obs,
+                td3_next_actions,
+                td3_task_z,
+            )
             target_q = torch.min(target_q1, target_q2)
-            rewards_flat = rewards.view(self.batch_size * num_tasks, -1)
             # scale rewards for Bellman update
-            rewards_flat = rewards_flat * self.reward_scale
-            terms_flat = terms.view(self.batch_size * num_tasks, -1)
-            target_q = rewards_flat + (1. - terms_flat) * self.discount * target_q
-        qf_loss = torch.mean((q1_pred - target_q) ** 2) + torch.mean((q2_pred - target_q) ** 2)
+            target_q = td3_rewards * self.reward_scale + (1. - td3_terms) * self.discount * target_q
+
+        qf_element_loss = (q1_pred - target_q) ** 2 + (q2_pred - target_q) ** 2
+        qf_loss = (qf_element_loss * td3_weights).sum() / td3_weight_sum
+        real_qf_loss = torch.mean(qf_element_loss[:real_sac_batch_size])
+        if virtual_batch_size > 0:
+            virtual_qf_loss = torch.mean(qf_element_loss[real_sac_batch_size:])
         self.qf1_optimizer.zero_grad()
         self.qf2_optimizer.zero_grad()
         qf_loss.backward(retain_graph=True)
         self.loss["qf_loss"] = qf_loss.item()
+        self.loss["real_qf_loss"] = real_qf_loss.item()
+        self.loss["virtual_qf_loss"] = virtual_qf_loss.item()
+        self.loss["virtual_transition_batch_size"] = virtual_batch_size
         self.loss["q_target"] = torch.mean(target_q).item()
         self.loss["q1_pred"] = torch.mean(q1_pred).item()
         self.loss["q2_pred"] = torch.mean(q2_pred).item()
@@ -653,24 +805,19 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.qf2_optimizer.step()
         self._set_requires_grad(self.qf1, False)
         self._set_requires_grad(self.qf2, False)
-        Q = self._min_q(t, b, obs, new_actions, task_z)
-        lmbda = self.bc_weight/Q.abs().mean().detach()
-        policy_loss = -lmbda * Q.mean()
-        bc_loss = F.mse_loss(new_actions, actions)
-        virtual_policy_loss = ptu.zeros(1).squeeze()
-        virtual_q_mean = ptu.zeros(1).squeeze()
-        virtual_q_abs_mean = ptu.zeros(1).squeeze()
-        virtual_policy_lambda = ptu.zeros(1).squeeze()
-        if self.virtual_policy_weight > 0 and virtual_task_z is not None and self._n_train_steps_total >= self.virtual_policy_warmup_steps:
-            virtual_policy_loss, virtual_q_mean, virtual_q_abs_mean, virtual_policy_lambda = self._compute_virtual_policy_loss(virtual_task_z, c_b)
+        Q = self._min_q(1, td3_batch_size, td3_obs, td3_new_actions, td3_task_z.detach())
+        weighted_abs_q = (Q.abs() * td3_weights).sum() / td3_weight_sum
+        lmbda = self.bc_weight / weighted_abs_q.detach().clamp(min=1e-6)
+        policy_loss = -lmbda * (Q * td3_weights).sum() / td3_weight_sum
+        bc_element_loss = torch.mean((td3_new_actions - td3_actions) ** 2, dim=1, keepdim=True)
+        bc_loss = (bc_element_loss * td3_weights).sum() / td3_weight_sum
+        if virtual_batch_size > 0:
+            virtual_bc_loss = torch.mean(bc_element_loss[real_sac_batch_size:])
 
-        policy_total_loss = policy_loss + bc_loss + self.virtual_policy_weight * virtual_policy_loss
+        policy_total_loss = policy_loss + bc_loss
         self.loss["policy_loss"] = policy_loss.item()
         self.loss["bc_loss"] = bc_loss.item()
-        self.loss["virtual_policy_loss"] = virtual_policy_loss.item()
-        self.loss["virtual_q_mean"] = virtual_q_mean.item()
-        self.loss["virtual_q_abs_mean"] = virtual_q_abs_mean.item()
-        self.loss["virtual_policy_lambda"] = virtual_policy_lambda.item()
+        self.loss["virtual_transition_bc_mse"] = virtual_bc_loss.item()
         self.loss['encoder_total_loss'] = encoder_total_loss.item()
         self.loss['policy_total_loss'] = policy_total_loss.item()
 
@@ -706,19 +853,13 @@ class GENTLE(OfflineMetaRLAlgorithm):
             self.eval_statistics['BC Loss'] = np.mean(ptu.get_numpy(
                 bc_loss
             ))
-            self.eval_statistics['Virtual Policy Loss'] = np.mean(ptu.get_numpy(
-                virtual_policy_loss
-            ))
-            self.eval_statistics['Virtual Q Mean'] = np.mean(ptu.get_numpy(
-                virtual_q_mean
-            ))
-            self.eval_statistics['Virtual Q Abs Mean'] = np.mean(ptu.get_numpy(
-                virtual_q_abs_mean
-            ))
-            self.eval_statistics['Virtual Policy Lambda'] = np.mean(ptu.get_numpy(
-                virtual_policy_lambda
-            ))
             self.eval_statistics['QF Loss'] = np.mean(ptu.get_numpy(qf_loss))
+            self.eval_statistics['Virtual Transition QF Loss'] = np.mean(ptu.get_numpy(
+                virtual_qf_loss
+            ))
+            self.eval_statistics['Virtual Transition BC MSE'] = np.mean(ptu.get_numpy(
+                virtual_bc_loss
+            ))
             self.eval_statistics.update(create_stats_ordered_dict('Q Predictions',  ptu.get_numpy(q1_pred)))
             self.eval_statistics.update(create_stats_ordered_dict('Policy mu',      ptu.get_numpy(policy_mean)))
         return ptu.get_numpy(self.agent.z_means), ptu.get_numpy(self.agent.z_vars)
