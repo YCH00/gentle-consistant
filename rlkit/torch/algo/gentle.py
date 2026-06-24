@@ -116,13 +116,19 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.M                              = kwargs.get('M', 2)
         self.beta                           = kwargs.get('beta', 1.0)
         self.virtual_task_generation_mode   = kwargs.get('virtual_task_generation_mode', 'local').lower()
-        if self.virtual_task_generation_mode not in ('local', 'global'):
+        if self.virtual_task_generation_mode not in ('local', 'global', 'gaussian'):
             raise ValueError(
-                "virtual_task_generation_mode must be either 'local' or 'global', "
+                "virtual_task_generation_mode must be one of 'local', 'global', or 'gaussian', "
                 "got '{}'".format(self.virtual_task_generation_mode)
             )
         self.virtual_interpolation_lambda_max = kwargs.get('virtual_interpolation_lambda_max', 0.2)
         self.virtual_interpolation_max_distance = kwargs.get('virtual_interpolation_max_distance', None)
+        self.virtual_gaussian_noise_std = float(kwargs.get('virtual_gaussian_noise_std', 0.05))
+        if self.virtual_gaussian_noise_std < 0.0:
+            raise ValueError(
+                "virtual_gaussian_noise_std must be non-negative, "
+                "got {}".format(self.virtual_gaussian_noise_std)
+            )
         self.consistency_loss_weight        = kwargs.get('consistency_loss_weight', 1.0)
         self.consistency_use_policy_relabel_data = kwargs.get('consistency_use_policy_relabel_data', True)
         self.virtual_transition_buffer_size = int(kwargs.get('virtual_transition_buffer_size', 50000))
@@ -398,6 +404,8 @@ class GENTLE(OfflineMetaRLAlgorithm):
     def _sample_virtual_task_embeddings(self, batch_size):
         if self.virtual_task_generation_mode == 'global':
             return self._sample_global_virtual_task_embeddings(batch_size)
+        if self.virtual_task_generation_mode == 'gaussian':
+            return self._sample_gaussian_virtual_task_embeddings(batch_size)
         return self._sample_local_virtual_task_embeddings(batch_size)
 
     @torch.no_grad()
@@ -479,6 +487,24 @@ class GENTLE(OfflineMetaRLAlgorithm):
             return None
 
         return torch.cat(virtual_zs, dim=0)
+
+    @torch.no_grad()
+    def _sample_gaussian_virtual_task_embeddings(self, batch_size):
+        if self.n_vt <= 0 or len(self.train_tasks) == 0:
+            return None
+
+        base_task_indices = np.random.choice(
+            self.train_tasks,
+            size=self.n_vt,
+            replace=True,
+        )
+        base_context = self.sample_context(base_task_indices, b_size=batch_size)
+        base_task_z = self._get_context_embedding(base_context, sample=False)
+        if self.virtual_gaussian_noise_std == 0.0:
+            return base_task_z
+
+        noise = torch.randn_like(base_task_z) * self.virtual_gaussian_noise_std
+        return base_task_z + noise
 
     @torch.no_grad()
     def get_virtual_task_embeddings_for_vis(self, n_points):

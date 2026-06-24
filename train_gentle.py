@@ -235,7 +235,7 @@ def deep_update_dict(fr, to):
 @click.option('--virtual_interpolation_lambda_max', type=float, default=None)
 @click.option('--consistency_use_policy_relabel_data', type=bool, default=None)
 @click.option('--virtual_transition_use_policy_actions', type=bool, default=None)
-@click.option('--virtual_task_generation_mode', type=click.Choice(['local', 'global']), default=None)
+@click.option('--virtual_task_generation_mode', type=click.Choice(['local', 'global', 'gaussian']), default=None)
 def main(
     config,
     gpu,
