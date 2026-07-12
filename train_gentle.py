@@ -235,6 +235,11 @@ def deep_update_dict(fr, to):
 @click.option('--virtual_interpolation_lambda_max', type=float, default=None)
 @click.option('--consistency_use_policy_relabel_data', type=bool, default=None)
 @click.option('--virtual_transition_use_policy_actions', type=bool, default=None)
+@click.option('--virtual_transition_loss_weight', type=float, default=None)
+@click.option('--virtual_transition_weight_schedule', type=click.Choice(['constant', 'linear_decay']), default=None)
+@click.option('--virtual_transition_weight_decay_start_itr', type=int, default=None)
+@click.option('--virtual_transition_weight_decay_end_itr', type=int, default=None)
+@click.option('--virtual_transition_final_loss_weight', type=float, default=None)
 @click.option('--virtual_task_generation_mode', type=click.Choice(['local', 'global', 'gaussian']), default=None)
 def main(
     config,
@@ -249,6 +254,11 @@ def main(
     virtual_interpolation_lambda_max,
     consistency_use_policy_relabel_data,
     virtual_transition_use_policy_actions,
+    virtual_transition_loss_weight,
+    virtual_transition_weight_schedule,
+    virtual_transition_weight_decay_start_itr,
+    virtual_transition_weight_decay_end_itr,
+    virtual_transition_final_loss_weight,
     virtual_task_generation_mode,
 ):
 
@@ -273,6 +283,16 @@ def main(
         variant['algo_params']['consistency_use_policy_relabel_data'] = consistency_use_policy_relabel_data
     if virtual_transition_use_policy_actions is not None:
         variant['algo_params']['virtual_transition_use_policy_actions'] = virtual_transition_use_policy_actions
+    if virtual_transition_loss_weight is not None:
+        variant['algo_params']['virtual_transition_loss_weight'] = virtual_transition_loss_weight
+    if virtual_transition_weight_schedule is not None:
+        variant['algo_params']['virtual_transition_weight_schedule'] = virtual_transition_weight_schedule
+    if virtual_transition_weight_decay_start_itr is not None:
+        variant['algo_params']['virtual_transition_weight_decay_start_itr'] = virtual_transition_weight_decay_start_itr
+    if virtual_transition_weight_decay_end_itr is not None:
+        variant['algo_params']['virtual_transition_weight_decay_end_itr'] = virtual_transition_weight_decay_end_itr
+    if virtual_transition_final_loss_weight is not None:
+        variant['algo_params']['virtual_transition_final_loss_weight'] = virtual_transition_final_loss_weight
     if virtual_task_generation_mode is not None:
         variant['algo_params']['virtual_task_generation_mode'] = virtual_task_generation_mode
 

@@ -133,7 +133,48 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.consistency_use_policy_relabel_data = kwargs.get('consistency_use_policy_relabel_data', True)
         self.virtual_transition_buffer_size = int(kwargs.get('virtual_transition_buffer_size', 50000))
         self.virtual_transition_batch_size  = int(kwargs.get('virtual_transition_batch_size', 256))
-        self.virtual_transition_loss_weight = kwargs.get('virtual_transition_loss_weight', 1.0)
+        self.virtual_transition_loss_weight = float(kwargs.get('virtual_transition_loss_weight', 1.0))
+        self.virtual_transition_weight_schedule = kwargs.get(
+            'virtual_transition_weight_schedule',
+            'constant',
+        ).lower()
+        if self.virtual_transition_weight_schedule not in ('constant', 'linear_decay'):
+            raise ValueError(
+                "virtual_transition_weight_schedule must be either 'constant' "
+                "or 'linear_decay', got '{}'".format(self.virtual_transition_weight_schedule)
+            )
+        self.virtual_transition_weight_decay_start_itr = int(
+            kwargs.get('virtual_transition_weight_decay_start_itr', 0)
+        )
+        self.virtual_transition_weight_decay_end_itr = kwargs.get(
+            'virtual_transition_weight_decay_end_itr',
+            None,
+        )
+        if self.virtual_transition_weight_decay_end_itr is None:
+            self.virtual_transition_weight_decay_end_itr = max(
+                self.virtual_transition_weight_decay_start_itr + 1,
+                self.num_iterations - 1,
+            )
+        self.virtual_transition_weight_decay_end_itr = int(
+            self.virtual_transition_weight_decay_end_itr
+        )
+        self.virtual_transition_final_loss_weight = float(
+            kwargs.get('virtual_transition_final_loss_weight', 0.0)
+        )
+        if self.virtual_transition_loss_weight < 0.0:
+            raise ValueError('virtual_transition_loss_weight must be non-negative')
+        if self.virtual_transition_final_loss_weight < 0.0:
+            raise ValueError('virtual_transition_final_loss_weight must be non-negative')
+        if self.virtual_transition_weight_decay_start_itr < 0:
+            raise ValueError('virtual_transition_weight_decay_start_itr must be non-negative')
+        if (
+            self.virtual_transition_weight_schedule == 'linear_decay'
+            and self.virtual_transition_weight_decay_end_itr <= self.virtual_transition_weight_decay_start_itr
+        ):
+            raise ValueError(
+                'virtual_transition_weight_decay_end_itr must be larger than '
+                'virtual_transition_weight_decay_start_itr when using linear_decay'
+            )
         self.virtual_transition_use_policy_actions = kwargs.get('virtual_transition_use_policy_actions', False)
         if self.virtual_transition_use_policy_actions and not self.use_next_obs_in_context:
             print(
@@ -203,6 +244,27 @@ class GENTLE(OfflineMetaRLAlgorithm):
     def _set_requires_grad(self, module, requires_grad):
         for param in module.parameters():
             param.requires_grad = requires_grad
+
+    def _get_virtual_transition_loss_weight(self):
+        if self.virtual_transition_weight_schedule == 'constant':
+            return self.virtual_transition_loss_weight
+
+        current_itr = int(getattr(self, 'itr', 0))
+        start_itr = self.virtual_transition_weight_decay_start_itr
+        end_itr = self.virtual_transition_weight_decay_end_itr
+        if current_itr <= start_itr:
+            return self.virtual_transition_loss_weight
+        if current_itr >= end_itr:
+            return self.virtual_transition_final_loss_weight
+
+        progress = float(current_itr - start_itr) / float(end_itr - start_itr)
+        return (
+            self.virtual_transition_loss_weight
+            + progress * (
+                self.virtual_transition_final_loss_weight
+                - self.virtual_transition_loss_weight
+            )
+        )
 
     ##### Data handling #####
     def unpack_batch(self, batch, sparse_reward=False):
@@ -697,9 +759,13 @@ class GENTLE(OfflineMetaRLAlgorithm):
         consistency_task_z = self.agent.z_means
         consistency_anchor_task_indices = np.asarray(indices)
         # consistency_anchor_task_indices = self._sample_mismatched_task_indices(indices)
+        current_virtual_transition_loss_weight = self._get_virtual_transition_loss_weight()
         with torch.no_grad():
             virtual_task_z = self._sample_virtual_task_embeddings(c_b)
-        num_virtual_transitions_added = self.add_virtual_transitions_to_buffer(virtual_task_z, c_b)
+        if current_virtual_transition_loss_weight > 0.0:
+            num_virtual_transitions_added = self.add_virtual_transitions_to_buffer(virtual_task_z, c_b)
+        else:
+            num_virtual_transitions_added = 0
         if virtual_task_z is not None:
             virtual_anchor_task_indices = np.random.choice(
                 self.train_tasks,
@@ -722,6 +788,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.loss['consistency_loss'] = consistency_loss.item()
         self.loss['num_virtual_tasks'] = 0 if virtual_task_z is None else len(virtual_task_z)
         self.loss['num_virtual_transitions_added'] = num_virtual_transitions_added
+        self.loss['virtual_transition_loss_weight_current'] = current_virtual_transition_loss_weight
         self.loss['virtual_transition_buffer_size'] = (
             0 if self.virtual_transition_buffer is None else self.virtual_transition_buffer.size()
         )
@@ -744,7 +811,9 @@ class GENTLE(OfflineMetaRLAlgorithm):
         virtual_qf_loss = ptu.zeros(1).squeeze()
         virtual_bc_loss = ptu.zeros(1).squeeze()
 
-        virtual_batch = self.sample_virtual_sac(self.virtual_transition_batch_size)
+        virtual_batch = None
+        if current_virtual_transition_loss_weight > 0.0:
+            virtual_batch = self.sample_virtual_sac(self.virtual_transition_batch_size)
         virtual_batch_size = 0
         if virtual_batch is not None:
             v_obs, v_actions, v_rewards, v_next_obs, v_terms, v_task_z = virtual_batch
@@ -785,7 +854,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
             td3_task_z = torch.cat([td3_task_z, v_task_z], dim=0)
             td3_next_actions = torch.cat([td3_next_actions, virtual_next_actions], dim=0)
             td3_new_actions = torch.cat([td3_new_actions, virtual_new_actions], dim=0)
-            virtual_weights = ptu.ones(virtual_batch_size, 1) * self.virtual_transition_loss_weight
+            virtual_weights = ptu.ones(virtual_batch_size, 1) * current_virtual_transition_loss_weight
             td3_weights = torch.cat([td3_weights, virtual_weights], dim=0)
 
         td3_batch_size = td3_obs.size(0)

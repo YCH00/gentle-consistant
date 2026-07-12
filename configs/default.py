@@ -69,7 +69,11 @@ default_config = dict(
         consistency_use_policy_relabel_data=True, # True: relabel virtual data; False: sampled real context data
         virtual_transition_buffer_size=50000, # replay buffer size for decoder-generated virtual transitions
         virtual_transition_batch_size=256, # TD3+BC batch size sampled from the virtual transition buffer
-        virtual_transition_loss_weight=1.0, # sample weight for virtual transitions in TD3+BC updates
+        virtual_transition_loss_weight=1.0, # initial sample weight for virtual transitions in TD3+BC updates
+        virtual_transition_weight_schedule='constant', # 'constant' or 'linear_decay' by outer training iteration
+        virtual_transition_weight_decay_start_itr=100, # linear_decay: keep initial weight until this iteration
+        virtual_transition_weight_decay_end_itr=300, # linear_decay: reach final weight at this iteration
+        virtual_transition_final_loss_weight=0.0, # linear_decay: final virtual transition sample weight
         virtual_transition_use_policy_actions=False, # False keeps real offline actions for more stable next_obs consistency
     ),
     util_params=dict(
