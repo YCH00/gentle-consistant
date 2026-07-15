@@ -134,6 +134,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.virtual_transition_buffer_size = int(kwargs.get('virtual_transition_buffer_size', 50000))
         self.virtual_transition_batch_size  = int(kwargs.get('virtual_transition_batch_size', 256))
         self.virtual_transition_loss_weight = float(kwargs.get('virtual_transition_loss_weight', 1.0))
+        self.virtual_transition_train_policy = kwargs.get('virtual_transition_train_policy', False)
         self.virtual_transition_weight_schedule = kwargs.get(
             'virtual_transition_weight_schedule',
             'constant',
@@ -799,15 +800,20 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.context_optimizer.step()
         
         real_sac_batch_size = t * b
-        td3_obs = obs
-        td3_actions = actions
-        td3_rewards = rewards.view(real_sac_batch_size, -1)
-        td3_next_obs = next_obs
-        td3_terms = terms.view(real_sac_batch_size, -1)
-        td3_task_z = task_z
-        td3_next_actions = next_actions
-        td3_new_actions = new_actions
-        td3_weights = ptu.ones(real_sac_batch_size, 1)
+        critic_obs = obs
+        critic_actions = actions
+        critic_rewards = rewards.view(real_sac_batch_size, -1)
+        critic_next_obs = next_obs
+        critic_terms = terms.view(real_sac_batch_size, -1)
+        critic_task_z = task_z
+        critic_next_actions = next_actions
+        critic_weights = ptu.ones(real_sac_batch_size, 1)
+
+        policy_obs = obs
+        policy_actions = actions
+        policy_task_z = task_z
+        policy_new_actions = new_actions
+        policy_weights = ptu.ones(real_sac_batch_size, 1)
         virtual_qf_loss = ptu.zeros(1).squeeze()
         virtual_bc_loss = ptu.zeros(1).squeeze()
 
@@ -837,52 +843,57 @@ class GENTLE(OfflineMetaRLAlgorithm):
                     virtual_next_actions + virtual_noise
                 ).clamp(-self.max_action, self.max_action)
 
-            virtual_actor_inputs = torch.cat([flat_v_obs, v_task_z.detach()], dim=-1)
-            virtual_new_actions = self.agent.policy(
-                1,
-                virtual_batch_size,
-                virtual_actor_inputs,
-                reparameterize=True,
-                return_log_prob=True,
-            )[0]
-
-            td3_obs = torch.cat([td3_obs, flat_v_obs], dim=0)
-            td3_actions = torch.cat([td3_actions, flat_v_actions], dim=0)
-            td3_rewards = torch.cat([td3_rewards, flat_v_rewards], dim=0)
-            td3_next_obs = torch.cat([td3_next_obs, flat_v_next_obs], dim=0)
-            td3_terms = torch.cat([td3_terms, flat_v_terms], dim=0)
-            td3_task_z = torch.cat([td3_task_z, v_task_z], dim=0)
-            td3_next_actions = torch.cat([td3_next_actions, virtual_next_actions], dim=0)
-            td3_new_actions = torch.cat([td3_new_actions, virtual_new_actions], dim=0)
             virtual_weights = ptu.ones(virtual_batch_size, 1) * current_virtual_transition_loss_weight
-            td3_weights = torch.cat([td3_weights, virtual_weights], dim=0)
+            critic_obs = torch.cat([critic_obs, flat_v_obs], dim=0)
+            critic_actions = torch.cat([critic_actions, flat_v_actions], dim=0)
+            critic_rewards = torch.cat([critic_rewards, flat_v_rewards], dim=0)
+            critic_next_obs = torch.cat([critic_next_obs, flat_v_next_obs], dim=0)
+            critic_terms = torch.cat([critic_terms, flat_v_terms], dim=0)
+            critic_task_z = torch.cat([critic_task_z, v_task_z], dim=0)
+            critic_next_actions = torch.cat([critic_next_actions, virtual_next_actions], dim=0)
+            critic_weights = torch.cat([critic_weights, virtual_weights], dim=0)
 
-        td3_batch_size = td3_obs.size(0)
-        td3_weight_sum = td3_weights.sum().clamp(min=1e-6)
+            if self.virtual_transition_train_policy:
+                virtual_actor_inputs = torch.cat([flat_v_obs, v_task_z.detach()], dim=-1)
+                virtual_new_actions = self.agent.policy(
+                    1,
+                    virtual_batch_size,
+                    virtual_actor_inputs,
+                    reparameterize=True,
+                    return_log_prob=True,
+                )[0]
+                policy_obs = torch.cat([policy_obs, flat_v_obs], dim=0)
+                policy_actions = torch.cat([policy_actions, flat_v_actions], dim=0)
+                policy_task_z = torch.cat([policy_task_z, v_task_z], dim=0)
+                policy_new_actions = torch.cat([policy_new_actions, virtual_new_actions], dim=0)
+                policy_weights = torch.cat([policy_weights, virtual_weights], dim=0)
 
-        q1_pred = self.qf1(1, td3_batch_size, td3_obs, td3_actions, td3_task_z.detach())
-        q2_pred = self.qf2(1, td3_batch_size, td3_obs, td3_actions, td3_task_z.detach())
+        critic_batch_size = critic_obs.size(0)
+        critic_weight_sum = critic_weights.sum().clamp(min=1e-6)
+
+        q1_pred = self.qf1(1, critic_batch_size, critic_obs, critic_actions, critic_task_z.detach())
+        q2_pred = self.qf2(1, critic_batch_size, critic_obs, critic_actions, critic_task_z.detach())
         with torch.no_grad():
             target_q1 = self.target_qf1(
                 1,
-                td3_batch_size,
-                td3_next_obs,
-                td3_next_actions,
-                td3_task_z,
+                critic_batch_size,
+                critic_next_obs,
+                critic_next_actions,
+                critic_task_z,
             )
             target_q2 = self.target_qf2(
                 1,
-                td3_batch_size,
-                td3_next_obs,
-                td3_next_actions,
-                td3_task_z,
+                critic_batch_size,
+                critic_next_obs,
+                critic_next_actions,
+                critic_task_z,
             )
             target_q = torch.min(target_q1, target_q2)
             # scale rewards for Bellman update
-            target_q = td3_rewards * self.reward_scale + (1. - td3_terms) * self.discount * target_q
+            target_q = critic_rewards * self.reward_scale + (1. - critic_terms) * self.discount * target_q
 
         qf_element_loss = (q1_pred - target_q) ** 2 + (q2_pred - target_q) ** 2
-        qf_loss = (qf_element_loss * td3_weights).sum() / td3_weight_sum
+        qf_loss = (qf_element_loss * critic_weights).sum() / critic_weight_sum
         real_qf_loss = torch.mean(qf_element_loss[:real_sac_batch_size])
         if virtual_batch_size > 0:
             virtual_qf_loss = torch.mean(qf_element_loss[real_sac_batch_size:])
@@ -900,19 +911,23 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.qf2_optimizer.step()
         self._set_requires_grad(self.qf1, False)
         self._set_requires_grad(self.qf2, False)
-        Q = self._min_q(1, td3_batch_size, td3_obs, td3_new_actions, td3_task_z.detach())
-        weighted_abs_q = (Q.abs() * td3_weights).sum() / td3_weight_sum
+        policy_batch_size = policy_obs.size(0)
+        policy_weight_sum = policy_weights.sum().clamp(min=1e-6)
+        Q = self._min_q(1, policy_batch_size, policy_obs, policy_new_actions, policy_task_z.detach())
+        weighted_abs_q = (Q.abs() * policy_weights).sum() / policy_weight_sum
         lmbda = self.bc_weight / weighted_abs_q.detach().clamp(min=1e-6)
-        policy_loss = -lmbda * (Q * td3_weights).sum() / td3_weight_sum
-        bc_element_loss = torch.mean((td3_new_actions - td3_actions) ** 2, dim=1, keepdim=True)
-        bc_loss = (bc_element_loss * td3_weights).sum() / td3_weight_sum
-        if virtual_batch_size > 0:
+        policy_loss = -lmbda * (Q * policy_weights).sum() / policy_weight_sum
+        bc_element_loss = torch.mean((policy_new_actions - policy_actions) ** 2, dim=1, keepdim=True)
+        bc_loss = (bc_element_loss * policy_weights).sum() / policy_weight_sum
+        if virtual_batch_size > 0 and self.virtual_transition_train_policy:
             virtual_bc_loss = torch.mean(bc_element_loss[real_sac_batch_size:])
 
         policy_total_loss = policy_loss + bc_loss
         self.loss["policy_loss"] = policy_loss.item()
         self.loss["bc_loss"] = bc_loss.item()
         self.loss["virtual_transition_bc_mse"] = virtual_bc_loss.item()
+        self.loss["virtual_transition_policy_batch_size"] = policy_batch_size - real_sac_batch_size
+        self.loss["virtual_transition_train_policy"] = int(self.virtual_transition_train_policy)
         self.loss['encoder_total_loss'] = encoder_total_loss.item()
         self.loss['policy_total_loss'] = policy_total_loss.item()
 

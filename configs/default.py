@@ -75,6 +75,7 @@ default_config = dict(
         virtual_transition_weight_decay_end_itr=300, # linear_decay: reach final weight at this iteration
         virtual_transition_final_loss_weight=0.0, # linear_decay: final virtual transition sample weight
         virtual_transition_use_policy_actions=False, # False keeps real offline actions for more stable next_obs consistency
+        virtual_transition_train_policy=False, # False: virtual transitions train critic only, not actor/BC
     ),
     util_params=dict(
         base_log_dir='./logs',

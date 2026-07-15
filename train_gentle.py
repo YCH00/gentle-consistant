@@ -240,6 +240,7 @@ def deep_update_dict(fr, to):
 @click.option('--virtual_transition_weight_decay_start_itr', type=int, default=None)
 @click.option('--virtual_transition_weight_decay_end_itr', type=int, default=None)
 @click.option('--virtual_transition_final_loss_weight', type=float, default=None)
+@click.option('--virtual_transition_train_policy', type=bool, default=None)
 @click.option('--virtual_task_generation_mode', type=click.Choice(['local', 'global', 'gaussian']), default=None)
 def main(
     config,
@@ -259,6 +260,7 @@ def main(
     virtual_transition_weight_decay_start_itr,
     virtual_transition_weight_decay_end_itr,
     virtual_transition_final_loss_weight,
+    virtual_transition_train_policy,
     virtual_task_generation_mode,
 ):
 
@@ -293,6 +295,8 @@ def main(
         variant['algo_params']['virtual_transition_weight_decay_end_itr'] = virtual_transition_weight_decay_end_itr
     if virtual_transition_final_loss_weight is not None:
         variant['algo_params']['virtual_transition_final_loss_weight'] = virtual_transition_final_loss_weight
+    if virtual_transition_train_policy is not None:
+        variant['algo_params']['virtual_transition_train_policy'] = virtual_transition_train_policy
     if virtual_task_generation_mode is not None:
         variant['algo_params']['virtual_task_generation_mode'] = virtual_task_generation_mode
 
