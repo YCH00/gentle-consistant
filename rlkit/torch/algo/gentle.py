@@ -134,7 +134,21 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.virtual_transition_buffer_size = int(kwargs.get('virtual_transition_buffer_size', 50000))
         self.virtual_transition_batch_size  = int(kwargs.get('virtual_transition_batch_size', 256))
         self.virtual_transition_loss_weight = float(kwargs.get('virtual_transition_loss_weight', 1.0))
-        self.virtual_transition_train_policy = kwargs.get('virtual_transition_train_policy', False)
+        legacy_virtual_transition_train_policy = kwargs.get('virtual_transition_train_policy', None)
+        if legacy_virtual_transition_train_policy is None:
+            default_virtual_train_policy_q = True
+            default_virtual_train_policy_bc = False
+        else:
+            default_virtual_train_policy_q = bool(legacy_virtual_transition_train_policy)
+            default_virtual_train_policy_bc = bool(legacy_virtual_transition_train_policy)
+        self.virtual_transition_train_policy_q = kwargs.get(
+            'virtual_transition_train_policy_q',
+            default_virtual_train_policy_q,
+        )
+        self.virtual_transition_train_policy_bc = kwargs.get(
+            'virtual_transition_train_policy_bc',
+            default_virtual_train_policy_bc,
+        )
         self.virtual_transition_weight_schedule = kwargs.get(
             'virtual_transition_weight_schedule',
             'constant',
@@ -809,11 +823,14 @@ class GENTLE(OfflineMetaRLAlgorithm):
         critic_next_actions = next_actions
         critic_weights = ptu.ones(real_sac_batch_size, 1)
 
-        policy_obs = obs
-        policy_actions = actions
-        policy_task_z = task_z
-        policy_new_actions = new_actions
-        policy_weights = ptu.ones(real_sac_batch_size, 1)
+        policy_q_obs = obs
+        policy_q_task_z = task_z
+        policy_q_new_actions = new_actions
+        policy_q_weights = ptu.ones(real_sac_batch_size, 1)
+
+        bc_actions = actions
+        bc_new_actions = new_actions
+        bc_weights = ptu.ones(real_sac_batch_size, 1)
         virtual_qf_loss = ptu.zeros(1).squeeze()
         virtual_bc_loss = ptu.zeros(1).squeeze()
 
@@ -853,7 +870,10 @@ class GENTLE(OfflineMetaRLAlgorithm):
             critic_next_actions = torch.cat([critic_next_actions, virtual_next_actions], dim=0)
             critic_weights = torch.cat([critic_weights, virtual_weights], dim=0)
 
-            if self.virtual_transition_train_policy:
+            if (
+                self.virtual_transition_train_policy_q
+                or self.virtual_transition_train_policy_bc
+            ):
                 virtual_actor_inputs = torch.cat([flat_v_obs, v_task_z.detach()], dim=-1)
                 virtual_new_actions = self.agent.policy(
                     1,
@@ -862,11 +882,18 @@ class GENTLE(OfflineMetaRLAlgorithm):
                     reparameterize=True,
                     return_log_prob=True,
                 )[0]
-                policy_obs = torch.cat([policy_obs, flat_v_obs], dim=0)
-                policy_actions = torch.cat([policy_actions, flat_v_actions], dim=0)
-                policy_task_z = torch.cat([policy_task_z, v_task_z], dim=0)
-                policy_new_actions = torch.cat([policy_new_actions, virtual_new_actions], dim=0)
-                policy_weights = torch.cat([policy_weights, virtual_weights], dim=0)
+                virtual_bc_loss = torch.mean((virtual_new_actions - flat_v_actions) ** 2)
+
+                if self.virtual_transition_train_policy_q:
+                    policy_q_obs = torch.cat([policy_q_obs, flat_v_obs], dim=0)
+                    policy_q_task_z = torch.cat([policy_q_task_z, v_task_z], dim=0)
+                    policy_q_new_actions = torch.cat([policy_q_new_actions, virtual_new_actions], dim=0)
+                    policy_q_weights = torch.cat([policy_q_weights, virtual_weights], dim=0)
+
+                if self.virtual_transition_train_policy_bc:
+                    bc_actions = torch.cat([bc_actions, flat_v_actions], dim=0)
+                    bc_new_actions = torch.cat([bc_new_actions, virtual_new_actions], dim=0)
+                    bc_weights = torch.cat([bc_weights, virtual_weights], dim=0)
 
         critic_batch_size = critic_obs.size(0)
         critic_weight_sum = critic_weights.sum().clamp(min=1e-6)
@@ -911,23 +938,30 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.qf2_optimizer.step()
         self._set_requires_grad(self.qf1, False)
         self._set_requires_grad(self.qf2, False)
-        policy_batch_size = policy_obs.size(0)
-        policy_weight_sum = policy_weights.sum().clamp(min=1e-6)
-        Q = self._min_q(1, policy_batch_size, policy_obs, policy_new_actions, policy_task_z.detach())
-        weighted_abs_q = (Q.abs() * policy_weights).sum() / policy_weight_sum
+        policy_q_batch_size = policy_q_obs.size(0)
+        policy_q_weight_sum = policy_q_weights.sum().clamp(min=1e-6)
+        Q = self._min_q(
+            1,
+            policy_q_batch_size,
+            policy_q_obs,
+            policy_q_new_actions,
+            policy_q_task_z.detach(),
+        )
+        weighted_abs_q = (Q.abs() * policy_q_weights).sum() / policy_q_weight_sum
         lmbda = self.bc_weight / weighted_abs_q.detach().clamp(min=1e-6)
-        policy_loss = -lmbda * (Q * policy_weights).sum() / policy_weight_sum
-        bc_element_loss = torch.mean((policy_new_actions - policy_actions) ** 2, dim=1, keepdim=True)
-        bc_loss = (bc_element_loss * policy_weights).sum() / policy_weight_sum
-        if virtual_batch_size > 0 and self.virtual_transition_train_policy:
-            virtual_bc_loss = torch.mean(bc_element_loss[real_sac_batch_size:])
+        policy_loss = -lmbda * (Q * policy_q_weights).sum() / policy_q_weight_sum
+        bc_weight_sum = bc_weights.sum().clamp(min=1e-6)
+        bc_element_loss = torch.mean((bc_new_actions - bc_actions) ** 2, dim=1, keepdim=True)
+        bc_loss = (bc_element_loss * bc_weights).sum() / bc_weight_sum
 
         policy_total_loss = policy_loss + bc_loss
         self.loss["policy_loss"] = policy_loss.item()
         self.loss["bc_loss"] = bc_loss.item()
         self.loss["virtual_transition_bc_mse"] = virtual_bc_loss.item()
-        self.loss["virtual_transition_policy_batch_size"] = policy_batch_size - real_sac_batch_size
-        self.loss["virtual_transition_train_policy"] = int(self.virtual_transition_train_policy)
+        self.loss["virtual_transition_policy_q_batch_size"] = policy_q_batch_size - real_sac_batch_size
+        self.loss["virtual_transition_policy_bc_batch_size"] = bc_actions.size(0) - real_sac_batch_size
+        self.loss["virtual_transition_train_policy_q"] = int(self.virtual_transition_train_policy_q)
+        self.loss["virtual_transition_train_policy_bc"] = int(self.virtual_transition_train_policy_bc)
         self.loss['encoder_total_loss'] = encoder_total_loss.item()
         self.loss['policy_total_loss'] = policy_total_loss.item()
 
