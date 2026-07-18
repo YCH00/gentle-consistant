@@ -23,6 +23,9 @@ class VirtualTaskReplayBuffer(object):
         self._next_obs = np.zeros((self._max_replay_buffer_size, obs_dim), dtype=np.float32)
         self._terminals = np.zeros((self._max_replay_buffer_size, 1), dtype='uint8')
         self._task_z = np.zeros((self._max_replay_buffer_size, latent_dim), dtype=np.float32)
+        self._weights = np.ones((self._max_replay_buffer_size, 1), dtype=np.float32)
+        self._cycle_errors = np.zeros((self._max_replay_buffer_size, 1), dtype=np.float32)
+        self._nearest_real_dists = np.zeros((self._max_replay_buffer_size, 1), dtype=np.float32)
         self.clear()
 
     def clear(self):
@@ -35,10 +38,35 @@ class VirtualTaskReplayBuffer(object):
     def num_steps_can_sample(self):
         return self._size
 
-    def add_batch(self, observations, actions, rewards, next_observations, terminals, task_z):
+    def add_batch(
+            self,
+            observations,
+            actions,
+            rewards,
+            next_observations,
+            terminals,
+            task_z,
+            weights=None,
+            cycle_errors=None,
+            nearest_real_dists=None,
+    ):
         n_samples = observations.shape[0]
         if n_samples <= 0:
             return
+
+        if weights is None:
+            weights = np.ones((n_samples, 1), dtype=np.float32)
+        else:
+            weights = np.asarray(weights, dtype=np.float32).reshape(n_samples, 1)
+        if cycle_errors is None:
+            cycle_errors = np.zeros((n_samples, 1), dtype=np.float32)
+        else:
+            cycle_errors = np.asarray(cycle_errors, dtype=np.float32).reshape(n_samples, 1)
+        if nearest_real_dists is None:
+            nearest_real_dists = np.zeros((n_samples, 1), dtype=np.float32)
+        else:
+            nearest_real_dists = np.asarray(nearest_real_dists, dtype=np.float32).reshape(n_samples, 1)
+
         if n_samples > self._max_replay_buffer_size:
             observations = observations[-self._max_replay_buffer_size:]
             actions = actions[-self._max_replay_buffer_size:]
@@ -46,6 +74,9 @@ class VirtualTaskReplayBuffer(object):
             next_observations = next_observations[-self._max_replay_buffer_size:]
             terminals = terminals[-self._max_replay_buffer_size:]
             task_z = task_z[-self._max_replay_buffer_size:]
+            weights = weights[-self._max_replay_buffer_size:]
+            cycle_errors = cycle_errors[-self._max_replay_buffer_size:]
+            nearest_real_dists = nearest_real_dists[-self._max_replay_buffer_size:]
             n_samples = self._max_replay_buffer_size
 
         indices = (np.arange(n_samples) + self._top) % self._max_replay_buffer_size
@@ -55,6 +86,9 @@ class VirtualTaskReplayBuffer(object):
         self._next_obs[indices] = next_observations
         self._terminals[indices] = terminals
         self._task_z[indices] = task_z
+        self._weights[indices] = weights
+        self._cycle_errors[indices] = cycle_errors
+        self._nearest_real_dists[indices] = nearest_real_dists
         self._top = (self._top + n_samples) % self._max_replay_buffer_size
         self._size = min(self._size + n_samples, self._max_replay_buffer_size)
 
@@ -68,6 +102,9 @@ class VirtualTaskReplayBuffer(object):
             next_observations=self._next_obs[indices],
             terminals=self._terminals[indices],
             task_z=self._task_z[indices],
+            weights=self._weights[indices],
+            cycle_errors=self._cycle_errors[indices],
+            nearest_real_dists=self._nearest_real_dists[indices],
         )
 
 class GENTLE(OfflineMetaRLAlgorithm):
@@ -148,6 +185,19 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.virtual_transition_train_policy_bc = kwargs.get(
             'virtual_transition_train_policy_bc',
             default_virtual_train_policy_bc,
+        )
+        self.virtual_transition_use_cycle_weight = kwargs.get(
+            'virtual_transition_use_cycle_weight',
+            False,
+        )
+        self.virtual_transition_cycle_weight_temperature = float(
+            kwargs.get('virtual_transition_cycle_weight_temperature', 1.0)
+        )
+        if self.virtual_transition_cycle_weight_temperature <= 0.0:
+            raise ValueError('virtual_transition_cycle_weight_temperature must be positive')
+        self.virtual_transition_log_nearest_distance = kwargs.get(
+            'virtual_transition_log_nearest_distance',
+            False,
         )
         self.virtual_transition_weight_schedule = kwargs.get(
             'virtual_transition_weight_schedule',
@@ -347,14 +397,25 @@ class GENTLE(OfflineMetaRLAlgorithm):
         next_obs = batch['next_observations'][None, ...]
         terms = batch['terminals'][None, ...]
         task_z = batch['task_z']
-        return obs, actions, rewards, next_obs, terms, task_z
+        weights = batch['weights']
+        cycle_errors = batch['cycle_errors']
+        nearest_real_dists = batch['nearest_real_dists']
+        return obs, actions, rewards, next_obs, terms, task_z, weights, cycle_errors, nearest_real_dists
 
     @torch.no_grad()
     def add_virtual_transitions_to_buffer(self, virtual_task_z, batch_size):
+        empty_stats = {
+            'virtual_transition_cycle_error_added_mean': 0.0,
+            'virtual_transition_cycle_error_added_max': 0.0,
+            'virtual_transition_quality_weight_added_mean': 0.0,
+            'virtual_transition_quality_weight_added_min': 0.0,
+            'virtual_transition_nearest_real_dist_added_mean': 0.0,
+            'virtual_transition_nearest_real_dist_added_max': 0.0,
+        }
         if self.virtual_transition_buffer is None or virtual_task_z is None:
-            return 0
+            return 0, empty_stats
         if len(virtual_task_z) == 0:
-            return 0
+            return 0, empty_stats
 
         num_virtual_tasks = virtual_task_z.size(0)
         anchor_task_indices = np.random.choice(self.train_tasks, size=num_virtual_tasks, replace=True)
@@ -390,12 +451,39 @@ class GENTLE(OfflineMetaRLAlgorithm):
             virtual_rewards = decoder_output
             virtual_next_obs = anchor_next_obs
 
+        quality_weights = torch.ones(num_virtual_tasks, 1, device=virtual_task_z.device)
+        cycle_errors = torch.zeros(num_virtual_tasks, 1, device=virtual_task_z.device)
+        if self.virtual_transition_use_cycle_weight:
+            virtual_context = torch.cat([anchor_obs, virtual_actions, decoder_output], dim=-1)
+            reconstructed_z = self._get_context_embedding(virtual_context, sample=False)
+            cycle_errors = torch.sqrt(
+                torch.mean((reconstructed_z - virtual_task_z.detach()) ** 2, dim=-1, keepdim=True)
+                + 1e-8
+            )
+            quality_weights = torch.exp(
+                -cycle_errors / self.virtual_transition_cycle_weight_temperature
+            )
+
+        nearest_real_dists = torch.zeros(num_virtual_tasks, 1, device=virtual_task_z.device)
+        if self.virtual_transition_log_nearest_distance:
+            real_task_indices = np.asarray(self.train_tasks)
+            real_context = self.sample_context(real_task_indices, b_size=batch_size)
+            real_task_z = self._get_context_embedding(real_context, sample=False).detach()
+            nearest_real_dists = torch.cdist(
+                virtual_task_z.detach(),
+                real_task_z,
+            ).min(dim=1, keepdim=True)[0]
+            nearest_real_dists = nearest_real_dists / max(float(np.sqrt(self.latent_dim)), 1.0)
+
         flat_obs = anchor_obs.reshape(-1, self.obs_dim)
         flat_actions = virtual_actions.reshape(-1, self.action_dim)
         flat_rewards = virtual_rewards.reshape(-1, 1)
         flat_next_obs = virtual_next_obs.reshape(-1, self.obs_dim)
         flat_terms = anchor_terms.reshape(-1, 1)
         flat_task_z = repeated_virtual_z.reshape(-1, self.latent_dim)
+        flat_quality_weights = quality_weights.unsqueeze(1).expand(-1, batch_size, -1).reshape(-1, 1)
+        flat_cycle_errors = cycle_errors.unsqueeze(1).expand(-1, batch_size, -1).reshape(-1, 1)
+        flat_nearest_real_dists = nearest_real_dists.unsqueeze(1).expand(-1, batch_size, -1).reshape(-1, 1)
 
         self.virtual_transition_buffer.add_batch(
             ptu.get_numpy(flat_obs),
@@ -404,8 +492,19 @@ class GENTLE(OfflineMetaRLAlgorithm):
             ptu.get_numpy(flat_next_obs),
             ptu.get_numpy(flat_terms),
             ptu.get_numpy(flat_task_z),
+            weights=ptu.get_numpy(flat_quality_weights),
+            cycle_errors=ptu.get_numpy(flat_cycle_errors),
+            nearest_real_dists=ptu.get_numpy(flat_nearest_real_dists),
         )
-        return flat_obs.size(0)
+        stats = {
+            'virtual_transition_cycle_error_added_mean': cycle_errors.mean().item(),
+            'virtual_transition_cycle_error_added_max': cycle_errors.max().item(),
+            'virtual_transition_quality_weight_added_mean': quality_weights.mean().item(),
+            'virtual_transition_quality_weight_added_min': quality_weights.min().item(),
+            'virtual_transition_nearest_real_dist_added_mean': nearest_real_dists.mean().item(),
+            'virtual_transition_nearest_real_dist_added_max': nearest_real_dists.max().item(),
+        }
+        return flat_obs.size(0), stats
 
     def _product_of_gaussians(self, mus, sigmas_squared):
         sigmas_squared = torch.clamp(sigmas_squared, min=1e-7)
@@ -778,9 +877,20 @@ class GENTLE(OfflineMetaRLAlgorithm):
         with torch.no_grad():
             virtual_task_z = self._sample_virtual_task_embeddings(c_b)
         if current_virtual_transition_loss_weight > 0.0:
-            num_virtual_transitions_added = self.add_virtual_transitions_to_buffer(virtual_task_z, c_b)
+            num_virtual_transitions_added, virtual_add_stats = self.add_virtual_transitions_to_buffer(
+                virtual_task_z,
+                c_b,
+            )
         else:
             num_virtual_transitions_added = 0
+            virtual_add_stats = {
+                'virtual_transition_cycle_error_added_mean': 0.0,
+                'virtual_transition_cycle_error_added_max': 0.0,
+                'virtual_transition_quality_weight_added_mean': 0.0,
+                'virtual_transition_quality_weight_added_min': 0.0,
+                'virtual_transition_nearest_real_dist_added_mean': 0.0,
+                'virtual_transition_nearest_real_dist_added_max': 0.0,
+            }
         if virtual_task_z is not None:
             virtual_anchor_task_indices = np.random.choice(
                 self.train_tasks,
@@ -807,6 +917,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.loss['virtual_transition_buffer_size'] = (
             0 if self.virtual_transition_buffer is None else self.virtual_transition_buffer.size()
         )
+        self.loss.update(virtual_add_stats)
         encoder_total_loss = context_loss + self.consistency_loss_weight * consistency_loss
         
         self.context_optimizer.zero_grad()
@@ -838,8 +949,22 @@ class GENTLE(OfflineMetaRLAlgorithm):
         if current_virtual_transition_loss_weight > 0.0:
             virtual_batch = self.sample_virtual_sac(self.virtual_transition_batch_size)
         virtual_batch_size = 0
+        virtual_quality_weight_sample_mean = 0.0
+        virtual_effective_weight_sample_mean = 0.0
+        virtual_cycle_error_sample_mean = 0.0
+        virtual_nearest_real_dist_sample_mean = 0.0
         if virtual_batch is not None:
-            v_obs, v_actions, v_rewards, v_next_obs, v_terms, v_task_z = virtual_batch
+            (
+                v_obs,
+                v_actions,
+                v_rewards,
+                v_next_obs,
+                v_terms,
+                v_task_z,
+                v_quality_weights,
+                v_cycle_errors,
+                v_nearest_real_dists,
+            ) = virtual_batch
             _, virtual_batch_size, _ = v_obs.size()
             flat_v_obs = v_obs.view(virtual_batch_size, -1)
             flat_v_actions = v_actions.view(virtual_batch_size, -1)
@@ -860,7 +985,11 @@ class GENTLE(OfflineMetaRLAlgorithm):
                     virtual_next_actions + virtual_noise
                 ).clamp(-self.max_action, self.max_action)
 
-            virtual_weights = ptu.ones(virtual_batch_size, 1) * current_virtual_transition_loss_weight
+            virtual_weights = v_quality_weights * current_virtual_transition_loss_weight
+            virtual_quality_weight_sample_mean = v_quality_weights.mean().item()
+            virtual_effective_weight_sample_mean = virtual_weights.mean().item()
+            virtual_cycle_error_sample_mean = v_cycle_errors.mean().item()
+            virtual_nearest_real_dist_sample_mean = v_nearest_real_dists.mean().item()
             critic_obs = torch.cat([critic_obs, flat_v_obs], dim=0)
             critic_actions = torch.cat([critic_actions, flat_v_actions], dim=0)
             critic_rewards = torch.cat([critic_rewards, flat_v_rewards], dim=0)
@@ -931,6 +1060,10 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.loss["real_qf_loss"] = real_qf_loss.item()
         self.loss["virtual_qf_loss"] = virtual_qf_loss.item()
         self.loss["virtual_transition_batch_size"] = virtual_batch_size
+        self.loss["virtual_transition_quality_weight_sample_mean"] = virtual_quality_weight_sample_mean
+        self.loss["virtual_transition_effective_weight_sample_mean"] = virtual_effective_weight_sample_mean
+        self.loss["virtual_transition_cycle_error_sample_mean"] = virtual_cycle_error_sample_mean
+        self.loss["virtual_transition_nearest_real_dist_sample_mean"] = virtual_nearest_real_dist_sample_mean
         self.loss["q_target"] = torch.mean(target_q).item()
         self.loss["q1_pred"] = torch.mean(q1_pred).item()
         self.loss["q2_pred"] = torch.mean(q2_pred).item()

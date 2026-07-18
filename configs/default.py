@@ -77,6 +77,9 @@ default_config = dict(
         virtual_transition_use_policy_actions=False, # False keeps real offline actions for more stable next_obs consistency
         virtual_transition_train_policy_q=True, # True: virtual transitions also train actor with -Q
         virtual_transition_train_policy_bc=False, # False avoids BC on mismatched virtual actions
+        virtual_transition_use_cycle_weight=False, # True: down-weight virtual transitions with high encoder-decoder cycle error
+        virtual_transition_cycle_weight_temperature=1.0, # soft weight exp(-cycle_error / temperature)
+        virtual_transition_log_nearest_distance=False, # log nearest real-z distance for virtual embeddings
     ),
     util_params=dict(
         base_log_dir='./logs',

@@ -243,6 +243,9 @@ def deep_update_dict(fr, to):
 @click.option('--virtual_transition_train_policy', type=bool, default=None)
 @click.option('--virtual_transition_train_policy_q', type=bool, default=None)
 @click.option('--virtual_transition_train_policy_bc', type=bool, default=None)
+@click.option('--virtual_transition_use_cycle_weight', type=bool, default=None)
+@click.option('--virtual_transition_cycle_weight_temperature', type=float, default=None)
+@click.option('--virtual_transition_log_nearest_distance', type=bool, default=None)
 @click.option('--virtual_task_generation_mode', type=click.Choice(['local', 'global', 'gaussian']), default=None)
 def main(
     config,
@@ -265,6 +268,9 @@ def main(
     virtual_transition_train_policy,
     virtual_transition_train_policy_q,
     virtual_transition_train_policy_bc,
+    virtual_transition_use_cycle_weight,
+    virtual_transition_cycle_weight_temperature,
+    virtual_transition_log_nearest_distance,
     virtual_task_generation_mode,
 ):
 
@@ -307,6 +313,12 @@ def main(
         variant['algo_params']['virtual_transition_train_policy_q'] = virtual_transition_train_policy_q
     if virtual_transition_train_policy_bc is not None:
         variant['algo_params']['virtual_transition_train_policy_bc'] = virtual_transition_train_policy_bc
+    if virtual_transition_use_cycle_weight is not None:
+        variant['algo_params']['virtual_transition_use_cycle_weight'] = virtual_transition_use_cycle_weight
+    if virtual_transition_cycle_weight_temperature is not None:
+        variant['algo_params']['virtual_transition_cycle_weight_temperature'] = virtual_transition_cycle_weight_temperature
+    if virtual_transition_log_nearest_distance is not None:
+        variant['algo_params']['virtual_transition_log_nearest_distance'] = virtual_transition_log_nearest_distance
     if virtual_task_generation_mode is not None:
         variant['algo_params']['virtual_task_generation_mode'] = virtual_task_generation_mode
 
