@@ -26,14 +26,18 @@
         "consistency_loss_weight": 0.5,
         "virtual_task_generation_mode": "global",
         "consistency_use_policy_relabel_data": false,
-        "virtual_transition_use_policy_actions": false,
+        "virtual_transition_batch_size": 256,
         "virtual_transition_loss_weight": 1.0,
         "virtual_transition_weight_schedule": "linear_decay",
         "virtual_transition_weight_decay_start_itr": 150,
         "virtual_transition_weight_decay_end_itr": 300,
         "virtual_transition_final_loss_weight": 0.0,
+        "virtual_transition_use_policy_actions": false,
         "virtual_transition_train_policy_q": true,
-        "virtual_transition_train_policy_bc": false
+        "virtual_transition_train_policy_bc": true,
+        "virtual_transition_use_cycle_weight": false,
+        "virtual_transition_cycle_weight_temperature": 1.0,
+        "virtual_transition_log_nearest_distance": false
     },
     "util_params": {
         "use_gpu": 1
