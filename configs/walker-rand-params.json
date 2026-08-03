@@ -18,7 +18,7 @@
         "embedding_batch_size": 256,
         "embedding_mini_batch_size": 256,
         "sample": 1,
-        "data_dir": "/data/zhouhongtu/GENTLE-consistant/data/walker-rand-params",
+        "data_dir": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params",
         "train_epoch": 1000000.0,
         "eval_epoch": 1000000.0,
         "n_trj": 50,
