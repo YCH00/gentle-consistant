@@ -39,9 +39,15 @@
         "virtual_transition_final_loss_weight": 0.0,
         "virtual_transition_use_policy_actions": false,
         "virtual_transition_train_policy_q": true,
-        "virtual_transition_train_policy_bc": false,
+        "virtual_transition_train_policy_bc": true,
         "virtual_transition_use_cycle_weight": false,
         "virtual_transition_cycle_weight_temperature": 1.0,
-        "virtual_transition_log_nearest_distance": false
+        "virtual_transition_log_nearest_distance": false,
+        "virtual_transition_use_recon_weight": true,
+        "virtual_transition_recon_weight_threshold": 0.75,
+        "virtual_transition_recon_weight_temperature": 0.75,
+        "virtual_transition_recon_weight_ema_alpha": 0.05,
+        "virtual_transition_recon_weight_min": 0.05,
+        "virtual_transition_recon_weight_mode": "hinge_exp"
     }
 }

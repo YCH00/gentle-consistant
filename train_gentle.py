@@ -246,6 +246,12 @@ def deep_update_dict(fr, to):
 @click.option('--virtual_transition_use_cycle_weight', type=bool, default=None)
 @click.option('--virtual_transition_cycle_weight_temperature', type=float, default=None)
 @click.option('--virtual_transition_log_nearest_distance', type=bool, default=None)
+@click.option('--virtual_transition_use_recon_weight', type=bool, default=None)
+@click.option('--virtual_transition_recon_weight_threshold', type=float, default=None)
+@click.option('--virtual_transition_recon_weight_temperature', type=float, default=None)
+@click.option('--virtual_transition_recon_weight_ema_alpha', type=float, default=None)
+@click.option('--virtual_transition_recon_weight_min', type=float, default=None)
+@click.option('--virtual_transition_recon_weight_mode', type=click.Choice(['hinge_exp', 'sigmoid']), default=None)
 @click.option('--virtual_task_generation_mode', type=click.Choice(['local', 'global', 'gaussian']), default=None)
 def main(
     config,
@@ -271,6 +277,12 @@ def main(
     virtual_transition_use_cycle_weight,
     virtual_transition_cycle_weight_temperature,
     virtual_transition_log_nearest_distance,
+    virtual_transition_use_recon_weight,
+    virtual_transition_recon_weight_threshold,
+    virtual_transition_recon_weight_temperature,
+    virtual_transition_recon_weight_ema_alpha,
+    virtual_transition_recon_weight_min,
+    virtual_transition_recon_weight_mode,
     virtual_task_generation_mode,
 ):
 
@@ -319,6 +331,18 @@ def main(
         variant['algo_params']['virtual_transition_cycle_weight_temperature'] = virtual_transition_cycle_weight_temperature
     if virtual_transition_log_nearest_distance is not None:
         variant['algo_params']['virtual_transition_log_nearest_distance'] = virtual_transition_log_nearest_distance
+    if virtual_transition_use_recon_weight is not None:
+        variant['algo_params']['virtual_transition_use_recon_weight'] = virtual_transition_use_recon_weight
+    if virtual_transition_recon_weight_threshold is not None:
+        variant['algo_params']['virtual_transition_recon_weight_threshold'] = virtual_transition_recon_weight_threshold
+    if virtual_transition_recon_weight_temperature is not None:
+        variant['algo_params']['virtual_transition_recon_weight_temperature'] = virtual_transition_recon_weight_temperature
+    if virtual_transition_recon_weight_ema_alpha is not None:
+        variant['algo_params']['virtual_transition_recon_weight_ema_alpha'] = virtual_transition_recon_weight_ema_alpha
+    if virtual_transition_recon_weight_min is not None:
+        variant['algo_params']['virtual_transition_recon_weight_min'] = virtual_transition_recon_weight_min
+    if virtual_transition_recon_weight_mode is not None:
+        variant['algo_params']['virtual_transition_recon_weight_mode'] = virtual_transition_recon_weight_mode
     if virtual_task_generation_mode is not None:
         variant['algo_params']['virtual_task_generation_mode'] = virtual_task_generation_mode
 

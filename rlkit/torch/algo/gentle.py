@@ -199,6 +199,39 @@ class GENTLE(OfflineMetaRLAlgorithm):
             'virtual_transition_log_nearest_distance',
             False,
         )
+        self.virtual_transition_use_recon_weight = kwargs.get(
+            'virtual_transition_use_recon_weight',
+            False,
+        )
+        self.virtual_transition_recon_weight_threshold = float(
+            kwargs.get('virtual_transition_recon_weight_threshold', 1.0)
+        )
+        self.virtual_transition_recon_weight_temperature = float(
+            kwargs.get('virtual_transition_recon_weight_temperature', 1.0)
+        )
+        self.virtual_transition_recon_weight_ema_alpha = float(
+            kwargs.get('virtual_transition_recon_weight_ema_alpha', 0.05)
+        )
+        self.virtual_transition_recon_weight_min = float(
+            kwargs.get('virtual_transition_recon_weight_min', 0.0)
+        )
+        self.virtual_transition_recon_weight_mode = kwargs.get(
+            'virtual_transition_recon_weight_mode',
+            'hinge_exp',
+        ).lower()
+        if self.virtual_transition_recon_weight_threshold < 0.0:
+            raise ValueError('virtual_transition_recon_weight_threshold must be non-negative')
+        if self.virtual_transition_recon_weight_temperature <= 0.0:
+            raise ValueError('virtual_transition_recon_weight_temperature must be positive')
+        if not (0.0 < self.virtual_transition_recon_weight_ema_alpha <= 1.0):
+            raise ValueError('virtual_transition_recon_weight_ema_alpha must be in (0, 1]')
+        if not (0.0 <= self.virtual_transition_recon_weight_min <= 1.0):
+            raise ValueError('virtual_transition_recon_weight_min must be in [0, 1]')
+        if self.virtual_transition_recon_weight_mode not in ('sigmoid', 'hinge_exp'):
+            raise ValueError(
+                "virtual_transition_recon_weight_mode must be 'sigmoid' or 'hinge_exp', "
+                "got '{}'".format(self.virtual_transition_recon_weight_mode)
+            )
         self.virtual_transition_weight_schedule = kwargs.get(
             'virtual_transition_weight_schedule',
             'constant',
@@ -247,6 +280,8 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 'use_next_obs_in_context=False reuses real next_obs, so generated virtual '
                 'transitions may pair policy actions with unmatched next observations.'
             )
+        self._virtual_transition_recon_loss_ema = None
+        self._virtual_transition_recon_weight = 1.0
 
         self.loss                           = {}
         self.plotter                        = plotter
@@ -310,7 +345,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         for param in module.parameters():
             param.requires_grad = requires_grad
 
-    def _get_virtual_transition_loss_weight(self):
+    def _get_virtual_transition_base_loss_weight(self):
         if self.virtual_transition_weight_schedule == 'constant':
             return self.virtual_transition_loss_weight
 
@@ -329,6 +364,44 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 self.virtual_transition_final_loss_weight
                 - self.virtual_transition_loss_weight
             )
+        )
+
+    def _get_virtual_transition_recon_weight(self):
+        if not self.virtual_transition_use_recon_weight:
+            return 1.0
+        if self._virtual_transition_recon_loss_ema is None:
+            return 1.0
+
+        recon_loss = float(self._virtual_transition_recon_loss_ema)
+        threshold = self.virtual_transition_recon_weight_threshold
+        temperature = self.virtual_transition_recon_weight_temperature
+        min_weight = self.virtual_transition_recon_weight_min
+
+        if self.virtual_transition_recon_weight_mode == 'sigmoid':
+            scaled_error = np.clip((recon_loss - threshold) / temperature, -60.0, 60.0)
+            confidence = 1.0 / (1.0 + np.exp(scaled_error))
+        else:
+            excess_error = max(recon_loss - threshold, 0.0)
+            confidence = np.exp(-excess_error / temperature)
+        return float(min_weight + (1.0 - min_weight) * confidence)
+
+    def _update_virtual_transition_recon_weight(self, recon_loss):
+        recon_loss_value = float(recon_loss.detach().item())
+        if self._virtual_transition_recon_loss_ema is None:
+            self._virtual_transition_recon_loss_ema = recon_loss_value
+        else:
+            alpha = self.virtual_transition_recon_weight_ema_alpha
+            self._virtual_transition_recon_loss_ema = (
+                (1.0 - alpha) * self._virtual_transition_recon_loss_ema
+                + alpha * recon_loss_value
+            )
+        self._virtual_transition_recon_weight = self._get_virtual_transition_recon_weight()
+        return self._virtual_transition_recon_weight
+
+    def _get_virtual_transition_loss_weight(self):
+        return (
+            self._get_virtual_transition_base_loss_weight()
+            * self._virtual_transition_recon_weight
         )
 
     ##### Data handling #####
@@ -870,6 +943,8 @@ class GENTLE(OfflineMetaRLAlgorithm):
         context_task_z = self.agent.z.unsqueeze(1).expand(-1, c_b, -1)
         pred_r_next_s = self.context_decoder(context[...,:obs_dim], context[...,obs_dim:obs_dim+action_dim], context_task_z)
         recon_loss = torch.mean((r_next_s - pred_r_next_s)**2)
+        current_virtual_transition_recon_weight = self._update_virtual_transition_recon_weight(recon_loss)
+        current_virtual_transition_base_loss_weight = self._get_virtual_transition_base_loss_weight()
         consistency_task_z = self.agent.z_means
         consistency_anchor_task_indices = np.asarray(indices)
         # consistency_anchor_task_indices = self._sample_mismatched_task_indices(indices)
@@ -913,7 +988,17 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.loss['consistency_loss'] = consistency_loss.item()
         self.loss['num_virtual_tasks'] = 0 if virtual_task_z is None else len(virtual_task_z)
         self.loss['num_virtual_transitions_added'] = num_virtual_transitions_added
+        self.loss['virtual_transition_base_loss_weight_current'] = current_virtual_transition_base_loss_weight
         self.loss['virtual_transition_loss_weight_current'] = current_virtual_transition_loss_weight
+        self.loss['virtual_transition_recon_weight_current'] = current_virtual_transition_recon_weight
+        self.loss['virtual_transition_recon_loss_ema'] = (
+            0.0
+            if self._virtual_transition_recon_loss_ema is None
+            else self._virtual_transition_recon_loss_ema
+        )
+        self.loss['virtual_transition_use_recon_weight'] = int(
+            self.virtual_transition_use_recon_weight
+        )
         self.loss['virtual_transition_buffer_size'] = (
             0 if self.virtual_transition_buffer is None else self.virtual_transition_buffer.size()
         )

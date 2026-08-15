@@ -80,6 +80,12 @@ default_config = dict(
         virtual_transition_use_cycle_weight=False, # True: down-weight virtual transitions with high encoder-decoder cycle error
         virtual_transition_cycle_weight_temperature=1.0, # soft weight exp(-cycle_error / temperature)
         virtual_transition_log_nearest_distance=False, # log nearest real-z distance for virtual embeddings
+        virtual_transition_use_recon_weight=False, # True: adapt virtual transition weight by decoder reconstruction reliability
+        virtual_transition_recon_weight_threshold=1.0, # reconstruction EMA below this threshold keeps high virtual weight
+        virtual_transition_recon_weight_temperature=1.0, # softness for recon-based down-weighting
+        virtual_transition_recon_weight_ema_alpha=0.05, # EMA update rate for reconstruction loss
+        virtual_transition_recon_weight_min=0.0, # lower bound for recon confidence weight
+        virtual_transition_recon_weight_mode='hinge_exp', # 'hinge_exp' or 'sigmoid'
     ),
     util_params=dict(
         base_log_dir='./logs',
