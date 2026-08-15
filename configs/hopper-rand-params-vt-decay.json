@@ -21,7 +21,7 @@
         "train_epoch": 1000000.0,
         "eval_epoch": 1000000.0,
         "n_trj": 50,
-        "n_vt": 4,
+        "n_vt": 10,
         "M": 1,
         "beta": 1.0,
         "consistency_loss_weight": 0.5,
@@ -38,7 +38,7 @@
         "virtual_transition_final_loss_weight": 0.0,
         "virtual_transition_use_policy_actions": false,
         "virtual_transition_train_policy_q": true,
-        "virtual_transition_train_policy_bc": true,
+        "virtual_transition_train_policy_bc": false,
         "virtual_transition_use_cycle_weight": false,
         "virtual_transition_cycle_weight_temperature": 1.0,
         "virtual_transition_log_nearest_distance": false

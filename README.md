@@ -19,6 +19,8 @@ python -m pip install "pip<24.1"
 pip install hydra-core==1.0.7 omegaconf==2.0.6
 pip install termcolor cffi lockfile
 pip install --no-build-isolation mujoco-py==1.50.1.68
+python -m pip install PyOpenGL==3.1.7
+python -m pip install -e ./rand_param_envs
 ```
 
 **For Hopper and Walker environments**, MuJoCo131 is required. Simply install it the same way as MuJoCo200. To switch between different MuJoCo versions:
@@ -30,6 +32,43 @@ source ~/.bashrc
 
 export MUJOCO_PY_MJPRO_PATH=~/.mujoco/mjpro${VERSION_NUM}
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/.mujoco/mjpro${VERSION_NUM}/bin
+
+use_mujoco() {
+    case "$1" in
+        131|150) ;;
+        *)
+            echo "用法: use_mujoco 131 或 use_mujoco 150"
+            return 1
+            ;;
+    esac
+
+    local clean_path=""
+    local path_item
+    local -a path_items
+
+    IFS=':' read -r -a path_items <<< "${LD_LIBRARY_PATH:-}"
+
+    for path_item in "${path_items[@]}"; do
+        case "$path_item" in
+            "$HOME/.mujoco/mjpro131/bin"|\
+            "$HOME/.mujoco/mjpro150/bin"|\
+            "$HOME/.mujoco/mjpro/bin"|"")
+                ;;
+            *)
+                clean_path="${clean_path:+$clean_path:}$path_item"
+                ;;
+        esac
+    done
+
+    export VERSION_NUM="$1"
+    export MUJOCO_PY_MJPRO_PATH="$HOME/.mujoco/mjpro${VERSION_NUM}"
+    export MUJOCO_PY_MJKEY_PATH="$HOME/.mujoco/mjkey.txt"
+    export LD_LIBRARY_PATH="$MUJOCO_PY_MJPRO_PATH/bin${clean_path:+:$clean_path}"
+
+    echo "MuJoCo 已切换到 ${VERSION_NUM}"
+    echo "MUJOCO_PY_MJPRO_PATH=$MUJOCO_PY_MJPRO_PATH"
+}
+
 ```
 
 ## Data Generation
