@@ -241,6 +241,7 @@ def deep_update_dict(fr, to):
 @click.option('--output_prefix', default='')
 @click.option('--exp_name', default=None)
 @click.option('--path_to_weights', default=None)
+@click.option('--n_vt', type=click.IntRange(min=0), default=None)
 @click.option('--M', 'virtual_neighbor_candidates', type=int, default=None)
 @click.option('--virtual_interpolation_lambda_max', type=float, default=None)
 @click.option('--consistency_use_policy_relabel_data', type=bool, default=None)
@@ -276,6 +277,7 @@ def main(
     output_prefix,
     exp_name,
     path_to_weights,
+    n_vt,
     virtual_neighbor_candidates,
     virtual_interpolation_lambda_max,
     consistency_use_policy_relabel_data,
@@ -317,6 +319,8 @@ def main(
     variant['util_params']['base_log_dir'] = './logs'
     if path_to_weights is not None:
         variant['path_to_weights'] = path_to_weights
+    if n_vt is not None:
+        variant['algo_params']['n_vt'] = n_vt
     if virtual_neighbor_candidates is not None:
         variant['algo_params']['M'] = virtual_neighbor_candidates
     if virtual_interpolation_lambda_max is not None:

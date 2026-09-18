@@ -122,7 +122,7 @@ Cheetah-Dir defines only forward/backward tasks. Its three configs and the bare 
 
 All profiles disable actor behavior cloning on virtual transitions: an offline action need not be an expert action for the new task. The original virtual-weight schedules and the `-vt-decay-cycle-critic` variants' actor-Q disablement remain in place. Those variants retain optional cycle-based weighting; low cycle error measures encoder/decoder self-consistency and is not independent evidence of physical task validity.
 
-The following settings live under `algo_params`. The four parameters shown in the override example below can also be changed on the training command line.
+The following settings live under `algo_params`. The four semantic parameters shown in the override example below can also be changed on the training command line. `--n_vt` overrides the number of virtual tasks per sampling call (a nonnegative integer); zero disables their generation. `--virtual_semantic_neighbors` limits graph-neighbor candidates per real task, not the number of tasks simultaneously averaged into one embedding. `--M` applies only to the legacy local/global samplers.
 
 | Parameter | Reward-task default | Meaning |
 | --- | ---: | --- |
@@ -147,7 +147,7 @@ The following settings live under `algo_params`. The four parameters shown in th
 For example, a single-seed run with explicit semantic overrides is:
 
 ```bash
-python train_gentle.py ./configs/point-robot.json --gpu 0 --seed_list 0 --virtual_task_generation_mode semantic --virtual_semantic_path_steps 8 --virtual_semantic_refresh_interval 100 --virtual_semantic_neighbors 3 --virtual_semantic_support_radius 1.0
+python train_gentle.py ./configs/point-robot.json --gpu 0 --seed_list 0 --n_vt 4 --virtual_task_generation_mode semantic --virtual_semantic_path_steps 8 --virtual_semantic_refresh_interval 100 --virtual_semantic_neighbors 3 --virtual_semantic_support_radius 1.0
 ```
 
 If no trustworthy connection passes the support and endpoint-reconstruction checks, semantic sampling skips virtual tasks. An optimized path that fails held-out validation may fall back to its supported straight reference path; this is recorded separately and should not be counted as successful nonlinear refinement. It does not enable interpolation between rejected or unsupported task pairs.
