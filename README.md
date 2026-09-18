@@ -89,18 +89,103 @@ python policy_eval.py --config ./configs/ant-dir.json
 
 Data will be saved in `self.work_dir/gentle_data/$env_name/$goal_idx{i}`
 
-## Training GENTLE 
+## Training GENTLE
 
-The configration files to run GENTLE is in `./configs`. For example, to train GENTLE on Ant-Dir, first you need to pretrain the dynamics model:
+The environment configs are in `./configs`. Set `algo_params.data_dir` to the local offline dataset before running. Use the same environment config and seed for dynamics pretraining, context encoder/decoder pretraining, and policy training:
+
 ```bash
-python pretrain_dynamics.py ./configs/ant-dir.json 
-```
-Then run:
-```bash
-python train_gentle.py ./configs/ant-dir.json
+python pretrain_dynamics.py ./configs/ant-dir.json --gpu 0 --seed_list 0
+python pretrain_encoder_decoder.py ./configs/ant-dir.json --gpu 0 --seed_list 0
+python train_gentle.py ./configs/ant-dir.json --gpu 0 --seed_list 0
 ```
 
-Logs will be written to `./logs/ant-dir/gentle/`
+Repeat `--seed_list` for additional seeds after preparing their pretrained models. Context checkpoints are loaded from `encoder_decoder/<env_name>/expert_seed<seed>/`; `--path_to_weights` can select another compatible directory containing `context_encoder.pth` and `context_decoder.pth` (the legacy filenames `encoder.pth` and `decoder.pth` are also accepted). Semantic interpolation changes sampling, not the encoder/decoder architecture, so compatible existing context checkpoints can be reused. Changes to latent size, network size, or `use_next_obs_in_context` require compatible checkpoints or new pretraining. Active semantic interpolation fails early if context checkpoints are missing: optimizing paths through a randomly initialized frozen decoder would not give meaningful task geometry.
+
+Logs will be written below `./logs/ant-dir/gentle/`.
+
+## Semantic task interpolation
+
+The six environment configs and their `-vt-decay` / `-vt-decay-cycle-critic` variants use `virtual_task_generation_mode="semantic"`. `SemanticTaskInterpolator` builds nearby task connections using real task prototypes and offline state/action support, then optimizes a discrete latent path using changes in the frozen decoder's normalized reward and dynamics predictions. Its path endpoints, prototypes, and probes stay fixed during each optimization; the cached geometry is refreshed periodically as the encoder learns. Held-out probes check a path before it supplies virtual tasks.
+
+Support is a nearest-neighbor heuristic in standardized observation/action coordinates, not a guarantee that an interpolated task exists in the environment. The decoder is a single model; `algo_params.ensemble_size` controls the separate pretrained task dynamics and does not provide uncertainty estimates for arbitrary virtual task embeddings. The supplied settings are conservative starting profiles, not performance-tuned results or guarantees that paths lie on the true task manifold. Measure held-out task return, valid-edge coverage, and generated-data quality before increasing virtual-task influence.
+
+| Environment | Virtual tasks per sampling call | Neighbors | Fit probes per task | Support radius | Trust radius | Path sampling interval | Initial virtual RL weight |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| Point-Robot | 4 | 3 | 64 | 1.0 | 0.10 | 0.10–0.90 | 0.5 |
+| Ant-Dir | 4 | 2 | 64 | 1.0 | 0.10 | 0.10–0.90 | 0.5 |
+| Cheetah-Vel | 4 | 2 | 64 | 1.0 | 0.10 | 0.10–0.90 | 0.5 |
+| Hopper-Rand-Params | 4 | 2 | 96 | 0.75 | 0.05 | 0.05–0.25 | 0.2 |
+| Walker-Rand-Params | 4 | 2 | 96 | 0.75 | 0.05 | 0.05–0.25 | 0.2 |
+| Cheetah-Dir | 0 | 2 | 64 | 1.0 | 0.10 | disabled | 0.0 |
+
+Cheetah-Dir defines only forward/backward tasks. Its three configs and the bare `default.py` therefore disable virtual task generation (`n_vt=0`) and virtual transition loss (`virtual_transition_loss_weight=0`), rather than inventing a continuous family between the two directions. Real-task training and consistency still run. For continuous-task environments, the JSON profiles explicitly enable four virtual tasks. Dynamics environments use narrower support, a smaller trust region, and samples closer to a randomly chosen end of the graph path. The sampling interval is a fraction of the complete path's semantic arc length, not a guaranteed Euclidean distance from an endpoint; a path can contain multiple supported edges.
+
+All profiles disable actor behavior cloning on virtual transitions: an offline action need not be an expert action for the new task. The original virtual-weight schedules and the `-vt-decay-cycle-critic` variants' actor-Q disablement remain in place. Those variants retain optional cycle-based weighting; low cycle error measures encoder/decoder self-consistency and is not independent evidence of physical task validity.
+
+The following settings live under `algo_params`. The four parameters shown in the override example below can also be changed on the training command line.
+
+| Parameter | Reward-task default | Meaning |
+| --- | ---: | --- |
+| `virtual_semantic_neighbors` | 2 (Point: 3) | Maximum nearby candidate task connections per anchor. |
+| `virtual_semantic_probe_batch_size` | 64 | Per-task fit-probe count; a second batch of this size is reserved for validation. |
+| `virtual_semantic_refresh_interval` | 100 | Refresh cached prototypes, support probes, and paths every this many gradient steps, not outer training iterations. |
+| `virtual_semantic_support_radius` | 1.0 | Nearest-neighbor RMS distance threshold in standardized observation/action coordinates. |
+| `virtual_semantic_min_shared_probes` | 8 | Minimum number of probes supported by both endpoint tasks. |
+| `virtual_semantic_max_latent_distance_ratio` | 2.0 | Limit endpoint separation relative to nearby task spacing. |
+| `virtual_semantic_max_reconstruction_error` | 1.0 | Maximum normalized endpoint reconstruction error for an accepted connection. |
+| `virtual_semantic_reward_weight` | 1.0 | Weight of normalized reward differences in path energy. |
+| `virtual_semantic_dynamics_weight` | 0.0 | Weight of normalized state-change predictions (decoder next state minus current state); Hopper/Walker set this to 1.0. |
+| `virtual_semantic_path_nodes` | 7 | Path nodes including the two fixed endpoints. |
+| `virtual_semantic_path_steps` | 8 | Optimization steps for each cached path. |
+| `virtual_semantic_path_lr` | 0.02 | Path optimizer learning rate; model parameters are not updated by it. |
+| `virtual_semantic_trust_radius` | 0.1 | Maximum deviation from the initial path, relative to endpoint separation. |
+| `virtual_semantic_latent_weight` | 0.05 | Latent-distance regularizer against decoder-insensitive shortcuts. |
+| `virtual_semantic_validation_ratio` | 1.25 | Allowed held-out path energy relative to the initial straight path. |
+| `virtual_semantic_alpha_min` | 0.1 | Lower endpoint of the accepted path's sampling interval. |
+| `virtual_semantic_alpha_max` | 0.9 | Upper endpoint of the accepted path's sampling interval. |
+
+For example, a single-seed run with explicit semantic overrides is:
+
+```bash
+python train_gentle.py ./configs/point-robot.json --gpu 0 --seed_list 0 --virtual_task_generation_mode semantic --virtual_semantic_path_steps 8 --virtual_semantic_refresh_interval 100 --virtual_semantic_neighbors 3 --virtual_semantic_support_radius 1.0
+```
+
+If no trustworthy connection passes the support and endpoint-reconstruction checks, semantic sampling skips virtual tasks. An optimized path that fails held-out validation may fall back to its supported straight reference path; this is recorded separately and should not be counted as successful nonlinear refinement. It does not enable interpolation between rejected or unsupported task pairs.
+
+Inspect these training statistics alongside real-task reconstruction error, virtual-task counts, and held-out task return:
+
+| Log key | Interpretation |
+| --- | --- |
+| `virtual_semantic_edges` / `virtual_semantic_paths` | Number of accepted task connections and available paths. |
+| `virtual_semantic_rejected_support` | Connections rejected for insufficient shared offline support. |
+| `virtual_semantic_rejected_reconstruction` | Connections rejected by the endpoint decoder reconstruction check. |
+| `virtual_semantic_rejected_latent` | Connections rejected by the latent-distance constraint. |
+| `virtual_semantic_refinement_accepted` / `virtual_semantic_refinement_rejected` | Successful versus rejected path refinements. |
+| `virtual_semantic_reference_fallbacks` | Supported straight reference paths retained instead of accepted optimized paths. |
+| `virtual_semantic_sampled` / `virtual_semantic_rejected_no_path` | Generated virtual embeddings versus skips because no accepted path is available. |
+| `virtual_semantic_refresh_count` | Geometry refresh count. |
+
+A zero virtual-task count can be an intended skip, not a crash. Do not automatically loosen support thresholds just to obtain nonzero counts; first inspect data overlap and decoder reconstruction. `virtual_semantic_candidate_edges`, `virtual_semantic_supported_edges`, and `virtual_semantic_refinement_attempts` provide additional context for acceptance rates.
+
+The previous modes remain available for ablations on continuous-task profiles:
+
+```bash
+python train_gentle.py ./configs/point-robot.json --gpu 0 --seed_list 0 --virtual_task_generation_mode local
+python train_gentle.py ./configs/point-robot.json --gpu 0 --seed_list 0 --virtual_task_generation_mode global --M 2
+python train_gentle.py ./configs/point-robot.json --gpu 0 --seed_list 0 --virtual_task_generation_mode gaussian
+```
+
+`M`, `beta`, `virtual_interpolation_lambda_max`, and `virtual_gaussian_noise_std` keep their previous meanings in the corresponding legacy modes; they do not tune semantic paths. The global mode can extrapolate when `beta > 1`. The commands above share the new profiles' RL weights and schedules, so they compare samplers rather than reproduce the repository's previous experiment settings.
+
+The embedding exporter reads the saved experiment's generation mode. Semantic export loads both `context_encoder_itr_<epoch>.pth` and `context_decoder_itr_<epoch>.pth` and uses the same path sampler as training. It reports an error when no supported paths exist instead of silently exporting linear mixtures. Configurations with `n_vt=0` have no virtual embeddings to export.
+
+Run the synthetic sampler and training-integration checks in a PyTorch environment with pytest:
+
+```bash
+python -m pytest tests -q
+```
+
+These checks cover constrained nonlinear paths, support rejection, paired transition inputs, decoder gradients, cached geometry, and real actor/critic/encoder updates without requiring a MuJoCo environment. They do not measure full benchmark training performance.
 
 visualize
 ```

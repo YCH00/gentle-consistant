@@ -58,6 +58,16 @@ def _load_pretrained_context_models(context_encoder, context_decoder, variant, s
     decoder_path = _find_weight_file(weights_dir, ['context_decoder.pth', 'decoder.pth'])
 
     if encoder_path is None and decoder_path is None and variant.get('path_to_weights') is None:
+        algo_params = variant['algo_params']
+        if (
+            algo_params.get('virtual_task_generation_mode') == 'semantic'
+            and algo_params.get('n_vt', 0) > 0
+        ):
+            raise FileNotFoundError(
+                f'Semantic task interpolation requires pretrained context encoder/decoder weights at {weights_dir}. '
+                'Run pretrain_dynamics.py and pretrain_encoder_decoder.py with the same config and seed first, '
+                'or provide --path_to_weights pointing to compatible context checkpoints.'
+            )
         print(f'No pretrained context weights found at {weights_dir}, continue with random initialization.')
         return
 
@@ -252,7 +262,11 @@ def deep_update_dict(fr, to):
 @click.option('--virtual_transition_recon_weight_ema_alpha', type=float, default=None)
 @click.option('--virtual_transition_recon_weight_min', type=float, default=None)
 @click.option('--virtual_transition_recon_weight_mode', type=click.Choice(['hinge_exp', 'sigmoid']), default=None)
-@click.option('--virtual_task_generation_mode', type=click.Choice(['local', 'global', 'gaussian']), default=None)
+@click.option('--virtual_task_generation_mode', type=click.Choice(['semantic', 'local', 'global', 'gaussian']), default=None)
+@click.option('--virtual_semantic_path_steps', type=click.IntRange(min=0), default=None)
+@click.option('--virtual_semantic_refresh_interval', type=click.IntRange(min=1), default=None)
+@click.option('--virtual_semantic_neighbors', type=click.IntRange(min=1), default=None)
+@click.option('--virtual_semantic_support_radius', type=click.FloatRange(min=0.0, min_open=True), default=None)
 def main(
     config,
     gpu,
@@ -284,6 +298,10 @@ def main(
     virtual_transition_recon_weight_min,
     virtual_transition_recon_weight_mode,
     virtual_task_generation_mode,
+    virtual_semantic_path_steps,
+    virtual_semantic_refresh_interval,
+    virtual_semantic_neighbors,
+    virtual_semantic_support_radius,
 ):
 
     variant = default_config
@@ -345,6 +363,14 @@ def main(
         variant['algo_params']['virtual_transition_recon_weight_mode'] = virtual_transition_recon_weight_mode
     if virtual_task_generation_mode is not None:
         variant['algo_params']['virtual_task_generation_mode'] = virtual_task_generation_mode
+    if virtual_semantic_path_steps is not None:
+        variant['algo_params']['virtual_semantic_path_steps'] = virtual_semantic_path_steps
+    if virtual_semantic_refresh_interval is not None:
+        variant['algo_params']['virtual_semantic_refresh_interval'] = virtual_semantic_refresh_interval
+    if virtual_semantic_neighbors is not None:
+        variant['algo_params']['virtual_semantic_neighbors'] = virtual_semantic_neighbors
+    if virtual_semantic_support_radius is not None:
+        variant['algo_params']['virtual_semantic_support_radius'] = virtual_semantic_support_radius
 
     # multi-processing
     if len(seed_list) > 1:

@@ -13,6 +13,7 @@ from rlkit.core import logger
 from rlkit.core.eval_util import create_stats_ordered_dict
 from rlkit.core.rl_algorithm import OfflineMetaRLAlgorithm
 from rlkit.data_management.env_replay_buffer import MultiTaskContextBuffer
+from rlkit.torch.task_interpolation import SemanticTaskInterpolator
 
 class VirtualTaskReplayBuffer(object):
     def __init__(self, max_replay_buffer_size, obs_dim, action_dim, latent_dim):
@@ -153,9 +154,9 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.M                              = kwargs.get('M', 2)
         self.beta                           = kwargs.get('beta', 1.0)
         self.virtual_task_generation_mode   = kwargs.get('virtual_task_generation_mode', 'local').lower()
-        if self.virtual_task_generation_mode not in ('local', 'global', 'gaussian'):
+        if self.virtual_task_generation_mode not in ('local', 'global', 'gaussian', 'semantic'):
             raise ValueError(
-                "virtual_task_generation_mode must be one of 'local', 'global', or 'gaussian', "
+                "virtual_task_generation_mode must be 'local', 'global', 'gaussian', or 'semantic', "
                 "got '{}'".format(self.virtual_task_generation_mode)
             )
         self.virtual_interpolation_lambda_max = kwargs.get('virtual_interpolation_lambda_max', 0.2)
@@ -299,6 +300,28 @@ class GENTLE(OfflineMetaRLAlgorithm):
 
         self._set_requires_grad(self.agent.context_encoder, True)
         self._set_requires_grad(self.context_decoder, False)
+
+        self._semantic_interpolator = None
+        self._semantic_refresh_step = None
+        if self.virtual_task_generation_mode == 'semantic':
+            semantic_options = {
+                key: value for key, value in kwargs.items()
+                if key.startswith('virtual_semantic_')
+            }
+            self._semantic_interpolator = SemanticTaskInterpolator(
+                self.context_decoder, self.use_next_obs_in_context, **semantic_options
+            )
+            self.virtual_semantic_probe_batch_size = int(
+                kwargs.get('virtual_semantic_probe_batch_size', 64)
+            )
+            self.virtual_semantic_refresh_interval = int(
+                kwargs.get('virtual_semantic_refresh_interval', 100)
+            )
+            if self.n_vt > 0 and self.virtual_transition_use_policy_actions:
+                raise ValueError(
+                    'semantic task interpolation requires offline support actions; '
+                    'set virtual_transition_use_policy_actions=False'
+                )
         
 
         self._num_steps                     = 0
@@ -476,7 +499,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         return obs, actions, rewards, next_obs, terms, task_z, weights, cycle_errors, nearest_real_dists
 
     @torch.no_grad()
-    def add_virtual_transitions_to_buffer(self, virtual_task_z, batch_size):
+    def add_virtual_transitions_to_buffer(self, virtual_task_z, batch_size, support_batch=None):
         empty_stats = {
             'virtual_transition_cycle_error_added_mean': 0.0,
             'virtual_transition_cycle_error_added_max': 0.0,
@@ -491,11 +514,20 @@ class GENTLE(OfflineMetaRLAlgorithm):
             return 0, empty_stats
 
         num_virtual_tasks = virtual_task_z.size(0)
-        anchor_task_indices = np.random.choice(self.train_tasks, size=num_virtual_tasks, replace=True)
-        anchor_obs, anchor_actions, _, anchor_next_obs, anchor_terms = self.sample_transition_batch(
-            anchor_task_indices,
-            batch_size,
-        )
+        if support_batch is None:
+            anchor_task_indices = np.random.choice(self.train_tasks, size=num_virtual_tasks, replace=True)
+            anchor_obs, anchor_actions, _, anchor_next_obs, anchor_terms = self.sample_transition_batch(
+                anchor_task_indices,
+                batch_size,
+            )
+        else:
+            # Keep the same paired offline inputs that supported the sampled path.
+            anchor_obs = support_batch['observations']
+            anchor_actions = support_batch['actions']
+            anchor_next_obs = support_batch['next_observations']
+            anchor_terms = support_batch['terminals']
+            if anchor_obs.shape[:2] != (num_virtual_tasks, batch_size):
+                raise ValueError('semantic support batch does not match virtual tasks / batch size')
         repeated_virtual_z = virtual_task_z.detach().unsqueeze(1).expand(-1, batch_size, -1)
 
         if self.virtual_transition_use_policy_actions:
@@ -525,6 +557,8 @@ class GENTLE(OfflineMetaRLAlgorithm):
             virtual_next_obs = anchor_next_obs
 
         quality_weights = torch.ones(num_virtual_tasks, 1, device=virtual_task_z.device)
+        if support_batch is not None:
+            quality_weights = support_batch['quality_weights'].detach().clone()
         cycle_errors = torch.zeros(num_virtual_tasks, 1, device=virtual_task_z.device)
         if self.virtual_transition_use_cycle_weight:
             virtual_context = torch.cat([anchor_obs, virtual_actions, decoder_output], dim=-1)
@@ -533,7 +567,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 torch.mean((reconstructed_z - virtual_task_z.detach()) ** 2, dim=-1, keepdim=True)
                 + 1e-8
             )
-            quality_weights = torch.exp(
+            quality_weights = quality_weights * torch.exp(
                 -cycle_errors / self.virtual_transition_cycle_weight_temperature
             )
 
@@ -604,12 +638,21 @@ class GENTLE(OfflineMetaRLAlgorithm):
         return torch.mean(params, dim=1)
 
     @torch.no_grad()
-    def _build_consistency_context(self, task_z, batch_size, anchor_task_indices=None, use_policy_relabel_data=None):
+    def _build_consistency_context(self, task_z, batch_size, anchor_task_indices=None,
+                                   use_policy_relabel_data=None, support_batch=None):
         if task_z is None or len(task_z) == 0:
             return None
 
         task_z = task_z.detach()
         num_tasks = task_z.size(0)
+        if support_batch is not None:
+            support_obs = support_batch['observations']
+            support_actions = support_batch['actions']
+            if support_obs.shape[:2] != (num_tasks, batch_size):
+                raise ValueError('semantic consistency support has incompatible dimensions')
+            repeated_z = task_z.unsqueeze(1).expand(-1, batch_size, -1)
+            predictions = self.context_decoder(support_obs, support_actions, repeated_z)
+            return torch.cat([support_obs, support_actions, predictions], dim=-1)
         if anchor_task_indices is None:
             anchor_task_indices = np.random.choice(self.train_tasks, size=num_tasks, replace=True)
         else:
@@ -650,12 +693,45 @@ class GENTLE(OfflineMetaRLAlgorithm):
         return torch.cat([anchor_obs, fake_actions, fake_r_next_s], dim=-1)
 
     @torch.no_grad()
-    def _sample_virtual_task_embeddings(self, batch_size):
-        if self.virtual_task_generation_mode == 'global':
-            return self._sample_global_virtual_task_embeddings(batch_size)
-        if self.virtual_task_generation_mode == 'gaussian':
-            return self._sample_gaussian_virtual_task_embeddings(batch_size)
-        return self._sample_local_virtual_task_embeddings(batch_size)
+    def _sample_virtual_task_embeddings(self, batch_size, return_metadata=False, force_refresh=False):
+        support_batch = None
+        if self.virtual_task_generation_mode == 'semantic':
+            support_batch = self._sample_semantic_virtual_tasks(batch_size, force_refresh)
+            embeddings = None if support_batch is None else support_batch['embeddings']
+        elif self.virtual_task_generation_mode == 'global':
+            embeddings = self._sample_global_virtual_task_embeddings(batch_size)
+        elif self.virtual_task_generation_mode == 'gaussian':
+            embeddings = self._sample_gaussian_virtual_task_embeddings(batch_size)
+        else:
+            embeddings = self._sample_local_virtual_task_embeddings(batch_size)
+        return (embeddings, support_batch) if return_metadata else embeddings
+
+    @torch.no_grad()
+    def _sample_semantic_virtual_tasks(self, batch_size, force_refresh=False):
+        if self.n_vt <= 0 or len(self.train_tasks) <= 1:
+            return None
+        needs_refresh = (
+            force_refresh or self._semantic_refresh_step is None
+            or self._num_steps - self._semantic_refresh_step >= self.virtual_semantic_refresh_interval
+        )
+        if needs_refresh:
+            # Use the existing task encoder/mean pooling, not a second prototype model.
+            context = self.sample_context(
+                self.train_tasks, b_size=max(batch_size, self.embedding_batch_size)
+            )
+            real_task_z = self._get_context_embedding(context, sample=False).detach()
+            transitions = self.sample_transition_batch(
+                self.train_tasks, 2 * self.virtual_semantic_probe_batch_size
+            )
+            batches = dict(zip(
+                ('observations', 'actions', 'rewards', 'next_observations', 'terminals'),
+                transitions,
+            ))
+            self._semantic_interpolator.refresh(real_task_z, batches)
+            self._semantic_refresh_step = self._num_steps
+        samples = self._semantic_interpolator.sample(self.n_vt, batch_size)
+        self.loss.update(self._semantic_interpolator.stats)
+        return samples
 
     @torch.no_grad()
     def _sample_global_virtual_task_embeddings(self, batch_size):
@@ -761,8 +837,10 @@ class GENTLE(OfflineMetaRLAlgorithm):
             return None
 
         virtual_zs = []
-        for _ in range(n_points):
-            virtual_task_z = self._sample_virtual_task_embeddings(self.online_sample_num)
+        for point_idx in range(n_points):
+            virtual_task_z = self._sample_virtual_task_embeddings(
+                self.online_sample_num, force_refresh=(point_idx == 0)
+            )
             if virtual_task_z is None:
                 return None
             virtual_zs.append(ptu.get_numpy(virtual_task_z))
@@ -773,7 +851,8 @@ class GENTLE(OfflineMetaRLAlgorithm):
         virtual_zs = np.concatenate(virtual_zs, axis=0)
         return virtual_zs[np.newaxis, ...]
 
-    def _compute_consistency_loss(self, task_z, batch_size, anchor_task_indices=None, use_policy_relabel_data=None):
+    def _compute_consistency_loss(self, task_z, batch_size, anchor_task_indices=None,
+                                  use_policy_relabel_data=None, support_batch=None):
         if task_z is None:
             return ptu.zeros(1).squeeze()
 
@@ -783,6 +862,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
             batch_size,
             anchor_task_indices=anchor_task_indices,
             use_policy_relabel_data=use_policy_relabel_data,
+            support_batch=support_batch,
         )
         if fake_context is None:
             return ptu.zeros(1).squeeze()
@@ -950,11 +1030,14 @@ class GENTLE(OfflineMetaRLAlgorithm):
         # consistency_anchor_task_indices = self._sample_mismatched_task_indices(indices)
         current_virtual_transition_loss_weight = self._get_virtual_transition_loss_weight()
         with torch.no_grad():
-            virtual_task_z = self._sample_virtual_task_embeddings(c_b)
+            virtual_task_z, virtual_support = self._sample_virtual_task_embeddings(
+                c_b, return_metadata=True
+            )
         if current_virtual_transition_loss_weight > 0.0:
             num_virtual_transitions_added, virtual_add_stats = self.add_virtual_transitions_to_buffer(
                 virtual_task_z,
                 c_b,
+                support_batch=virtual_support,
             )
         else:
             num_virtual_transitions_added = 0
@@ -966,7 +1049,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 'virtual_transition_nearest_real_dist_added_mean': 0.0,
                 'virtual_transition_nearest_real_dist_added_max': 0.0,
             }
-        if virtual_task_z is not None:
+        if virtual_task_z is not None and virtual_support is None:
             virtual_anchor_task_indices = np.random.choice(
                 self.train_tasks,
                 size=len(virtual_task_z),
@@ -982,6 +1065,16 @@ class GENTLE(OfflineMetaRLAlgorithm):
             c_b,
             anchor_task_indices=consistency_anchor_task_indices,
         )
+        if virtual_support is not None:
+            virtual_consistency_loss = self._compute_consistency_loss(
+                virtual_task_z, c_b, support_batch=virtual_support
+            )
+            # Match the real/virtual task averaging used by the legacy concatenation.
+            real_count = consistency_task_z.size(0)
+            virtual_count = virtual_task_z.size(0)
+            consistency_loss = (
+                real_count * consistency_loss + virtual_count * virtual_consistency_loss
+            ) / (real_count + virtual_count)
         context_loss = self.recon_loss_weight * recon_loss
         self.loss['recon_loss'] = recon_loss.item()
         self.loss['context_loss'] = context_loss.item()
@@ -1224,5 +1317,14 @@ class GENTLE(OfflineMetaRLAlgorithm):
             ))
             self.eval_statistics.update(create_stats_ordered_dict('Q Predictions',  ptu.get_numpy(q1_pred)))
             self.eval_statistics.update(create_stats_ordered_dict('Policy mu',      ptu.get_numpy(policy_mean)))
+        if self._semantic_interpolator is not None:
+            # self.loss alone is not written by the base algorithm. Publish
+            # current geometry diagnostics through the actual CSV/TensorBoard
+            # evaluation logging path, including when no edge was accepted.
+            self.eval_statistics.update(self._semantic_interpolator.stats)
+            for key in ('num_virtual_tasks', 'num_virtual_transitions_added',
+                        'virtual_transition_loss_weight_current',
+                        'virtual_transition_quality_weight_added_mean'):
+                self.eval_statistics[key] = self.loss[key]
         return ptu.get_numpy(self.agent.z_means), ptu.get_numpy(self.agent.z_vars)
     
