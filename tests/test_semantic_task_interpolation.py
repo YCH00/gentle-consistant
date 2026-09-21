@@ -162,6 +162,32 @@ def test_sample_keeps_real_transition_tuples_together():
     assert (sample["quality_weights"] <= 1).all()
 
 
+def test_zero_steps_uses_supported_reference_without_optimizer(monkeypatch):
+    sampler, _, task_z, batches = make_reward_sampler(virtual_semantic_path_steps=0)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError('path_steps=0 must not construct an optimizer')
+
+    monkeypatch.setattr(torch.optim, 'Adam', forbidden)
+    sampler.refresh(task_z, batches)
+    sample = sampler.sample(12, 64)
+    assert sample is not None
+    assert sampler.stats['virtual_semantic_refinement_attempts'] == 0
+    assert sampler.stats['virtual_semantic_refinement_accepted'] == 0
+    assert sampler.stats['virtual_semantic_reference_fallbacks'] == 0
+    for (i, j), edge in sampler.edges.items():
+        t = torch.linspace(0, 1, len(edge['nodes']))[:, None]
+        torch.testing.assert_close(edge['nodes'], (1 - t) * task_z[i] + t * task_z[j])
+        assert edge['validation_energy_ratio'] == pytest.approx(1.0)
+    assert sampler.stats['virtual_semantic_task_coverage_fraction'] == 1
+    assert sampler.stats['virtual_semantic_sampled_unique_edges'] > 0
+    assert 0 < sampler.stats['virtual_semantic_sampled_support_unique_fraction'] <= 0.5
+    sampler.paths = []
+    assert sampler.sample(12, 64) is None
+    assert sampler.stats['virtual_semantic_sampled_unique_edges'] == 0
+    assert sampler.stats['virtual_semantic_sampled_support_unique_fraction'] == 0
+
+
 def test_seed_reproduces_refresh_and_sample():
     results = []
     for _ in range(2):

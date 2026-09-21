@@ -176,7 +176,10 @@ class SemanticTaskInterpolator:
                  'refinement_attempts', 'refinement_accepted', 'refinement_rejected',
                  'reference_fallbacks', 'sampled', 'rejected_no_path',
                  'refinement_displacement_mean', 'heldout_reconstruction_mean',
-                 'path_hops_mean', 'sampled_quality_mean')
+                 'path_hops_mean', 'sampled_quality_mean', 'covered_tasks',
+                 'task_coverage_fraction', 'supported_probe_count_mean',
+                 'validation_energy_ratio_mean', 'sampled_unique_edges',
+                 'sampled_support_unique_fraction')
         self.stats = {'virtual_semantic_' + name: 0 for name in names}
         self.stats['virtual_semantic_refresh_count'] = self._refresh_count
 
@@ -322,6 +325,14 @@ class SemanticTaskInterpolator:
             if displacements:
                 self.stats['virtual_semantic_refinement_displacement_mean'] = sum(displacements) / len(displacements)
         self.stats['virtual_semantic_edges'] = len(self.edges)
+        covered = {task for endpoints in self.edges for task in endpoints}
+        self.stats['virtual_semantic_covered_tasks'] = len(covered)
+        self.stats['virtual_semantic_task_coverage_fraction'] = len(covered) / n_tasks
+        if self.edges:
+            self.stats['virtual_semantic_supported_probe_count_mean'] = sum(
+                edge['check_ids'].numel() for edge in self.edges.values()) / len(self.edges)
+            self.stats['virtual_semantic_validation_energy_ratio_mean'] = sum(
+                edge['validation_energy_ratio'] for edge in self.edges.values()) / len(self.edges)
         self._build_graph_paths(n_tasks)
         self.stats['virtual_semantic_paths'] = len(self.paths)
         if self.paths:
@@ -437,6 +448,7 @@ class SemanticTaskInterpolator:
             return None
         return {'nodes': dense_nodes.detach(), 'lengths': segment_lengths.detach(),
                 'length': segment_lengths.sum().item(), 'check_ids': check_ids,
+                'validation_energy_ratio': (self._energy(check_features) / baseline_check_energy).item(),
                 'displacement': displacement, 'endpoints': (i, j)}
 
     def _build_graph_paths(self, n_tasks):
@@ -478,6 +490,8 @@ class SemanticTaskInterpolator:
         A result may use both endpoint tasks' data; ``anchor_positions`` is
         descriptive metadata only.  Never use it to resample arbitrary inputs.
         """
+        for name in ('sampled_quality_mean', 'sampled_unique_edges', 'sampled_support_unique_fraction'):
+            self.stats['virtual_semantic_' + name] = 0
         if num_tasks <= 0 or batch_size <= 0:
             return None
         if not self.paths:
@@ -487,6 +501,7 @@ class SemanticTaskInterpolator:
                                       'next_observations', 'terminals',
                                       'quality_weights', 'anchor_positions')}
         device = self.task_z.device
+        sampled_edges, unique_fraction_sum = set(), 0.0
         for _ in range(num_tasks):
             path = self.paths[torch.randint(len(self.paths), (), device=device).item()]
             alpha = (self._opt('alpha_min') + torch.rand((), device=device).item() *
@@ -505,6 +520,7 @@ class SemanticTaskInterpolator:
                 remaining -= edge_length
             start, end = path['edges'][edge_position]
             edge = self.edges[tuple(sorted((start, end)))]
+            sampled_edges.add(tuple(sorted((start, end))))
             forward = start < end
             nodes = edge['nodes'] if forward else edge['nodes'].flip(0)
             lengths = edge['lengths'] if forward else edge['lengths'].flip(0)
@@ -517,6 +533,7 @@ class SemanticTaskInterpolator:
             embedding = (1 - fraction) * nodes[segment] + fraction * nodes[segment + 1]
             ids = edge['check_ids'][torch.randint(edge['check_ids'].numel(),
                                                  (batch_size,), device=device)]
+            unique_fraction_sum += ids.unique().numel() / batch_size
             results['embeddings'].append(embedding)
             for key in ('observations', 'actions', 'next_observations', 'terminals'):
                 results[key].append(self.check[key][ids])
@@ -526,4 +543,6 @@ class SemanticTaskInterpolator:
         self._count('sampled', num_tasks)
         result = {key: torch.stack(values).detach() for key, values in results.items()}
         self.stats['virtual_semantic_sampled_quality_mean'] = result['quality_weights'].mean().item()
+        self.stats['virtual_semantic_sampled_unique_edges'] = len(sampled_edges)
+        self.stats['virtual_semantic_sampled_support_unique_fraction'] = unique_fraction_sum / num_tasks
         return result

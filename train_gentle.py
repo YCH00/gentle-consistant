@@ -1,4 +1,6 @@
 import os
+import copy
+import hashlib
 import numpy as np
 import click
 import json
@@ -52,6 +54,14 @@ def _find_weight_file(weights_dir, candidate_filenames):
     return None
 
 
+def _checkpoint_sha256(path):
+    digest = hashlib.sha256()
+    with path.open('rb') as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b''):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def _load_pretrained_context_models(context_encoder, context_decoder, variant, seed):
     weights_dir = _resolve_weights_dir(variant, seed)
     encoder_path = _find_weight_file(weights_dir, ['context_encoder.pth', 'encoder.pth'])
@@ -60,11 +70,12 @@ def _load_pretrained_context_models(context_encoder, context_decoder, variant, s
     if encoder_path is None and decoder_path is None and variant.get('path_to_weights') is None:
         algo_params = variant['algo_params']
         if (
-            algo_params.get('virtual_task_generation_mode') == 'semantic'
-            and algo_params.get('n_vt', 0) > 0
+            variant.get('require_pretrained_context', False)
+            or (algo_params.get('virtual_task_generation_mode') == 'semantic'
+                and algo_params.get('n_vt', 0) > 0)
         ):
             raise FileNotFoundError(
-                f'Semantic task interpolation requires pretrained context encoder/decoder weights at {weights_dir}. '
+                f'This experiment requires pretrained context encoder/decoder weights at {weights_dir}. '
                 'Run pretrain_dynamics.py and pretrain_encoder_decoder.py with the same config and seed first, '
                 'or provide --path_to_weights pointing to compatible context checkpoints.'
             )
@@ -88,8 +99,16 @@ def _load_pretrained_context_models(context_encoder, context_decoder, variant, s
         ) from error
     print(f'Loaded pretrained context encoder from {encoder_path}')
     print(f'Loaded pretrained context decoder from {decoder_path}')
+    variant['pretrained_context'] = {
+        'encoder_path': str(encoder_path.resolve()),
+        'decoder_path': str(decoder_path.resolve()),
+        'encoder_sha256': _checkpoint_sha256(encoder_path),
+        'decoder_sha256': _checkpoint_sha256(decoder_path),
+    }
 
 def experiment(variant, seed=None):
+    variant = copy.deepcopy(variant)
+    variant['seed'] = seed
     env = NormalizedBoxEnv(ENVS[variant['env_name']](**variant['env_params']))
     
     if seed is not None:
@@ -255,6 +274,7 @@ def deep_update_dict(fr, to):
 @click.option('--virtual_transition_train_policy_q', type=bool, default=None)
 @click.option('--virtual_transition_train_policy_bc', type=bool, default=None)
 @click.option('--virtual_transition_use_cycle_weight', type=bool, default=None)
+@click.option('--virtual_transition_use_semantic_weight', type=bool, default=None)
 @click.option('--virtual_transition_cycle_weight_temperature', type=float, default=None)
 @click.option('--virtual_transition_log_nearest_distance', type=bool, default=None)
 @click.option('--virtual_transition_use_recon_weight', type=bool, default=None)
@@ -291,6 +311,7 @@ def main(
     virtual_transition_train_policy_q,
     virtual_transition_train_policy_bc,
     virtual_transition_use_cycle_weight,
+    virtual_transition_use_semantic_weight,
     virtual_transition_cycle_weight_temperature,
     virtual_transition_log_nearest_distance,
     virtual_transition_use_recon_weight,
@@ -306,11 +327,13 @@ def main(
     virtual_semantic_support_radius,
 ):
 
-    variant = default_config
+    variant = copy.deepcopy(default_config)
     if config:
         with open(os.path.join(config)) as f:
             exp_params = json.load(f)
         variant = deep_update_dict(exp_params, variant)
+        variant['config_path'] = str(Path(config).resolve())
+    variant['seed_list'] = list(seed_list)
     variant['util_params']['gpu_id'] = gpu
     variant['util_params']['debug'] = debug
     variant['algo_type'] = algo_type
@@ -349,6 +372,8 @@ def main(
         variant['algo_params']['virtual_transition_train_policy_bc'] = virtual_transition_train_policy_bc
     if virtual_transition_use_cycle_weight is not None:
         variant['algo_params']['virtual_transition_use_cycle_weight'] = virtual_transition_use_cycle_weight
+    if virtual_transition_use_semantic_weight is not None:
+        variant['algo_params']['virtual_transition_use_semantic_weight'] = virtual_transition_use_semantic_weight
     if virtual_transition_cycle_weight_temperature is not None:
         variant['algo_params']['virtual_transition_cycle_weight_temperature'] = virtual_transition_cycle_weight_temperature
     if virtual_transition_log_nearest_distance is not None:

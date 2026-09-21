@@ -276,3 +276,89 @@ def test_training_continues_and_logs_when_no_semantic_edge_is_supported():
     assert algo.eval_statistics['virtual_semantic_edges'] == 0
     assert algo.eval_statistics['virtual_semantic_rejected_no_path'] > 0
     assert np.isfinite(algo.loss['policy_total_loss'])
+
+
+@pytest.mark.parametrize('use_quality', [False, True])
+def test_semantic_quality_switch_controls_replay_weights_only(use_quality):
+    algo, _ = make_algorithm()
+    algo.virtual_transition_use_cycle_weight = False
+    algo.virtual_transition_use_semantic_weight = use_quality
+    z, support = algo._sample_virtual_task_embeddings(16, return_metadata=True)
+    # Non-unit values distinguish the switch from perfect endpoint predictions.
+    support['quality_weights'] = torch.tensor([[0.4], [0.6], [0.8]])
+    algo.add_virtual_transitions_to_buffer(z, 16, support_batch=support)
+    expected = support['quality_weights'] if use_quality else torch.ones(3, 1)
+    np.testing.assert_allclose(algo.virtual_transition_buffer._weights[:48],
+                               expected.repeat_interleave(16, dim=0).numpy())
+    torch.testing.assert_close(support['quality_weights'], torch.tensor([[0.4], [0.6], [0.8]]))
+    np.testing.assert_allclose(algo.virtual_transition_buffer._observations[:48],
+                               support['observations'].reshape(48, 1).numpy())
+
+
+@pytest.mark.parametrize('mode,steps', [('global', 0), ('semantic', 0), ('semantic', 8)])
+@pytest.mark.parametrize('dynamics', [False, True])
+def test_ablation_training_uses_only_linear_sample_weight(mode, steps, dynamics):
+    algo, _ = make_algorithm(dynamics)
+    algo.virtual_task_generation_mode = mode
+    algo.virtual_transition_use_cycle_weight = False
+    algo.virtual_transition_use_semantic_weight = False
+    algo.virtual_transition_use_recon_weight = False
+    algo.virtual_transition_train_policy_bc = False
+    algo.virtual_transition_train_policy_q = True
+    algo.virtual_transition_weight_schedule = 'linear_decay'
+    algo.virtual_transition_weight_decay_start_itr = 2
+    algo.virtual_transition_weight_decay_end_itr = 4
+    algo.virtual_transition_final_loss_weight = 0.0
+    if mode == 'global':
+        algo._semantic_interpolator = None
+        algo.M, algo.beta = 2, 1.0
+    else:
+        algo._semantic_interpolator.options['virtual_semantic_path_steps'] = steps
+    for iteration, expected_weight in [(0, 0.5), (2, 0.5), (3, 0.25), (4, 0.0)]:
+        algo.itr = iteration
+        algo.eval_statistics = None
+        algo._take_step([0, 1], algo.sample_context([0, 1], 16))
+        assert algo.loss['virtual_transition_effective_weight_sample_mean'] == pytest.approx(expected_weight)
+        assert algo.eval_statistics['virtual_transition_recon_weight_current'] == 1.0
+        assert algo.eval_statistics['virtual_transition_use_semantic_weight'] == 0
+        assert algo.eval_statistics['virtual_transition_use_recon_weight'] == 0
+        assert algo.eval_statistics['virtual_transition_use_cycle_weight'] == 0
+        assert algo.loss['virtual_transition_policy_bc_batch_size'] == 0
+        assert algo.loss['virtual_consistency_fraction'] == pytest.approx(3 / 5)
+        combined = (2 * algo.loss['real_consistency_loss'] + 3 * algo.loss['virtual_consistency_loss']) / 5
+        assert algo.loss['consistency_loss'] == pytest.approx(combined, abs=1e-7)
+        assert algo.eval_statistics['virtual_diagnostic_training_calls'] == 1
+        if expected_weight == 0:
+            assert algo.loss['num_virtual_transitions_added'] == 0
+            assert algo.loss['num_virtual_tasks'] == 3  # consistency still uses virtual tasks
+        algo._num_steps += 1
+
+
+def test_diagnostic_iteration_means_include_skips_and_reset():
+    algo, _ = make_algorithm()
+    algo._take_step([0, 1], algo.sample_context([0, 1], 16))
+    algo._sample_virtual_task_embeddings = lambda *a, **kw: (None, None)
+    algo._take_step([0, 1], algo.sample_context([0, 1], 16))
+    assert algo.eval_statistics['num_virtual_tasks_itr_mean'] == 1.5
+    assert algo.eval_statistics['virtual_consistency_fraction_itr_mean'] == pytest.approx(0.3)
+    assert algo.eval_statistics['virtual_task_generation_skipped_itr_mean'] == 0.5
+    assert algo.eval_statistics['num_virtual_transitions_added_itr_total'] == 48
+    algo.itr += 1
+    algo.eval_statistics = None
+    algo._take_step([0, 1], algo.sample_context([0, 1], 16))
+    assert algo.eval_statistics['num_virtual_tasks_itr_mean'] == 0
+    assert algo.eval_statistics['virtual_task_generation_skipped_itr_mean'] == 1
+    assert algo.eval_statistics['num_virtual_transitions_added_itr_total'] == 0
+    assert algo.eval_statistics['virtual_diagnostic_training_calls'] == 1
+
+
+def test_per_task_consistency_logging_preserves_loss_and_gradient():
+    algo, _ = make_algorithm()
+    z, support = algo._sample_virtual_task_embeddings(16, return_metadata=True)
+    scalar = algo._compute_consistency_loss(z, 16, support_batch=support)
+    per_task = algo._compute_consistency_loss(z, 16, support_batch=support, return_task_losses=True)
+    torch.testing.assert_close(scalar, per_task.mean())
+    parameter = algo.agent.context_encoder.scale
+    grad_scalar, = torch.autograd.grad(scalar, parameter)
+    grad_tasks, = torch.autograd.grad(per_task.mean(), parameter)
+    torch.testing.assert_close(grad_scalar, grad_tasks)

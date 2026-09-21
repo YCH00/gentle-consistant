@@ -187,6 +187,9 @@ class GENTLE(OfflineMetaRLAlgorithm):
             'virtual_transition_train_policy_bc',
             default_virtual_train_policy_bc,
         )
+        self.virtual_transition_use_semantic_weight = kwargs.get(
+            'virtual_transition_use_semantic_weight', True,
+        )
         self.virtual_transition_use_cycle_weight = kwargs.get(
             'virtual_transition_use_cycle_weight',
             False,
@@ -557,7 +560,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
             virtual_next_obs = anchor_next_obs
 
         quality_weights = torch.ones(num_virtual_tasks, 1, device=virtual_task_z.device)
-        if support_batch is not None:
+        if support_batch is not None and self.virtual_transition_use_semantic_weight:
             quality_weights = support_batch['quality_weights'].detach().clone()
         cycle_errors = torch.zeros(num_virtual_tasks, 1, device=virtual_task_z.device)
         if self.virtual_transition_use_cycle_weight:
@@ -852,9 +855,10 @@ class GENTLE(OfflineMetaRLAlgorithm):
         return virtual_zs[np.newaxis, ...]
 
     def _compute_consistency_loss(self, task_z, batch_size, anchor_task_indices=None,
-                                  use_policy_relabel_data=None, support_batch=None):
+                                  use_policy_relabel_data=None, support_batch=None,
+                                  return_task_losses=False):
         if task_z is None:
-            return ptu.zeros(1).squeeze()
+            return ptu.zeros(0) if return_task_losses else ptu.zeros(1).squeeze()
 
         task_z = task_z.detach()
         fake_context = self._build_consistency_context(
@@ -865,8 +869,10 @@ class GENTLE(OfflineMetaRLAlgorithm):
             support_batch=support_batch,
         )
         if fake_context is None:
-            return ptu.zeros(1).squeeze()
+            return ptu.zeros(0) if return_task_losses else ptu.zeros(1).squeeze()
         fake_task_z = self._get_context_embedding(fake_context, sample=False)
+        if return_task_losses:
+            return F.mse_loss(fake_task_z, task_z, reduction='none').mean(dim=-1)
         return F.mse_loss(fake_task_z, task_z)
     
     def _sample_mismatched_task_indices(self, task_indices):
@@ -1026,6 +1032,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         current_virtual_transition_recon_weight = self._update_virtual_transition_recon_weight(recon_loss)
         current_virtual_transition_base_loss_weight = self._get_virtual_transition_base_loss_weight()
         consistency_task_z = self.agent.z_means
+        real_consistency_count = consistency_task_z.size(0)
         consistency_anchor_task_indices = np.asarray(indices)
         # consistency_anchor_task_indices = self._sample_mismatched_task_indices(indices)
         current_virtual_transition_loss_weight = self._get_virtual_transition_loss_weight()
@@ -1060,21 +1067,29 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 consistency_anchor_task_indices,
                 virtual_anchor_task_indices,
             ])
-        consistency_loss = self._compute_consistency_loss(
+        consistency_task_losses = self._compute_consistency_loss(
             consistency_task_z,
             c_b,
             anchor_task_indices=consistency_anchor_task_indices,
+            return_task_losses=True,
         )
         if virtual_support is not None:
-            virtual_consistency_loss = self._compute_consistency_loss(
-                virtual_task_z, c_b, support_batch=virtual_support
+            virtual_task_losses = self._compute_consistency_loss(
+                virtual_task_z, c_b, support_batch=virtual_support,
+                return_task_losses=True,
             )
-            # Match the real/virtual task averaging used by the legacy concatenation.
-            real_count = consistency_task_z.size(0)
-            virtual_count = virtual_task_z.size(0)
-            consistency_loss = (
-                real_count * consistency_loss + virtual_count * virtual_consistency_loss
-            ) / (real_count + virtual_count)
+            consistency_task_losses = torch.cat([consistency_task_losses, virtual_task_losses])
+        # Keep the existing task-count weighting, while exposing both components.
+        consistency_loss = consistency_task_losses.mean()
+        virtual_consistency_count = consistency_task_losses.size(0) - real_consistency_count
+        self.loss['real_consistency_loss'] = consistency_task_losses[:real_consistency_count].mean().item()
+        self.loss['virtual_consistency_loss'] = (
+            consistency_task_losses[real_consistency_count:].mean().item()
+            if virtual_consistency_count else 0.0
+        )
+        self.loss['virtual_consistency_fraction'] = (
+            virtual_consistency_count / consistency_task_losses.size(0)
+        )
         context_loss = self.recon_loss_weight * recon_loss
         self.loss['recon_loss'] = recon_loss.item()
         self.loss['context_loss'] = context_loss.item()
@@ -1317,14 +1332,60 @@ class GENTLE(OfflineMetaRLAlgorithm):
             ))
             self.eval_statistics.update(create_stats_ordered_dict('Q Predictions',  ptu.get_numpy(q1_pred)))
             self.eval_statistics.update(create_stats_ordered_dict('Policy mu',      ptu.get_numpy(policy_mean)))
+        self._record_virtual_task_diagnostics()
         if self._semantic_interpolator is not None:
             # self.loss alone is not written by the base algorithm. Publish
             # current geometry diagnostics through the actual CSV/TensorBoard
             # evaluation logging path, including when no edge was accepted.
             self.eval_statistics.update(self._semantic_interpolator.stats)
-            for key in ('num_virtual_tasks', 'num_virtual_transitions_added',
-                        'virtual_transition_loss_weight_current',
-                        'virtual_transition_quality_weight_added_mean'):
-                self.eval_statistics[key] = self.loss[key]
         return ptu.get_numpy(self.agent.z_means), ptu.get_numpy(self.agent.z_vars)
+
+    def _record_virtual_task_diagnostics(self):
+        """Publish every sampler's weights and per-iteration training averages.
+
+        Graph counters remain snapshots since the last geometry refresh. Means
+        here aggregate training calls, so a single accepted path at evaluation
+        does not hide earlier skips. No RNG or gradient computations occur here.
+        """
+        values = {key: float(self.loss[key]) for key in (
+            'num_virtual_tasks', 'num_virtual_transitions_added',
+            'virtual_transition_base_loss_weight_current',
+            'virtual_transition_recon_weight_current',
+            'virtual_transition_loss_weight_current',
+            'virtual_transition_quality_weight_added_mean',
+            'virtual_transition_quality_weight_sample_mean',
+            'virtual_transition_effective_weight_sample_mean',
+            'virtual_transition_batch_size',
+            'virtual_consistency_fraction', 'real_consistency_loss',
+            'virtual_consistency_loss', 'recon_loss',
+        )}
+        values['virtual_task_generation_skipped'] = float(
+            self.n_vt > 0 and self.loss['num_virtual_tasks'] == 0
+        )
+        if self._semantic_interpolator is not None:
+            for name in ('edges', 'paths', 'covered_tasks', 'task_coverage_fraction',
+                         'sampled_unique_edges', 'sampled_support_unique_fraction'):
+                key = 'virtual_semantic_' + name
+                values[key] = float(self._semantic_interpolator.stats.get(key, 0))
+        if getattr(self, '_virtual_diagnostic_iteration', None) != self.itr:
+            self._virtual_diagnostic_iteration = self.itr
+            self._virtual_diagnostic_sums = {}
+            self._virtual_diagnostic_count = 0
+        self._virtual_diagnostic_count += 1
+        for key, value in values.items():
+            self._virtual_diagnostic_sums[key] = self._virtual_diagnostic_sums.get(key, 0.0) + value
+            self.eval_statistics[key] = value
+            self.eval_statistics[key + '_itr_mean'] = (
+                self._virtual_diagnostic_sums[key] / self._virtual_diagnostic_count
+            )
+        self.eval_statistics['virtual_diagnostic_training_calls'] = self._virtual_diagnostic_count
+        self.eval_statistics['num_virtual_transitions_added_itr_total'] = (
+            self._virtual_diagnostic_sums['num_virtual_transitions_added']
+        )
+        for key in ('virtual_transition_use_semantic_weight',
+                    'virtual_transition_use_recon_weight',
+                    'virtual_transition_use_cycle_weight',
+                    'virtual_transition_train_policy_q',
+                    'virtual_transition_train_policy_bc'):
+            self.eval_statistics[key] = int(getattr(self, key))
     

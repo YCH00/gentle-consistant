@@ -1,5 +1,6 @@
 import argparse
 import csv
+import json
 import re
 from pathlib import Path
 
@@ -232,6 +233,44 @@ def save_compare_csv(csv_path, summaries):
                 writer.writerow([summary["experiment"], summary["label"], *row])
 
 
+def save_run_data(csv_path, summaries, args):
+    """Export original per-seed values and saved run-time configurations.
+
+    Use each original series, never the aligned/interpolated plot matrix.
+    Missing variants stay explicit; current configs cannot replace them.
+    """
+    seed_path = csv_path.with_name(csv_path.stem + '_seeds.csv')
+    manifest_path = csv_path.with_name(csv_path.stem + '_runs.json')
+    seed_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest = dict(tag=args.tag, align=args.align, plot_smooth_window=args.smooth_window,
+                    seed_values_smoothed=False, aggregate_std_ddof=0, runs=[])
+    with seed_path.open('w', newline='', encoding='utf-8') as handle:
+        writer = csv.writer(handle)
+        writer.writerow(['experiment', 'label', 'seed', 'step', 'value'])
+        for summary in summaries:
+            for series in summary['series']:
+                for step, value in zip(series['steps'], series['values']):
+                    writer.writerow([summary['experiment'], summary['label'],
+                                     series['seed'], int(step), float(value)])
+                run_dir = Path(series['run_dir'])
+                variant_path = run_dir / 'variant.json'
+                variant = None
+                if variant_path.exists():
+                    with variant_path.open(encoding='utf-8') as source:
+                        variant = json.load(source)
+                else:
+                    print(f'Warning: missing run-time configuration: {variant_path}')
+                manifest['runs'].append(dict(
+                    experiment=summary['experiment'], label=summary['label'],
+                    seed=series['seed'], run_dir=str(run_dir.resolve()),
+                    observations=len(series['steps']), variant=variant,
+                ))
+    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n',
+                             encoding='utf-8')
+    print(f'Saved original seed values: {seed_path}')
+    print(f'Saved run configurations: {manifest_path}')
+
+
 def default_output_path(experiment, tag):
     output_name = f"{sanitize_filename(experiment)}_{sanitize_filename(tag)}_mean.png"
     return Path("figures") / output_name
@@ -403,6 +442,8 @@ def parse_args():
     )
     parser.add_argument("--title", default=None, help="Optional plot title.")
     parser.add_argument("--ylabel", default=None, help="Optional y-axis label.")
+    parser.add_argument('--export-run-data', action='store_true',
+                        help='Also export original per-seed scalar values and saved variant.json files.')
     parser.add_argument(
         "--list-tags",
         action="store_true",
@@ -468,6 +509,8 @@ def run_single_experiment(args):
 
     csv_path = Path(args.csv_output) if args.csv_output else output_path.with_suffix(".csv")
     save_csv(csv_path, summary["steps"], summary["mean"], summary["std"], summary["counts"])
+    if args.export_run_data:
+        save_run_data(csv_path, [summary], args)
 
     print("Matched runs:")
     for seed_name, run_dir in runs:
@@ -512,6 +555,8 @@ def run_compare_experiments(args):
 
     csv_path = Path(args.csv_output) if args.csv_output else output_path.with_suffix(".csv")
     save_compare_csv(csv_path, summaries)
+    if args.export_run_data:
+        save_run_data(csv_path, summaries, args)
 
     print("Matched runs:")
     for experiment, label in zip(experiments, labels):
