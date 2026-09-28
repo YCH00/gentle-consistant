@@ -28,6 +28,18 @@ from rlkit.torch.algo.gentle import GENTLE
 
 rng = default_rng()
 
+
+def _train_with_tensorboard(algorithm, log_dir):
+    writer = SummaryWriter(log_dir)
+    try:
+        algorithm.train(writer)
+    finally:
+        # Pool workers can exit without flushing the writer's background queue.
+        # close() flushes pending events, including when training raises.
+        writer.close()
+    print(f'Training completed: {log_dir}', flush=True)
+
+
 def global_seed(seed=0):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -238,8 +250,7 @@ def experiment(variant, seed=None):
         algo_name=variant['output_prefix']+variant['algo_type']
     )
 
-    tb_writer = SummaryWriter(experiment_log_dir)
-    algorithm.train(tb_writer)
+    _train_with_tensorboard(algorithm, experiment_log_dir)
 
 def deep_update_dict(fr, to):
     ''' update dict of dicts with new values '''
