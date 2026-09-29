@@ -24,6 +24,62 @@ ARMS = [('global', 'global', 0), ('semantic-path0', 'semantic', 0),
         ('semantic-path8', 'semantic', 8)]
 
 
+@pytest.mark.parametrize('env', ENVIRONMENTS)
+@pytest.mark.parametrize('arm', ['semantic-path0', 'semantic-path8', 'global'])
+def test_diagnostic_profiles_change_only_the_intended_factor(env, arm):
+    namespace, calls = training_entrypoint()
+    runner = CliRunner()
+    suffix = '-consistency-decay' if arm == 'global' else '-bank'
+    for folder, end in [('interpolation-ablation', ''), ('interpolation-diagnostics', suffix)]:
+        path = ROOT / 'configs' / folder / (env + '-' + arm + end + '.json')
+        result = runner.invoke(namespace['main'], [str(path), '--seed_list', '0'])
+        assert result.exit_code == 0, result.output
+    old, new = (copy.deepcopy(call[0]) for call in calls)
+    old.pop('config_path')
+    new.pop('config_path')
+    p = new['algo_params']
+    if arm == 'global':
+        assert p['virtual_consistency_weight_schedule'] == 'linear_decay'
+        assert p['virtual_consistency_final_weight'] == 0
+        assert p['virtual_semantic_training_bank_size'] == 0
+        for name in ('start', 'end'):
+            assert p['virtual_consistency_weight_decay_' + name + '_itr'] == p['virtual_transition_weight_decay_' + name + '_itr']
+        changed = ['virtual_consistency_weight_schedule', 'virtual_consistency_weight_decay_start_itr',
+                   'virtual_consistency_weight_decay_end_itr', 'virtual_consistency_final_weight']
+    else:
+        assert p['virtual_semantic_training_bank_size'] == 1024
+        assert p['virtual_semantic_training_bank_refresh_interval'] == 25
+        assert p['virtual_consistency_weight_schedule'] == 'constant'
+        changed = ['virtual_semantic_training_bank_size', 'virtual_semantic_training_bank_refresh_interval']
+    for key in changed:
+        new['algo_params'][key] = old['algo_params'][key]
+    assert old == new
+
+
+def test_diagnostic_cli_overrides_and_defaults_do_not_leak():
+    namespace, calls = training_entrypoint()
+    runner = CliRunner()
+    path = str(CONFIGS / 'ant-dir-semantic-path8.json')
+    options = dict(virtual_semantic_training_bank_size=512,
+                   virtual_semantic_training_bank_refresh_interval=7,
+                   virtual_consistency_weight_schedule='linear_decay',
+                   virtual_consistency_weight_decay_start_itr=30,
+                   virtual_consistency_weight_decay_end_itr=90,
+                   virtual_consistency_final_weight=0.2)
+    args = [value for key, value in options.items() for value in ('--' + key, str(value))]
+    result = runner.invoke(namespace['main'], [path, '--seed_list', '0'] + args)
+    assert result.exit_code == 0, result.output
+    assert {key: calls[-1][0]['algo_params'][key] for key in options} == options
+    result = runner.invoke(namespace['main'], [path, '--seed_list', '0'])
+    assert result.exit_code == 0, result.output
+    assert calls[-1][0]['algo_params']['virtual_semantic_training_bank_size'] == 0
+    assert calls[-1][0]['algo_params']['virtual_consistency_weight_schedule'] == 'constant'
+    for key, value in [('virtual_semantic_training_bank_size', '-1'),
+                       ('virtual_semantic_training_bank_refresh_interval', '0'),
+                       ('virtual_consistency_final_weight', '1.1')]:
+        assert runner.invoke(namespace['main'], [path, '--' + key, value]).exit_code == 2
+
+
 def training_entrypoint():
     calls = []
 

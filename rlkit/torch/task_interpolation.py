@@ -20,8 +20,10 @@ class SemanticTaskInterpolator:
     ``refresh`` receives deterministic task embeddings and actual offline
     transitions, with shape [tasks, probes, feature].  The first half of each
     task's transitions supplies fitting probes and nearest-neighbor support;
-    the second half supplies held-out validation and generated-transition
-    inputs.  Use freshly sampled batches on each refresh.  Their independence
+    the second half supplies held-out validation and, by default, training
+    inputs. With training_bank_size > 0, refresh_training_bank supplies a
+    separate, larger input pool filtered against the same support reference.
+    Use freshly sampled batches on each refresh. Their independence
     is subject to the underlying replay sampler (duplicates are possible).
 
     ``decoder(obs, actions, z)`` must return reward, optionally concatenated
@@ -34,6 +36,8 @@ class SemanticTaskInterpolator:
         'virtual_semantic_neighbors': 2,
         'virtual_semantic_probe_batch_size': 64,
         'virtual_semantic_refresh_interval': 100,
+        'virtual_semantic_training_bank_size': 0,
+        'virtual_semantic_training_bank_refresh_interval': 25,
         'virtual_semantic_support_radius': 1.0,
         'virtual_semantic_min_shared_probes': 8,
         'virtual_semantic_max_latent_distance_ratio': 2.0,
@@ -63,7 +67,8 @@ class SemanticTaskInterpolator:
         result = dict(cls.DEFAULTS)
         result.update(supplied)
         integer_names = ('neighbors', 'probe_batch_size', 'refresh_interval',
-                         'min_shared_probes', 'path_nodes', 'path_steps')
+                         'min_shared_probes', 'path_nodes', 'path_steps',
+                         'training_bank_size', 'training_bank_refresh_interval')
         for name in integer_names:
             key = 'virtual_semantic_' + name
             value = result[key]
@@ -72,7 +77,7 @@ class SemanticTaskInterpolator:
             if not math.isfinite(value) or int(value) != value:
                 raise ValueError('{} must be an integer'.format(key))
             result[key] = int(value)
-            minimum = 0 if name == 'path_steps' else (3 if name == 'path_nodes' else 1)
+            minimum = 0 if name in ('path_steps', 'training_bank_size') else (3 if name == 'path_nodes' else 1)
             if result[key] < minimum:
                 raise ValueError('{} must be >= {}'.format(key, minimum))
         for key in set(result) - {'virtual_semantic_' + n for n in integer_names}:
@@ -97,6 +102,8 @@ class SemanticTaskInterpolator:
         if (result['virtual_semantic_min_shared_probes'] >
                 result['virtual_semantic_probe_batch_size']):
             raise ValueError('semantic min_shared_probes cannot exceed probe_batch_size')
+        if result['virtual_semantic_training_bank_size'] == 1:
+            raise ValueError('semantic training_bank_size must be 0 (legacy) or >= 2')
         return result
 
     def __init__(self, decoder, use_next_obs_in_context, **options):
@@ -111,6 +118,8 @@ class SemanticTaskInterpolator:
         self.stats = {}
         self._refresh_count = 0
         self.task_z = None
+        self.training_bank = None
+        self._training_bank_refresh_count = 0
 
     def _opt(self, name):
         return self.options['virtual_semantic_' + name]
@@ -179,9 +188,11 @@ class SemanticTaskInterpolator:
                  'path_hops_mean', 'sampled_quality_mean', 'covered_tasks',
                  'task_coverage_fraction', 'supported_probe_count_mean',
                  'validation_energy_ratio_mean', 'sampled_unique_edges',
-                 'sampled_support_unique_fraction')
+                 'sampled_support_unique_fraction', 'training_supported_input_count_mean',
+                 'training_bank_edge_coverage_fraction', 'training_bank_fallback_fraction')
         self.stats = {'virtual_semantic_' + name: 0 for name in names}
         self.stats['virtual_semantic_refresh_count'] = self._refresh_count
+        self.stats['virtual_semantic_training_bank_refresh_count'] = self._training_bank_refresh_count
 
     def _validate_batches(self, task_z, batches):
         if task_z.ndim != 2 or not task_z.is_floating_point():
@@ -210,6 +221,8 @@ class SemanticTaskInterpolator:
         self._refresh_count += 1
         self._reset_stats()
         self.edges, self.paths = {}, []
+        # A new graph uses a new support reference; never reuse an old bank.
+        self.training_bank = None
         self.task_z = task_z.detach().clone()
         n_tasks = task_z.shape[0]
         if n_tasks < 2:
@@ -240,6 +253,10 @@ class SemanticTaskInterpolator:
         scale = flat_fit_sa.std(0, unbiased=False).clamp_min(1e-3)
         fit_sa = (fit_sa - center) / scale
         check_sa = (check_sa - center) / scale
+        if self._opt('training_bank_size'):
+            self._support_center = center.clone()
+            self._support_scale = scale.clone()
+            self._support_fit_sa = fit_sa.clone()
         flat_fit_sa = fit_sa.reshape(-1, fit_sa.shape[-1])
         flat_check_sa = check_sa.reshape(-1, check_sa.shape[-1])
         # RMS nearest-neighbor distance, after per-coordinate standardization.
@@ -340,6 +357,48 @@ class SemanticTaskInterpolator:
                 len(path['edges']) for path in self.paths) / len(self.paths)
         else:
             self._count('rejected_no_path')
+
+    @torch.no_grad()
+    def refresh_training_bank(self, batches):
+        """Refresh training inputs without changing the graph or calling the decoder.
+
+        Candidates are separate replay draws, filtered against the graph's
+        fixed fit probes using the SAME standardized nearest-neighbor radius.
+        Each edge uses only its two endpoint tasks' paired offline tuples.
+        An edge with too few candidates falls back to its validated check
+        bank at sampling time; graph/path probabilities remain unchanged.
+        """
+        if not self._opt('training_bank_size'):
+            raise ValueError('training_bank_size must be enabled before refreshing a training bank')
+        if self.task_z is None:
+            raise RuntimeError('refresh the semantic graph before its training bank')
+        self._validate_batches(self.task_z, batches)
+        if any(not torch.isfinite(batches[key]).all() for key in self.BATCH_KEYS):
+            raise ValueError('Semantic training bank must contain finite paired transitions')
+        if not self.edges:
+            return
+        flat = {key: batches[key].detach().reshape(-1, batches[key].shape[-1]).clone()
+                for key in self.BATCH_KEYS}
+        sa = torch.cat([flat['observations'], flat['actions']], dim=-1)
+        sa = (sa - self._support_center) / self._support_scale
+        normalizer = math.sqrt(sa.shape[-1])
+        # Bound cdist's intermediate allocation for larger offline input pools.
+        support = torch.stack([
+            torch.cat([torch.cdist(chunk, reference).min(-1).values
+                       for chunk in sa.split(1024)]) / normalizer
+            for reference in self._support_fit_sa
+        ])
+        count = batches['observations'].shape[1]
+        for (i, j), edge in self.edges.items():
+            # Do not cap these indices at the small geometry probe count.
+            edge['training_ids'] = self._shared_indices(i, j, count, support)
+        self.training_bank = flat
+        self._training_bank_refresh_count += 1
+        counts = [edge['training_ids'].numel() for edge in self.edges.values()]
+        self.stats['virtual_semantic_training_bank_refresh_count'] = self._training_bank_refresh_count
+        self.stats['virtual_semantic_training_supported_input_count_mean'] = sum(counts) / len(counts)
+        self.stats['virtual_semantic_training_bank_edge_coverage_fraction'] = sum(
+            count >= self._opt('min_shared_probes') for count in counts) / len(counts)
 
     def _shared_indices(self, i, j, count, support):
         ids = torch.cat([torch.arange(i * count, (i + 1) * count, device=support.device),
@@ -490,18 +549,21 @@ class SemanticTaskInterpolator:
         A result may use both endpoint tasks' data; ``anchor_positions`` is
         descriptive metadata only.  Never use it to resample arbitrary inputs.
         """
-        for name in ('sampled_quality_mean', 'sampled_unique_edges', 'sampled_support_unique_fraction'):
+        for name in ('sampled_quality_mean', 'sampled_unique_edges', 'sampled_support_unique_fraction',
+                     'training_bank_fallback_fraction'):
             self.stats['virtual_semantic_' + name] = 0
         if num_tasks <= 0 or batch_size <= 0:
             return None
         if not self.paths:
             self._count('rejected_no_path')
             return None
+        if self._opt('training_bank_size') and self.training_bank is None:
+            raise RuntimeError('refresh_training_bank must follow each semantic graph refresh')
         results = {key: [] for key in ('embeddings', 'observations', 'actions',
                                       'next_observations', 'terminals',
                                       'quality_weights', 'anchor_positions')}
         device = self.task_z.device
-        sampled_edges, unique_fraction_sum = set(), 0.0
+        sampled_edges, unique_fraction_sum, bank_fallbacks = set(), 0.0, 0
         for _ in range(num_tasks):
             path = self.paths[torch.randint(len(self.paths), (), device=device).item()]
             alpha = (self._opt('alpha_min') + torch.rand((), device=device).item() *
@@ -531,12 +593,17 @@ class SemanticTaskInterpolator:
             before = cumulative[segment - 1] if segment else 0.0
             fraction = ((location - before) / lengths[segment].clamp_min(1e-12)).clamp(0, 1)
             embedding = (1 - fraction) * nodes[segment] + fraction * nodes[segment + 1]
-            ids = edge['check_ids'][torch.randint(edge['check_ids'].numel(),
-                                                 (batch_size,), device=device)]
+            input_bank, available_ids = self.check, edge['check_ids']
+            if self._opt('training_bank_size'):
+                if edge['training_ids'].numel() >= self._opt('min_shared_probes'):
+                    input_bank, available_ids = self.training_bank, edge['training_ids']
+                else:
+                    bank_fallbacks += 1
+            ids = available_ids[torch.randint(available_ids.numel(), (batch_size,), device=device)]
             unique_fraction_sum += ids.unique().numel() / batch_size
             results['embeddings'].append(embedding)
             for key in ('observations', 'actions', 'next_observations', 'terminals'):
-                results[key].append(self.check[key][ids])
+                results[key].append(input_bank[key][ids])
             results['quality_weights'].append(edge['quality'].reshape(1))
             anchor = start if segment + fraction.item() < (nodes.shape[0] - 1) / 2 else end
             results['anchor_positions'].append(torch.tensor(anchor, device=device, dtype=torch.long))
@@ -545,4 +612,5 @@ class SemanticTaskInterpolator:
         self.stats['virtual_semantic_sampled_quality_mean'] = result['quality_weights'].mean().item()
         self.stats['virtual_semantic_sampled_unique_edges'] = len(sampled_edges)
         self.stats['virtual_semantic_sampled_support_unique_fraction'] = unique_fraction_sum / num_tasks
+        self.stats['virtual_semantic_training_bank_fallback_fraction'] = bank_fallbacks / num_tasks
         return result

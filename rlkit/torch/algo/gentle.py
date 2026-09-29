@@ -169,6 +169,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
             )
         self.consistency_loss_weight        = kwargs.get('consistency_loss_weight', 1.0)
         self.consistency_use_policy_relabel_data = kwargs.get('consistency_use_policy_relabel_data', True)
+        self._configure_virtual_consistency_schedule(kwargs)
         self.virtual_transition_buffer_size = int(kwargs.get('virtual_transition_buffer_size', 50000))
         self.virtual_transition_batch_size  = int(kwargs.get('virtual_transition_batch_size', 256))
         self.virtual_transition_loss_weight = float(kwargs.get('virtual_transition_loss_weight', 1.0))
@@ -306,6 +307,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
 
         self._semantic_interpolator = None
         self._semantic_refresh_step = None
+        self._semantic_training_bank_refresh_step = None
         if self.virtual_task_generation_mode == 'semantic':
             semantic_options = {
                 key: value for key, value in kwargs.items()
@@ -391,6 +393,57 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 - self.virtual_transition_loss_weight
             )
         )
+
+    def _configure_virtual_consistency_schedule(self, options):
+        self.virtual_consistency_weight_schedule = options.get(
+            'virtual_consistency_weight_schedule', 'constant').lower()
+        if self.virtual_consistency_weight_schedule not in ('constant', 'linear_decay'):
+            raise ValueError('virtual_consistency_weight_schedule must be constant or linear_decay')
+        for name, default in (('start', 100), ('end', 300)):
+            key = 'virtual_consistency_weight_decay_' + name + '_itr'
+            value = options.get(key, default)
+            if (isinstance(value, bool) or not isinstance(value, (int, float))
+                    or not np.isfinite(value) or int(value) != value or value < 0):
+                raise ValueError(key + ' must be a nonnegative integer')
+            setattr(self, key, int(value))
+        self.virtual_consistency_final_weight = float(options.get('virtual_consistency_final_weight', 0.0))
+        if not 0 <= self.virtual_consistency_final_weight <= 1:
+            raise ValueError('virtual_consistency_final_weight must be in [0, 1]')
+        if (self.virtual_consistency_weight_schedule == 'linear_decay' and
+                self.virtual_consistency_weight_decay_end_itr <= self.virtual_consistency_weight_decay_start_itr):
+            raise ValueError('virtual consistency decay end must be larger than start')
+
+    def _get_virtual_consistency_weight(self):
+        if self.virtual_consistency_weight_schedule == 'constant':
+            return 1.0
+        itr = int(getattr(self, 'itr', 0))
+        start, end = (self.virtual_consistency_weight_decay_start_itr,
+                      self.virtual_consistency_weight_decay_end_itr)
+        progress = min(1.0, max(0.0, (itr - start) / (end - start)))
+        return 1.0 + progress * (self.virtual_consistency_final_weight - 1.0)
+
+    def _aggregate_consistency_losses(self, task_losses, real_count):
+        """Decay only virtual terms; keep the original total-task denominator.
+
+        With 10 real and 4 virtual tasks, real mean weight remains 10/14,
+        including after gamma reaches zero. Do not renormalize to 10 tasks.
+        If no virtual tasks were generated, retain the legacy real-only mean.
+        """
+        if task_losses.ndim != 1 or not 0 < real_count <= task_losses.numel():
+            raise ValueError('consistency losses must be a nonempty real-first task vector')
+        total = task_losses.numel()
+        virtual_count = total - real_count
+        gamma = self._get_virtual_consistency_weight()
+        real, virtual = task_losses[:real_count], task_losses[real_count:]
+        # Exact legacy reduction when the new schedule is disabled or not yet decaying.
+        loss = task_losses.mean() if gamma == 1.0 else (real.sum() + gamma * virtual.sum()) / total
+        self.loss['real_consistency_loss'] = real.mean().item()
+        self.loss['virtual_consistency_loss'] = virtual.mean().item() if virtual_count else 0.0
+        self.loss['virtual_consistency_fraction'] = virtual_count / total
+        self.loss['virtual_consistency_weight_current'] = gamma
+        self.loss['real_consistency_effective_weight'] = self.consistency_loss_weight * real_count / total
+        self.loss['virtual_consistency_effective_weight'] = self.consistency_loss_weight * gamma * virtual_count / total
+        return loss
 
     def _get_virtual_transition_recon_weight(self):
         if not self.virtual_transition_use_recon_weight:
@@ -732,6 +785,18 @@ class GENTLE(OfflineMetaRLAlgorithm):
             ))
             self._semantic_interpolator.refresh(real_task_z, batches)
             self._semantic_refresh_step = self._num_steps
+            self._semantic_training_bank_refresh_step = None
+        bank_size = self._semantic_interpolator.options['virtual_semantic_training_bank_size']
+        bank_interval = self._semantic_interpolator.options['virtual_semantic_training_bank_refresh_interval']
+        last_bank_refresh = getattr(self, '_semantic_training_bank_refresh_step', None)
+        if bank_size and self._semantic_interpolator.edges and (
+                last_bank_refresh is None or self._num_steps - last_bank_refresh >= bank_interval):
+            # Draw AFTER geometry construction, so bank size does not change
+            # geometry's probe selection within this graph refresh.
+            training_transitions = self.sample_transition_batch(self.train_tasks, bank_size)
+            self._semantic_interpolator.refresh_training_bank(dict(zip(
+                self._semantic_interpolator.BATCH_KEYS, training_transitions)))
+            self._semantic_training_bank_refresh_step = self._num_steps
         samples = self._semantic_interpolator.sample(self.n_vt, batch_size)
         self.loss.update(self._semantic_interpolator.stats)
         return samples
@@ -1079,17 +1144,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 return_task_losses=True,
             )
             consistency_task_losses = torch.cat([consistency_task_losses, virtual_task_losses])
-        # Keep the existing task-count weighting, while exposing both components.
-        consistency_loss = consistency_task_losses.mean()
-        virtual_consistency_count = consistency_task_losses.size(0) - real_consistency_count
-        self.loss['real_consistency_loss'] = consistency_task_losses[:real_consistency_count].mean().item()
-        self.loss['virtual_consistency_loss'] = (
-            consistency_task_losses[real_consistency_count:].mean().item()
-            if virtual_consistency_count else 0.0
-        )
-        self.loss['virtual_consistency_fraction'] = (
-            virtual_consistency_count / consistency_task_losses.size(0)
-        )
+        consistency_loss = self._aggregate_consistency_losses(consistency_task_losses, real_consistency_count)
         context_loss = self.recon_loss_weight * recon_loss
         self.loss['recon_loss'] = recon_loss.item()
         self.loss['context_loss'] = context_loss.item()
@@ -1358,13 +1413,17 @@ class GENTLE(OfflineMetaRLAlgorithm):
             'virtual_transition_batch_size',
             'virtual_consistency_fraction', 'real_consistency_loss',
             'virtual_consistency_loss', 'recon_loss',
+            'virtual_consistency_weight_current', 'real_consistency_effective_weight',
+            'virtual_consistency_effective_weight',
         )}
         values['virtual_task_generation_skipped'] = float(
             self.n_vt > 0 and self.loss['num_virtual_tasks'] == 0
         )
         if self._semantic_interpolator is not None:
             for name in ('edges', 'paths', 'covered_tasks', 'task_coverage_fraction',
-                         'sampled_unique_edges', 'sampled_support_unique_fraction'):
+                         'sampled_unique_edges', 'sampled_support_unique_fraction',
+                         'training_supported_input_count_mean', 'training_bank_edge_coverage_fraction',
+                         'training_bank_fallback_fraction'):
                 key = 'virtual_semantic_' + name
                 values[key] = float(self._semantic_interpolator.stats.get(key, 0))
         if getattr(self, '_virtual_diagnostic_iteration', None) != self.itr:

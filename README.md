@@ -1,6 +1,8 @@
 # Generalizable Task Representation Learning for Offline Meta-Reinforcement Learning with Data Limitations
 Code for AAAI'24 paper "Generalizable Task Representation Learning for Offline Meta-Reinforcement Learning with Data Limitations".
 
+Experiment 35 adds independent ablations for a larger supported semantic training input bank and virtual-only consistency decay. See [configurations, diagnostics, and commands](configs/interpolation-diagnostics/README.md). Both features are opt-in; experiment 34 configurations retain their original behavior.
+
 ## Installation
 
 First install [MuJoCo](https://www.roboti.us/index.html). For tasks differ in reward functions (Cheetah, Ant), install MuJoCo150 or plus. Set `LD_LIBRARY_PATH` to point to both the MuJoCo binaries (`/$HOME/.mujoco/mujoco200/bin`) as well as the gpu drivers.

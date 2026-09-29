@@ -132,6 +132,10 @@ def sample_virtual_embeddings(
             ('observations', 'actions', 'rewards', 'next_observations', 'terminals'), transitions
         ))
         interpolator.refresh(encode_tasks(train_tasks), batches)
+        bank_size = interpolator.options['virtual_semantic_training_bank_size']
+        if bank_size and interpolator.edges:
+            training_transitions = sample_context_batch(train_buffer, train_tasks, bank_size)
+            interpolator.refresh_training_bank(dict(zip(interpolator.BATCH_KEYS, training_transitions)))
         virtual_zs = []
         for _ in range(n_points):
             samples = interpolator.sample(n_vt, batch_size)

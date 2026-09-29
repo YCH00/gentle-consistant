@@ -45,6 +45,124 @@ def load_production_classes():
 GENTLE, VirtualTaskReplayBuffer = load_production_classes()
 
 
+@pytest.mark.parametrize('iteration,gamma', [(0, 1), (2, 1), (3, 0.5), (4, 0), (8, 0)])
+def test_virtual_consistency_decay_keeps_real_gradients_and_total_denominator(iteration, gamma):
+    algo, _ = make_algorithm()
+    algo._configure_virtual_consistency_schedule(dict(
+        virtual_consistency_weight_schedule='linear_decay',
+        virtual_consistency_weight_decay_start_itr=2,
+        virtual_consistency_weight_decay_end_itr=4))
+    algo.consistency_loss_weight = 0.5
+    algo.itr = iteration
+    losses = torch.arange(1., 15., requires_grad=True)
+    loss = algo._aggregate_consistency_losses(losses, 10)
+    (algo.consistency_loss_weight * loss).backward()
+    torch.testing.assert_close(losses.grad[:10], torch.full((10,), 0.5 / 14))
+    torch.testing.assert_close(losses.grad[10:], torch.full((4,), 0.5 * gamma / 14))
+    assert algo.loss['virtual_consistency_weight_current'] == gamma
+    assert algo.loss['real_consistency_effective_weight'] == pytest.approx(0.5 * 10 / 14)
+    assert algo.loss['virtual_consistency_effective_weight'] == pytest.approx(0.5 * gamma * 4 / 14)
+    if gamma == 1:
+        torch.testing.assert_close(loss, losses.mean(), rtol=0, atol=0)
+
+
+def test_consistency_without_virtual_tasks_preserves_real_only_mean():
+    algo, _ = make_algorithm()
+    algo._configure_virtual_consistency_schedule(dict(
+        virtual_consistency_weight_schedule='linear_decay'))
+    algo.itr = 500
+    losses = torch.arange(10., requires_grad=True)
+    value = algo._aggregate_consistency_losses(losses, 10)
+    value.backward()
+    torch.testing.assert_close(value, losses.mean())
+    torch.testing.assert_close(losses.grad, torch.full((10,), 0.1))
+    assert algo.loss['virtual_consistency_fraction'] == 0
+
+
+@pytest.mark.parametrize('options', [
+    dict(virtual_consistency_weight_schedule='invalid'),
+    dict(virtual_consistency_weight_decay_start_itr=-1),
+    dict(virtual_consistency_weight_decay_end_itr=1.5),
+    dict(virtual_consistency_weight_decay_start_itr=True),
+    dict(virtual_consistency_weight_decay_start_itr=float('inf')),
+    dict(virtual_consistency_weight_schedule='linear_decay', virtual_consistency_weight_decay_end_itr=100),
+    dict(virtual_consistency_final_weight=-0.1),
+    dict(virtual_consistency_final_weight=1.1),
+    dict(virtual_consistency_final_weight=float('nan')),
+])
+def test_invalid_virtual_consistency_schedule(options):
+    with pytest.raises(ValueError):
+        GENTLE.__new__(GENTLE)._configure_virtual_consistency_schedule(options)
+
+
+def test_training_bank_has_independent_refresh_clock_and_forced_graph_invalidation():
+    algo, calls = make_algorithm()
+    sampler = algo._semantic_interpolator
+    sampler.options.update(virtual_semantic_training_bank_size=128,
+                           virtual_semantic_training_bank_refresh_interval=5)
+    algo._sample_virtual_task_embeddings(16)
+    assert calls[-1][1] == 128
+    assert sampler._refresh_count == sampler._training_bank_refresh_count == 1
+    first_call_count = len(calls)
+    algo._num_steps = 4
+    algo._sample_virtual_task_embeddings(16)
+    assert len(calls) == first_call_count
+    algo._num_steps = 5
+    algo._sample_virtual_task_embeddings(16)
+    assert len(calls) == first_call_count + 1
+    assert sampler._refresh_count == 1 and sampler._training_bank_refresh_count == 2
+    algo._num_steps = 6
+    algo._sample_virtual_task_embeddings(16, force_refresh=True)
+    assert sampler._refresh_count == 2 and sampler._training_bank_refresh_count == 3
+    algo._num_steps = 106
+    algo._sample_virtual_task_embeddings(16)
+    assert sampler._refresh_count == 3 and sampler._training_bank_refresh_count == 4
+
+
+@pytest.mark.parametrize('dynamics', [False, True])
+@pytest.mark.parametrize('mode', ['global', 'semantic'])
+def test_training_with_bank_and_zero_virtual_consistency_keeps_generation_and_rl(mode, dynamics):
+    algo, _ = make_algorithm(dynamics)
+    algo.virtual_task_generation_mode = mode
+    if mode == 'global':
+        algo._semantic_interpolator = None
+        algo.M, algo.beta = 2, 1.0
+    else:
+        algo._semantic_interpolator.options['virtual_semantic_training_bank_size'] = 128
+    algo._configure_virtual_consistency_schedule(dict(
+        virtual_consistency_weight_schedule='linear_decay',
+        virtual_consistency_weight_decay_start_itr=0,
+        virtual_consistency_weight_decay_end_itr=1))
+    # RL remains enabled while the independent consistency schedule reaches zero.
+    algo.virtual_transition_weight_schedule = 'constant'
+    algo.itr = 2
+    state = copy.deepcopy(algo.context_decoder.state_dict())
+    algo._take_step([0, 1], algo.sample_context([0, 1], 16))
+    assert algo.loss['num_virtual_tasks'] == 3
+    assert algo.loss['virtual_consistency_fraction'] == pytest.approx(3 / 5)
+    assert algo.loss['virtual_consistency_effective_weight'] == 0
+    assert algo.loss['consistency_loss'] == pytest.approx(algo.loss['real_consistency_loss'] * 2 / 5)
+    assert algo.loss['num_virtual_transitions_added'] == 48
+    assert algo.virtual_transition_buffer.size() == 48
+    for name in ('encoder_total_loss', 'policy_total_loss', 'qf_loss'):
+        assert np.isfinite(algo.loss[name])
+    for key, value in algo.context_decoder.state_dict().items():
+        torch.testing.assert_close(value, state[key], rtol=0, atol=0)
+    assert all(p.grad is None for p in algo.context_decoder.parameters())
+
+
+def test_embedding_export_supports_separate_training_bank():
+    algo, calls = make_algorithm()
+    result = load_export_sampler(algo)(
+        None, [0, 1], algo.agent.context_encoder, 2, False, False,
+        n_vt=3, mixing_tasks=2, beta=1, batch_size=16, n_points=2,
+        generation_mode='semantic', context_decoder=algo.context_decoder,
+        algo_params=dict(virtual_semantic_probe_batch_size=32, virtual_semantic_path_steps=0,
+                         virtual_semantic_training_bank_size=128))
+    assert result.shape == (1, 6, 2) and np.isfinite(result).all()
+    assert any(size == 128 for _, size in calls)
+
+
 class ToyEncoder(torch.nn.Module):
     output_size = 2
 
@@ -265,10 +383,12 @@ def test_legacy_samplers_still_support_training_update(mode):
     assert np.isfinite(algo.loss['policy_total_loss'])
 
 
-def test_training_continues_and_logs_when_no_semantic_edge_is_supported():
+@pytest.mark.parametrize('bank_size', [0, 128])
+def test_training_continues_and_logs_when_no_semantic_edge_is_supported(bank_size):
     algo, _ = make_algorithm()
     algo._semantic_interpolator = SemanticTaskInterpolator(
         algo.context_decoder, False, virtual_semantic_support_radius=1e-8,
+        virtual_semantic_training_bank_size=bank_size,
     )
     algo._take_step([0, 1], algo.sample_context([0, 1], 16))
     assert algo.loss['num_virtual_tasks'] == 0

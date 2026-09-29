@@ -18,6 +18,117 @@ from rlkit.torch.task_interpolation import SemanticTaskInterpolator
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_separate_bank_expands_inputs_preserving_geometry_and_paired_tuples():
+    torch.manual_seed(42)
+    sampler, decoder, z, batches = make_reward_sampler(
+        virtual_semantic_training_bank_size=1024, virtual_semantic_path_steps=0)
+    sampler.refresh(z, batches)
+    assert sampler.paths
+    before = copy.deepcopy(sampler.edges)
+    paths = copy.deepcopy(sampler.paths)
+    bank = paired_batches(decoder, z, probe_count=1024)
+    # Preserve unique, recognizable successors while filtering only (s,a).
+    bank['next_observations'] = torch.arange(2048.).reshape(2, 1024, 1)
+    decoder_state = copy.deepcopy(decoder.state_dict())
+    def forbidden(*args, **kwargs):
+        raise AssertionError('training bank operations must not call the decoder')
+    decoder.forward = forbidden
+    sampler.refresh_training_bank(bank)
+    assert sampler.paths == paths
+    for key, edge in before.items():
+        for name, value in edge.items():
+            if torch.is_tensor(value):
+                torch.testing.assert_close(sampler.edges[key][name], value, rtol=0, atol=0)
+            else:
+                assert sampler.edges[key][name] == value
+        ids = sampler.edges[key]['training_ids']
+        assert ids.numel() > 64
+        sa = torch.cat([bank['observations'], bank['actions']], -1).reshape(-1, 2)
+        sa = (sa - sampler._support_center) / sampler._support_scale
+        for endpoint in key:
+            distance = torch.cdist(sa[ids], sampler._support_fit_sa[endpoint]).min(-1).values / 2**0.5
+            assert (distance <= sampler._opt('support_radius') + 1e-6).all()
+    result = sampler.sample(4, 512)
+    assert sampler.stats['virtual_semantic_sampled_support_unique_fraction'] > 0.5
+    assert sampler.stats['virtual_semantic_training_bank_fallback_fraction'] == 0
+    ids = result['next_observations'].long().reshape(-1)
+    for key in ('observations', 'actions', 'next_observations', 'terminals'):
+        torch.testing.assert_close(result[key].reshape(-1, 1), bank[key].reshape(-1, 1)[ids])
+    for key, value in decoder.state_dict().items():
+        torch.testing.assert_close(value, decoder_state[key], rtol=0, atol=0)
+
+
+def test_bank_support_failure_falls_back_without_changing_virtual_embeddings():
+    torch.manual_seed(42)
+    sampler, decoder, z, batches = make_reward_sampler(
+        virtual_semantic_training_bank_size=128, virtual_semantic_path_steps=0)
+    sampler.refresh(z, batches)
+    with pytest.raises(RuntimeError, match='refresh_training_bank'):
+        sampler.sample(4, 16)
+    outside = paired_batches(decoder, z, 128, shifts=[1000, 1000])
+    sampler.refresh_training_bank(outside)
+    assert all(edge['training_ids'].numel() == 0 for edge in sampler.edges.values())
+    torch.manual_seed(123)
+    fallback = sampler.sample(4, 32)
+    assert sampler.stats['virtual_semantic_training_bank_fallback_fraction'] == 1
+    sampler.options['virtual_semantic_training_bank_size'] = 0
+    torch.manual_seed(123)
+    legacy = sampler.sample(4, 32)
+    for key in fallback:
+        torch.testing.assert_close(fallback[key], legacy[key], rtol=0, atol=0)
+
+
+def test_bank_refresh_replaces_inputs_and_graph_refresh_invalidates_bank():
+    torch.manual_seed(42)
+    sampler, decoder, z, batches = make_reward_sampler(
+        virtual_semantic_training_bank_size=128, virtual_semantic_path_steps=0)
+    sampler.refresh(z, batches)
+    bank = paired_batches(decoder, z, 128)
+    bank['next_observations'].fill_(123)
+    sampler.refresh_training_bank(bank)
+    bank['next_observations'].fill_(456)
+    assert (sampler.sample(2, 16)['next_observations'] == 123).all()
+    sampler.refresh_training_bank(bank)
+    assert (sampler.sample(2, 16)['next_observations'] == 456).all()
+    assert sampler.stats['virtual_semantic_training_bank_refresh_count'] == 2
+    invalid = copy.deepcopy(bank)
+    invalid['actions'][0, 0, 0] = float('nan')
+    with pytest.raises(ValueError, match='finite'):
+        sampler.refresh_training_bank(invalid)
+    sampler.refresh(z, batches)
+    assert sampler.training_bank is None
+    with pytest.raises(RuntimeError, match='refresh_training_bank'):
+        sampler.sample(2, 16)
+
+
+def test_training_bank_requires_support_from_both_endpoints():
+    torch.manual_seed(42)
+    sampler, decoder, z, batches = make_reward_sampler(
+        virtual_semantic_training_bank_size=3, virtual_semantic_path_steps=0)
+    sampler.refresh(z, batches)
+    assert sampler.edges
+    # Controlled references distinguish shared inputs from one-sided inputs.
+    sampler._support_center = torch.zeros(2)
+    sampler._support_scale = torch.ones(2)
+    sampler._support_fit_sa = torch.tensor([[[0., 0.]], [[1., 0.]]])
+    sampler.options['virtual_semantic_support_radius'] = 0.4
+    bank = paired_batches(decoder, z, 3)
+    bank['observations'] = torch.tensor([[[0.], [0.5], [1.]]]).repeat(2, 1, 1)
+    bank['actions'].zero_()
+    sampler.refresh_training_bank(bank)
+    for edge in sampler.edges.values():
+        assert edge['training_ids'].tolist() == [1, 4]
+
+
+@pytest.mark.parametrize('key,value', [
+    ('training_bank_size', -1), ('training_bank_size', 1), ('training_bank_size', 2.5),
+    ('training_bank_refresh_interval', 0), ('training_bank_refresh_interval', 1.5),
+])
+def test_invalid_training_bank_options(key, value):
+    with pytest.raises(ValueError):
+        make_reward_sampler(**{'virtual_semantic_' + key: value})
+
+
 class CurvedRewardDecoder(torch.nn.Module):
     """A known nonlinear task chart with a shorter curved latent path.
 

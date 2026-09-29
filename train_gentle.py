@@ -299,6 +299,12 @@ def deep_update_dict(fr, to):
 @click.option('--virtual_semantic_refresh_interval', type=click.IntRange(min=1), default=None)
 @click.option('--virtual_semantic_neighbors', type=click.IntRange(min=1), default=None)
 @click.option('--virtual_semantic_support_radius', type=click.FloatRange(min=0.0, min_open=True), default=None)
+@click.option('--virtual_semantic_training_bank_size', type=click.IntRange(min=0), default=None)
+@click.option('--virtual_semantic_training_bank_refresh_interval', type=click.IntRange(min=1), default=None)
+@click.option('--virtual_consistency_weight_schedule', type=click.Choice(['constant', 'linear_decay']), default=None)
+@click.option('--virtual_consistency_weight_decay_start_itr', type=click.IntRange(min=0), default=None)
+@click.option('--virtual_consistency_weight_decay_end_itr', type=click.IntRange(min=0), default=None)
+@click.option('--virtual_consistency_final_weight', type=click.FloatRange(min=0.0, max=1.0), default=None)
 def main(
     config,
     gpu,
@@ -336,6 +342,12 @@ def main(
     virtual_semantic_refresh_interval,
     virtual_semantic_neighbors,
     virtual_semantic_support_radius,
+    virtual_semantic_training_bank_size,
+    virtual_semantic_training_bank_refresh_interval,
+    virtual_consistency_weight_schedule,
+    virtual_consistency_weight_decay_start_itr,
+    virtual_consistency_weight_decay_end_itr,
+    virtual_consistency_final_weight,
 ):
 
     variant = copy.deepcopy(default_config)
@@ -411,6 +423,16 @@ def main(
         variant['algo_params']['virtual_semantic_neighbors'] = virtual_semantic_neighbors
     if virtual_semantic_support_radius is not None:
         variant['algo_params']['virtual_semantic_support_radius'] = virtual_semantic_support_radius
+    for key, value in dict(
+        virtual_semantic_training_bank_size=virtual_semantic_training_bank_size,
+        virtual_semantic_training_bank_refresh_interval=virtual_semantic_training_bank_refresh_interval,
+        virtual_consistency_weight_schedule=virtual_consistency_weight_schedule,
+        virtual_consistency_weight_decay_start_itr=virtual_consistency_weight_decay_start_itr,
+        virtual_consistency_weight_decay_end_itr=virtual_consistency_weight_decay_end_itr,
+        virtual_consistency_final_weight=virtual_consistency_final_weight,
+    ).items():
+        if value is not None:
+            variant['algo_params'][key] = value
 
     # multi-processing
     if len(seed_list) > 1:
