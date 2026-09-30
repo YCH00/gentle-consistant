@@ -29,6 +29,23 @@ from rlkit.torch.algo.gentle import GENTLE
 rng = default_rng()
 
 
+def _save_observation_normalizer(algorithm, log_dir):
+    """Persist the exact training transform, without sampling or changing it."""
+    normalizer = algorithm.obs_normalizer
+    mean, var = np.asarray(normalizer.mean), np.asarray(normalizer.var)
+    if (mean.shape != var.shape or not np.isfinite(mean).all() or not np.isfinite(var).all()
+            or (var < 0).any() or not np.isfinite(normalizer.count) or normalizer.count <= 0):
+        raise ValueError('Cannot save invalid observation normalization statistics')
+    destination = Path(log_dir) / 'observation_normalizer.npz'
+    temporary = destination.with_suffix('.npz.tmp')
+    with temporary.open('wb') as handle:
+        np.savez_compressed(handle, format_version=np.asarray(1), mean=mean, var=var,
+                            count=np.asarray(normalizer.count),
+                            train_tasks=np.asarray(algorithm.train_tasks),
+                            eval_tasks=np.asarray(algorithm.eval_tasks))
+    temporary.replace(destination)
+
+
 def _train_with_tensorboard(algorithm, log_dir):
     writer = SummaryWriter(log_dir)
     try:
@@ -250,6 +267,7 @@ def experiment(variant, seed=None):
         algo_name=variant['output_prefix']+variant['algo_type']
     )
 
+    _save_observation_normalizer(algorithm, experiment_log_dir)
     _train_with_tensorboard(algorithm, experiment_log_dir)
 
 def deep_update_dict(fr, to):

@@ -1,5 +1,7 @@
 # 第 35 次实验：输入池与虚拟 consistency 的独立消融
 
+第 35 次结果后的下一步见 [固定 context 复评](../../docs/fixed_context_diagnostics.md) 与 [第 36 次匹配的无虚拟任务对照](REAL_ONLY_MATCHED.md)。下方历史第 35 次配置保留原样。
+
 本组配置从 `configs/interpolation-ablation/` 的第 34 次配置复制，只改变各自待验证因素。历史配置保持原样。优先跑 Ant-Dir、Cheetah-Vel 的四个 seed；其余连续环境提供同样的独立配置。Cheetah-Dir 是离散方向对照，继续使用原有 `cheetah-dir-control.json`，不增加虚拟任务。
 
 | 实验名称 | 文件后缀 | 对照 | 唯一研究因素 |

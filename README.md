@@ -3,6 +3,8 @@ Code for AAAI'24 paper "Generalizable Task Representation Learning for Offline M
 
 Experiment 35 adds independent ablations for a larger supported semantic training input bank and virtual-only consistency decay. See [configurations, diagnostics, and commands](configs/interpolation-diagnostics/README.md). Both features are opt-in; experiment 34 configurations retain their original behavior.
 
+Experiment 36 adds [fixed-context checkpoint evaluation](docs/fixed_context_diagnostics.md) and [matched real-task-only controls](configs/interpolation-diagnostics/REAL_ONLY_MATCHED.md). Existing training/evaluation defaults are preserved; new runs also save their exact observation normalization statistics for checkpoint reuse.
+
 ## Installation
 
 First install [MuJoCo](https://www.roboti.us/index.html). For tasks differ in reward functions (Cheetah, Ant), install MuJoCo150 or plus. Set `LD_LIBRARY_PATH` to point to both the MuJoCo binaries (`/$HOME/.mujoco/mujoco200/bin`) as well as the gpu drivers.
