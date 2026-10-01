@@ -293,6 +293,7 @@ def deep_update_dict(fr, to):
 @click.option('--M', 'virtual_neighbor_candidates', type=int, default=None)
 @click.option('--virtual_interpolation_lambda_max', type=float, default=None)
 @click.option('--consistency_use_policy_relabel_data', type=bool, default=None)
+@click.option('--real_consistency_input_mode', type=click.Choice(['legacy', 'paired_replay', 'policy', 'cross_task']), default=None)
 @click.option('--virtual_transition_use_policy_actions', type=bool, default=None)
 @click.option('--virtual_transition_loss_weight', type=float, default=None)
 @click.option('--virtual_transition_weight_schedule', type=click.Choice(['constant', 'linear_decay']), default=None)
@@ -336,6 +337,7 @@ def main(
     virtual_neighbor_candidates,
     virtual_interpolation_lambda_max,
     consistency_use_policy_relabel_data,
+    real_consistency_input_mode,
     virtual_transition_use_policy_actions,
     virtual_transition_loss_weight,
     virtual_transition_weight_schedule,
@@ -391,6 +393,8 @@ def main(
         variant['algo_params']['virtual_interpolation_lambda_max'] = virtual_interpolation_lambda_max
     if consistency_use_policy_relabel_data is not None:
         variant['algo_params']['consistency_use_policy_relabel_data'] = consistency_use_policy_relabel_data
+    if real_consistency_input_mode is not None:
+        variant['algo_params']['real_consistency_input_mode'] = real_consistency_input_mode
     if virtual_transition_use_policy_actions is not None:
         variant['algo_params']['virtual_transition_use_policy_actions'] = virtual_transition_use_policy_actions
     if virtual_transition_loss_weight is not None:

@@ -169,6 +169,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
             )
         self.consistency_loss_weight        = kwargs.get('consistency_loss_weight', 1.0)
         self.consistency_use_policy_relabel_data = kwargs.get('consistency_use_policy_relabel_data', True)
+        self._configure_real_consistency_input(kwargs)
         self._configure_virtual_consistency_schedule(kwargs)
         self.virtual_transition_buffer_size = int(kwargs.get('virtual_transition_buffer_size', 50000))
         self.virtual_transition_batch_size  = int(kwargs.get('virtual_transition_batch_size', 256))
@@ -393,6 +394,13 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 - self.virtual_transition_loss_weight
             )
         )
+
+    def _configure_real_consistency_input(self, options):
+        mode = options.get('real_consistency_input_mode', 'legacy')
+        if mode not in ('legacy', 'paired_replay', 'policy', 'cross_task'):
+            raise ValueError(
+                'real_consistency_input_mode must be legacy, paired_replay, policy, or cross_task')
+        self.real_consistency_input_mode = mode
 
     def _configure_virtual_consistency_schedule(self, options):
         self.virtual_consistency_weight_schedule = options.get(
@@ -695,7 +703,10 @@ class GENTLE(OfflineMetaRLAlgorithm):
 
     @torch.no_grad()
     def _build_consistency_context(self, task_z, batch_size, anchor_task_indices=None,
-                                   use_policy_relabel_data=None, support_batch=None):
+                                   use_policy_relabel_data=None, support_batch=None,
+                                   input_mode=None):
+        if input_mode not in (None, 'legacy', 'paired_replay', 'policy', 'cross_task'):
+            raise ValueError('Invalid consistency input_mode: {}'.format(input_mode))
         if task_z is None or len(task_z) == 0:
             return None
 
@@ -724,8 +735,14 @@ class GENTLE(OfflineMetaRLAlgorithm):
         repeated_task_z = task_z.unsqueeze(1).expand(-1, batch_size, -1)
         if use_policy_relabel_data is None:
             use_policy_relabel_data = self.consistency_use_policy_relabel_data
+        if input_mode in (None, 'legacy'):
+            input_mode = 'policy' if use_policy_relabel_data else 'cross_task'
 
-        if use_policy_relabel_data:
+        if input_mode == 'paired_replay':
+            # Preserve each observed (s, a) pair. The decoder still supplies the
+            # reward/dynamics fields, so this changes inputs, not the cycle target.
+            fake_actions = anchor_context[:, :, self.obs_dim:self.obs_dim + self.action_dim]
+        elif input_mode == 'policy':
             policy_inputs = torch.cat(
                 [
                     anchor_obs.reshape(-1, self.obs_dim),
@@ -921,7 +938,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
 
     def _compute_consistency_loss(self, task_z, batch_size, anchor_task_indices=None,
                                   use_policy_relabel_data=None, support_batch=None,
-                                  return_task_losses=False):
+                                  return_task_losses=False, input_mode=None):
         if task_z is None:
             return ptu.zeros(0) if return_task_losses else ptu.zeros(1).squeeze()
 
@@ -932,6 +949,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
             anchor_task_indices=anchor_task_indices,
             use_policy_relabel_data=use_policy_relabel_data,
             support_batch=support_batch,
+            input_mode=input_mode,
         )
         if fake_context is None:
             return ptu.zeros(0) if return_task_losses else ptu.zeros(1).squeeze()
@@ -1132,12 +1150,33 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 consistency_anchor_task_indices,
                 virtual_anchor_task_indices,
             ])
-        consistency_task_losses = self._compute_consistency_loss(
-            consistency_task_z,
-            c_b,
-            anchor_task_indices=consistency_anchor_task_indices,
-            return_task_losses=True,
-        )
+        real_input_mode = getattr(self, 'real_consistency_input_mode', 'legacy')
+        if real_input_mode == 'legacy':
+            # Preserve the original combined call and RNG order for old runs.
+            consistency_task_losses = self._compute_consistency_loss(
+                consistency_task_z,
+                c_b,
+                anchor_task_indices=consistency_anchor_task_indices,
+                return_task_losses=True,
+            )
+        else:
+            consistency_task_losses = self._compute_consistency_loss(
+                consistency_task_z[:real_consistency_count],
+                c_b,
+                anchor_task_indices=consistency_anchor_task_indices[:real_consistency_count],
+                return_task_losses=True,
+                input_mode=real_input_mode,
+            )
+            if len(consistency_task_z) > real_consistency_count:
+                # Non-semantic virtual tasks keep their existing input policy;
+                # the real-task override must not alter their construction.
+                virtual_task_losses = self._compute_consistency_loss(
+                    consistency_task_z[real_consistency_count:],
+                    c_b,
+                    anchor_task_indices=consistency_anchor_task_indices[real_consistency_count:],
+                    return_task_losses=True,
+                )
+                consistency_task_losses = torch.cat([consistency_task_losses, virtual_task_losses])
         if virtual_support is not None:
             virtual_task_losses = self._compute_consistency_loss(
                 virtual_task_z, c_b, support_batch=virtual_support,
@@ -1145,6 +1184,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
             )
             consistency_task_losses = torch.cat([consistency_task_losses, virtual_task_losses])
         consistency_loss = self._aggregate_consistency_losses(consistency_task_losses, real_consistency_count)
+        self.loss['real_consistency_paired_replay'] = int(real_input_mode == 'paired_replay')
         context_loss = self.recon_loss_weight * recon_loss
         self.loss['recon_loss'] = recon_loss.item()
         self.loss['context_loss'] = context_loss.item()
@@ -1166,7 +1206,12 @@ class GENTLE(OfflineMetaRLAlgorithm):
             0 if self.virtual_transition_buffer is None else self.virtual_transition_buffer.size()
         )
         self.loss.update(virtual_add_stats)
-        encoder_total_loss = context_loss + self.consistency_loss_weight * consistency_loss
+        # Keep consistency's forward sampling/diagnostics in the zero-weight
+        # ablation, but disconnect its backward graph (0 * NaN is still NaN).
+        if self.consistency_loss_weight == 0.0:
+            encoder_total_loss = context_loss
+        else:
+            encoder_total_loss = context_loss + self.consistency_loss_weight * consistency_loss
         
         self.context_optimizer.zero_grad()
         encoder_total_loss.backward()
@@ -1415,6 +1460,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
             'virtual_consistency_loss', 'recon_loss',
             'virtual_consistency_weight_current', 'real_consistency_effective_weight',
             'virtual_consistency_effective_weight',
+            'real_consistency_paired_replay',
         )}
         values['virtual_task_generation_skipped'] = float(
             self.n_vt > 0 and self.loss['num_virtual_tasks'] == 0
