@@ -4,6 +4,8 @@
 
 第 36 次 Ant-Dir 结果后的两组独立消融见 [第 37 次真实任务 consistency 消融](REAL_CONSISTENCY_ABLATION.md)，包括关闭 consistency 与使用配对 replay 输入。
 
+第 37 次结果后的改进见 [第 38 次独立 consistency 与 critic 诊断](INDEPENDENT_CONSISTENCY.md)，包括真实系数 0.1、语义虚拟 RL 单独训练以及虚拟 consistency 的独立对照。
+
 本组配置从 `configs/interpolation-ablation/` 的第 34 次配置复制，只改变各自待验证因素。历史配置保持原样。优先跑 Ant-Dir、Cheetah-Vel 的四个 seed；其余连续环境提供同样的独立配置。Cheetah-Dir 是离散方向对照，继续使用原有 `cheetah-dir-control.json`，不增加虚拟任务。
 
 | 实验名称 | 文件后缀 | 对照 | 唯一研究因素 |

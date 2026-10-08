@@ -168,6 +168,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 "got {}".format(self.virtual_gaussian_noise_std)
             )
         self.consistency_loss_weight        = kwargs.get('consistency_loss_weight', 1.0)
+        self._configure_consistency_weights(kwargs)
         self.consistency_use_policy_relabel_data = kwargs.get('consistency_use_policy_relabel_data', True)
         self._configure_real_consistency_input(kwargs)
         self._configure_virtual_consistency_schedule(kwargs)
@@ -395,6 +396,57 @@ class GENTLE(OfflineMetaRLAlgorithm):
             )
         )
 
+    def _configure_consistency_weights(self, options):
+        """Optional group coefficients override the legacy mean coefficient.
+
+        None retains w_c * N_group / N_total. An explicit coefficient applies
+        directly to that group's mean; virtual coefficients still use gamma.
+        """
+        for key in ('consistency_loss_weight', 'real_consistency_loss_weight',
+                    'virtual_consistency_loss_weight'):
+            value = options.get(key, getattr(self, 'consistency_loss_weight', 1.0) if key == 'consistency_loss_weight' else None)
+            if value is None and key != 'consistency_loss_weight':
+                setattr(self, key, None)
+                continue
+            if (isinstance(value, bool) or not isinstance(value, (int, float))
+                    or not np.isfinite(value) or value < 0):
+                raise ValueError(key + ' must be a finite nonnegative number')
+            setattr(self, key, float(value))
+
+    def _uses_independent_consistency_weights(self):
+        return (getattr(self, 'real_consistency_loss_weight', None) is not None
+                or getattr(self, 'virtual_consistency_loss_weight', None) is not None)
+
+    def _get_consistency_effective_weights(self, real_count, total):
+        real = getattr(self, 'real_consistency_loss_weight', None)
+        virtual = getattr(self, 'virtual_consistency_loss_weight', None)
+        real_weight = self.consistency_loss_weight * real_count / total if real is None else real
+        virtual_count = total - real_count
+        virtual_weight = self.consistency_loss_weight * virtual_count / total if virtual is None else virtual
+        virtual_weight = virtual_weight * self._get_virtual_consistency_weight() if virtual_count else 0.0
+        return real_weight, virtual_weight
+
+    def _weighted_consistency_loss(self, real_losses, virtual_losses, legacy_loss):
+        """Return the encoder contribution, or None when both groups are off.
+
+        Explicit groups must keep separate computation graphs: slicing a
+        concatenated diagnostic vector can still send 0 * NaN backwards
+        through a disabled branch. Old configurations retain their reduction
+        and sampling order exactly.
+        """
+        if not self._uses_independent_consistency_weights():
+            return None if self.consistency_loss_weight == 0.0 else self.consistency_loss_weight * legacy_loss
+        virtual_count = 0 if virtual_losses is None else virtual_losses.numel()
+        real_weight, virtual_weight = self._get_consistency_effective_weights(
+            real_losses.numel(), real_losses.numel() + virtual_count)
+        contribution = None
+        if real_weight > 0.0:
+            contribution = real_weight * real_losses.mean()
+        if virtual_weight > 0.0:
+            virtual_contribution = virtual_weight * virtual_losses.mean()
+            contribution = virtual_contribution if contribution is None else contribution + virtual_contribution
+        return contribution
+
     def _configure_real_consistency_input(self, options):
         mode = options.get('real_consistency_input_mode', 'legacy')
         if mode not in ('legacy', 'paired_replay', 'policy', 'cross_task'):
@@ -449,8 +501,9 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.loss['virtual_consistency_loss'] = virtual.mean().item() if virtual_count else 0.0
         self.loss['virtual_consistency_fraction'] = virtual_count / total
         self.loss['virtual_consistency_weight_current'] = gamma
-        self.loss['real_consistency_effective_weight'] = self.consistency_loss_weight * real_count / total
-        self.loss['virtual_consistency_effective_weight'] = self.consistency_loss_weight * gamma * virtual_count / total
+        real_weight, virtual_weight = self._get_consistency_effective_weights(real_count, total)
+        self.loss['real_consistency_effective_weight'] = real_weight
+        self.loss['virtual_consistency_effective_weight'] = virtual_weight
         return loss
 
     def _get_virtual_transition_recon_weight(self):
@@ -1151,7 +1204,8 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 virtual_anchor_task_indices,
             ])
         real_input_mode = getattr(self, 'real_consistency_input_mode', 'legacy')
-        if real_input_mode == 'legacy':
+        real_task_losses = virtual_task_losses = None
+        if real_input_mode == 'legacy' and not self._uses_independent_consistency_weights():
             # Preserve the original combined call and RNG order for old runs.
             consistency_task_losses = self._compute_consistency_loss(
                 consistency_task_z,
@@ -1160,13 +1214,14 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 return_task_losses=True,
             )
         else:
-            consistency_task_losses = self._compute_consistency_loss(
+            real_task_losses = self._compute_consistency_loss(
                 consistency_task_z[:real_consistency_count],
                 c_b,
                 anchor_task_indices=consistency_anchor_task_indices[:real_consistency_count],
                 return_task_losses=True,
                 input_mode=real_input_mode,
             )
+            consistency_task_losses = real_task_losses
             if len(consistency_task_z) > real_consistency_count:
                 # Non-semantic virtual tasks keep their existing input policy;
                 # the real-task override must not alter their construction.
@@ -1184,6 +1239,10 @@ class GENTLE(OfflineMetaRLAlgorithm):
             )
             consistency_task_losses = torch.cat([consistency_task_losses, virtual_task_losses])
         consistency_loss = self._aggregate_consistency_losses(consistency_task_losses, real_consistency_count)
+        consistency_encoder_loss = self._weighted_consistency_loss(
+            real_task_losses, virtual_task_losses, consistency_loss)
+        self.loss['consistency_encoder_loss'] = (
+            0.0 if consistency_encoder_loss is None else consistency_encoder_loss.item())
         self.loss['real_consistency_paired_replay'] = int(real_input_mode == 'paired_replay')
         context_loss = self.recon_loss_weight * recon_loss
         self.loss['recon_loss'] = recon_loss.item()
@@ -1208,10 +1267,10 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.loss.update(virtual_add_stats)
         # Keep consistency's forward sampling/diagnostics in the zero-weight
         # ablation, but disconnect its backward graph (0 * NaN is still NaN).
-        if self.consistency_loss_weight == 0.0:
+        if consistency_encoder_loss is None:
             encoder_total_loss = context_loss
         else:
-            encoder_total_loss = context_loss + self.consistency_loss_weight * consistency_loss
+            encoder_total_loss = context_loss + consistency_encoder_loss
         
         self.context_optimizer.zero_grad()
         encoder_total_loss.backward()
@@ -1338,6 +1397,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
                 critic_task_z,
             )
             target_q = torch.min(target_q1, target_q2)
+            bootstrap_q = target_q
             # scale rewards for Bellman update
             target_q = critic_rewards * self.reward_scale + (1. - critic_terms) * self.discount * target_q
 
@@ -1349,6 +1409,7 @@ class GENTLE(OfflineMetaRLAlgorithm):
         self.qf1_optimizer.zero_grad()
         self.qf2_optimizer.zero_grad()
         qf_loss.backward(retain_graph=True)
+        self._record_critic_diagnostics(q1_pred, q2_pred, target_q, bootstrap_q, real_sac_batch_size)
         self.loss["qf_loss"] = qf_loss.item()
         self.loss["real_qf_loss"] = real_qf_loss.item()
         self.loss["virtual_qf_loss"] = virtual_qf_loss.item()
@@ -1375,6 +1436,9 @@ class GENTLE(OfflineMetaRLAlgorithm):
         )
         weighted_abs_q = (Q.abs() * policy_q_weights).sum() / policy_q_weight_sum
         lmbda = self.bc_weight / weighted_abs_q.detach().clamp(min=1e-6)
+        self.loss['policy_q_abs_mean'] = weighted_abs_q.detach().item()
+        self.loss['policy_q_lambda'] = lmbda.item()
+        self.loss['real_policy_q_abs_mean'] = Q[:real_sac_batch_size].detach().abs().mean().item()
         policy_loss = -lmbda * (Q * policy_q_weights).sum() / policy_q_weight_sum
         bc_weight_sum = bc_weights.sum().clamp(min=1e-6)
         bc_element_loss = torch.mean((bc_new_actions - bc_actions) ** 2, dim=1, keepdim=True)
@@ -1440,12 +1504,52 @@ class GENTLE(OfflineMetaRLAlgorithm):
             self.eval_statistics.update(self._semantic_interpolator.stats)
         return ptu.get_numpy(self.agent.z_means), ptu.get_numpy(self.agent.z_vars)
 
+    @staticmethod
+    def _gradient_norm(module):
+        # Float64 avoids overflow in the diagnostic reduction of large but
+        # finite gradients. This observes the optimizer gradients unchanged.
+        norms = [p.grad.detach().norm(p=2, dtype=torch.float64)
+                 for p in module.parameters() if p.grad is not None]
+        return torch.stack(norms).norm(p=2).item() if norms else 0.0
+
+    def _record_critic_diagnostics(self, q1, q2, target, bootstrap, real_count):
+        """Observe behavior-action Q before the optimizer step; no extra forwards."""
+        tensors = {'q1_pred': q1.detach(), 'q2_pred': q2.detach(),
+                   'q_target': target.detach(), 'q_bootstrap': bootstrap.detach()}
+        observations = {}
+        zero = q1.new_zeros(())
+        td = torch.cat([(q1.detach() - target.detach()).abs(),
+                        (q2.detach() - target.detach()).abs()], dim=-1)
+        for group, selection in (('real', slice(None, real_count)),
+                                 ('virtual', slice(real_count, None))):
+            for name, tensor in tensors.items():
+                values = tensor[selection]
+                prefix = group + '_' + name + '_'
+                if values.numel():
+                    observations[prefix + 'mean'] = values.mean()
+                    observations[prefix + 'std'] = values.std(unbiased=False)
+                    observations[prefix + 'min'] = values.min()
+                    observations[prefix + 'max'] = values.max()
+                else:
+                    for suffix in ('mean', 'std', 'min', 'max'):
+                        observations[prefix + suffix] = zero
+            td_values = td[selection]
+            observations[group + '_td_abs_mean'] = td_values.mean() if td_values.numel() else zero
+            observations[group + '_td_abs_max'] = td_values.max() if td_values.numel() else zero
+        # One transfer for batch statistics rather than synchronizing CUDA for
+        # every scalar. All observations are detached from the training graph.
+        self.loss.update(zip(observations, torch.stack(list(observations.values())).detach().cpu().tolist()))
+        self.loss['qf1_grad_norm'] = self._gradient_norm(self.qf1)
+        self.loss['qf2_grad_norm'] = self._gradient_norm(self.qf2)
+
     def _record_virtual_task_diagnostics(self):
         """Publish every sampler's weights and per-iteration training averages.
 
         Graph counters remain snapshots since the last geometry refresh. Means
         here aggregate training calls, so a single accepted path at evaluation
-        does not hide earlier skips. No RNG or gradient computations occur here.
+        does not hide earlier skips. Critic distributions are observed on each
+        training batch; _itr_mean is a mean over calls, not pooled variance.
+        _itr_max/min retain extremes across those calls. No RNG occurs here.
         """
         values = {key: float(self.loss[key]) for key in (
             'num_virtual_tasks', 'num_virtual_transitions_added',
@@ -1461,7 +1565,17 @@ class GENTLE(OfflineMetaRLAlgorithm):
             'virtual_consistency_weight_current', 'real_consistency_effective_weight',
             'virtual_consistency_effective_weight',
             'real_consistency_paired_replay',
+            'consistency_encoder_loss', 'context_loss', 'encoder_total_loss',
+            'qf_loss', 'real_qf_loss', 'virtual_qf_loss', 'q_target', 'q1_pred', 'q2_pred',
+            'policy_q_abs_mean', 'policy_q_lambda', 'real_policy_q_abs_mean',
         )}
+        critic_keys = ['qf1_grad_norm', 'qf2_grad_norm']
+        for group in ('real', 'virtual'):
+            critic_keys.extend(group + '_' + name + '_' + suffix
+                               for name in ('q1_pred', 'q2_pred', 'q_target', 'q_bootstrap')
+                               for suffix in ('mean', 'std', 'min', 'max'))
+            critic_keys.extend([group + '_td_abs_mean', group + '_td_abs_max'])
+        values.update({key: float(self.loss[key]) for key in critic_keys if key in self.loss})
         values['virtual_task_generation_skipped'] = float(
             self.n_vt > 0 and self.loss['num_virtual_tasks'] == 0
         )
@@ -1476,6 +1590,8 @@ class GENTLE(OfflineMetaRLAlgorithm):
             self._virtual_diagnostic_iteration = self.itr
             self._virtual_diagnostic_sums = {}
             self._virtual_diagnostic_count = 0
+            self._training_diagnostic_maxima = {}
+            self._training_diagnostic_minima = {}
         self._virtual_diagnostic_count += 1
         for key, value in values.items():
             self._virtual_diagnostic_sums[key] = self._virtual_diagnostic_sums.get(key, 0.0) + value
@@ -1483,6 +1599,15 @@ class GENTLE(OfflineMetaRLAlgorithm):
             self.eval_statistics[key + '_itr_mean'] = (
                 self._virtual_diagnostic_sums[key] / self._virtual_diagnostic_count
             )
+            if (key.endswith('_max') or key in ('qf_loss', 'real_qf_loss', 'virtual_qf_loss',
+                                                'qf1_grad_norm', 'qf2_grad_norm', 'policy_q_lambda')):
+                self._training_diagnostic_maxima[key] = float(np.maximum(
+                    self._training_diagnostic_maxima.get(key, value), value))
+                self.eval_statistics[key + '_itr_max'] = self._training_diagnostic_maxima[key]
+            if key.endswith('_min') or key == 'policy_q_lambda':
+                self._training_diagnostic_minima[key] = float(np.minimum(
+                    self._training_diagnostic_minima.get(key, value), value))
+                self.eval_statistics[key + '_itr_min'] = self._training_diagnostic_minima[key]
         self.eval_statistics['virtual_diagnostic_training_calls'] = self._virtual_diagnostic_count
         self.eval_statistics['num_virtual_transitions_added_itr_total'] = (
             self._virtual_diagnostic_sums['num_virtual_transitions_added']
