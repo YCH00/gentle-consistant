@@ -1,5 +1,7 @@
 # 第 36 次：固定 context 复评与匹配对照
 
+第 38 次结果后的批量入口为 `python evaluate_fixed_context_suite.py --gpu 0`，默认比较 Ant-Dir 的第 37 次无 consistency 对照和第 38 次两组语义模型，按训练 seed 共享 context 并汇总配对差值。默认模型阶段、输出及第 39 次训练命令见 [第 39 次实验说明](../configs/interpolation-diagnostics/RL_GENERATION_ABLATION.md)。下方保留单运行协议及历史命令。
+
 第 35 次没有支持继续扩大输入池或增加路径步数。因此本轮先区分 context 采集、表示变化与控制性能，并补齐参数匹配的无虚拟任务对照。现有第 34/35 次训练配置和评估指标保持原样；新增复评是独立协议，不能直接将其绝对回报与旧 `_expl` 指标混为一谈。
 
 ## 固定 context 的模型复评

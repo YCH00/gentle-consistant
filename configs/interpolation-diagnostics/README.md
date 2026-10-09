@@ -6,6 +6,8 @@
 
 第 37 次结果后的改进见 [第 38 次独立 consistency 与 critic 诊断](INDEPENDENT_CONSISTENCY.md)，包括真实系数 0.1、语义虚拟 RL 单独训练以及虚拟 consistency 的独立对照。
 
+第 38 次结果后的下一步见 [第 39 次生成方式对照与虚拟 consistency 衰减](RL_GENERATION_ABLATION.md)，新增 Ant-Dir 的 global RL-only、语义虚拟 consistency 衰减两组配置，以及一行执行共享 context 复评的入口。
+
 本组配置从 `configs/interpolation-ablation/` 的第 34 次配置复制，只改变各自待验证因素。历史配置保持原样。优先跑 Ant-Dir、Cheetah-Vel 的四个 seed；其余连续环境提供同样的独立配置。Cheetah-Dir 是离散方向对照，继续使用原有 `cheetah-dir-control.json`，不增加虚拟任务。
 
 | 实验名称 | 文件后缀 | 对照 | 唯一研究因素 |
