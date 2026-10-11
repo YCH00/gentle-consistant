@@ -23,6 +23,7 @@ def positive_int(value):
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--shared-artifacts', type=Path, help='Relocated byte-identical bundle for a shared-mode run')
     parser.add_argument('--log-dir', required=True, type=Path)
     parser.add_argument('--epochs', nargs='+', type=int, default=[200, 400, 499])
     parser.add_argument('--collector-epochs', nargs='+', type=int, default=[200, 499])
@@ -328,6 +329,8 @@ def main(argv=None):
         if any(destination == run or run in destination.parents for run in (log_dir, collector_dir)):
             raise ValueError('Write diagnostic outputs outside the training/collector run directories')
     variant = load_variant(log_dir)
+    from shared_protocol.runtime import bind_evaluation_run, make_training_env
+    bind_evaluation_run(variant, log_dir, args.shared_artifacts)
     if args.data_dir:
         variant['algo_params']['data_dir'] = str(args.data_dir.expanduser().resolve())
     params = variant['algo_params']
@@ -336,6 +339,9 @@ def main(argv=None):
         epoch: checkpoint_paths(collector_dir, epoch, ('policy',)) for epoch in args.collector_epochs}
     if collector_paths:
         collector_variant = load_variant(collector_dir)
+        bind_evaluation_run(collector_variant, collector_dir, args.shared_artifacts)
+        if variant.get('shared_artifact_hashes') != collector_variant.get('shared_artifact_hashes'):
+            raise ValueError('Collector and evaluated run have different shared artifacts')
         if args.data_dir:
             collector_variant['algo_params']['data_dir'] = params['data_dir']
         validate_collector_variant(variant, collector_variant)
@@ -351,10 +357,13 @@ def main(argv=None):
     if args.gpu is not None and (not torch.cuda.is_available() or args.gpu >= torch.cuda.device_count()):
         raise ValueError('Requested GPU is unavailable; omit --gpu for CPU evaluation')
     ptu.set_gpu_mode(args.gpu is not None, args.gpu or 0)
-    env_class = ENVS[variant['env_name']]
-    if 'non_mujoco' in env_class.__module__:
-        raise RuntimeError('This environment is a placeholder. Configure the project MuJoCo runtime before evaluation.')
-    env = NormalizedBoxEnv(env_class(**variant['env_params']))
+    if variant.get('shared_artifacts'):
+        env = make_training_env(variant)
+    else:
+        env_class = ENVS[variant['env_name']]
+        if 'non_mujoco' in env_class.__module__:
+            raise RuntimeError('This environment is a placeholder. Configure the project MuJoCo runtime before evaluation.')
+        env = NormalizedBoxEnv(env_class(**variant['env_params']))
     try:
         task_ids = list(env.get_all_task_idx())
         train_tasks = task_ids[:variant['n_train_tasks']]
@@ -365,9 +374,20 @@ def main(argv=None):
         obs_dim, action_dim = int(np.prod(env.observation_space.shape)), int(np.prod(env.action_space.shape))
         train_pools, train_manifest = load_offline_pools(params['data_dir'], train_tasks, params['n_trj'],
                                                        params['train_epoch'], obs_dim, action_dim)
-        stats, normalizer_origin = resolve_observation_stats(log_dir, train_pools, train_tasks, eval_tasks)
+        bundle = getattr(env, 'shared_bundle', None)
+        if bundle is not None:
+            stats = bundle['stats']
+            normalizer_origin = dict(source='verified_shared_artifacts', path=bundle['path'],
+                                     shared_artifact_hashes=bundle['hashes'])
+        else:
+            stats, normalizer_origin = resolve_observation_stats(log_dir, train_pools, train_tasks, eval_tasks)
         if collector_paths and collector_dir != log_dir:
-            collector_stats, _ = resolve_observation_stats(collector_dir, train_pools, train_tasks, eval_tasks)
+            if bundle is not None:
+                # bind_evaluation_run already checked all three collector artifact hashes.
+                from shared_protocol.data import load_normalizer
+                collector_stats = load_normalizer(Path(collector_variant['shared_artifacts']) / 'observation_normalizer.npz', stats)
+            else:
+                collector_stats, _ = resolve_observation_stats(collector_dir, train_pools, train_tasks, eval_tasks)
             if any(not np.array_equal(stats[key], collector_stats[key]) for key in ('mean', 'var')):
                 raise ValueError('Shared collector uses a different observation transform. Use collectors from this run; normalized banks cannot cross coordinate systems.')
         env.update_obs_mean_var(stats['mean'], stats['var'])
@@ -376,6 +396,15 @@ def main(argv=None):
         else:
             pools, data_manifest = load_offline_pools(params['data_dir'], tasks, params['n_trj'],
                                                      params['eval_epoch'], obs_dim, action_dim)
+        if bundle is not None:
+            # Use the exact published stats and normalized action coordinates, not a refit.
+            for key in ('mean', 'var', 'count'):
+                if not np.array_equal(stats[key], bundle['stats'][key]):
+                    raise ValueError('Run normalizer differs from the shared bundle: ' + key)
+            stats = bundle['stats']
+            train_pools = {t: bundle['pools'][t] for t in train_tasks}
+            pools = {t: bundle['pools'][t] for t in tasks}
+            normalizer_origin['shared_artifact_hashes'] = bundle['hashes']
         metadata = json_data(dict(protocol_version=1, env_name=variant['env_name'], env_params=variant['env_params'],
             training_seed=variant['seed'], split=args.split, tasks=tasks, train_tasks=train_tasks,
             context_size=args.context_size, context_repeats=args.context_repeats, probe_size=args.probe_size,

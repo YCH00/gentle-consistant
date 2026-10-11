@@ -75,6 +75,15 @@ def build_train_buffer(
     )
     obs_normalizer = ptu.RunningMeanStd(shape=obs_dim)
 
+    bundle = getattr(env, 'shared_bundle', None)
+    if bundle is not None:
+        from shared_protocol.runtime import install_normalizer, fill_buffer
+        if list(train_tasks) != bundle['cfg']['train_tasks']:
+            raise ValueError('Pretraining task split differs from shared artifacts')
+        install_normalizer(obs_normalizer, bundle)
+        fill_buffer(train_buffer, train_tasks, bundle)
+        return train_buffer, obs_normalizer
+
     train_paths = load_train_paths(
         data_dir=variant["algo_params"]["data_dir"],
         train_epoch=variant["algo_params"]["train_epoch"],
@@ -190,7 +199,9 @@ def build_task_dynamics(variant, obs_dim: int, action_dim: int) -> MultiTaskDyna
 
 
 def load_task_dynamics(task_dynamics: MultiTaskDynamics, variant, seed) -> Path:
-    dynamics_dir = Path(__file__).parent.absolute() / "dynamics" / variant["env_name"] / f"expert_seed{seed}"
+    from shared_protocol.runtime import pretrained_dir, check_pretrained
+    dynamics_dir = pretrained_dir('dynamics', variant, seed)
+    check_pretrained(dynamics_dir, variant)
     try:
         task_dynamics.load(str(dynamics_dir))
     except (FileNotFoundError, RuntimeError) as error:
@@ -410,7 +421,9 @@ def resolve_pretrain_hparams(variant):
 
 
 def experiment(variant, seed=None):
-    env = NormalizedBoxEnv(ENVS[variant["env_name"]](**variant["env_params"]))
+    from shared_protocol.runtime import make_training_env, prepare_pretrain_output, persist_bundle
+    env = make_training_env(variant)
+    save_dir = prepare_pretrain_output('encoder_decoder', variant, seed)
 
     if seed is not None:
         global_seed(seed)
@@ -531,11 +544,12 @@ def experiment(variant, seed=None):
     context_encoder.train(False)
     context_decoder.train(False)
 
-    save_dir = Path(__file__).parent.absolute() / "encoder_decoder" / variant["env_name"] / f"expert_seed{seed}"
     save_dir.mkdir(parents=True, exist_ok=True)
     context_encoder.save(save_dir / "context_encoder.pth")
     context_decoder.save(save_dir / "context_decoder.pth")
     np.savez(save_dir / "obs_normalizer.npz", mean=obs_normalizer.mean, var=obs_normalizer.var)
+    if getattr(env, 'shared_bundle', None) is not None:
+        persist_bundle(env.shared_bundle, save_dir)
 
     save_metadata = {
         "seed": seed,
@@ -569,13 +583,17 @@ def experiment(variant, seed=None):
 @click.argument("config", default=None)
 @click.option("--gpu", default=0)
 @click.option("--seed_list", multiple=True, type=int, default=[0, 1, 2, 3])
-def main(config, gpu, seed_list):
+@click.option('--shared-artifacts', type=click.Path(exists=True, file_okay=False), default=None)
+@click.option('--data-dir', type=click.Path(exists=True, file_okay=False), default=None)
+def main(config, gpu, seed_list, shared_artifacts=None, data_dir=None):
     variant = default_config
     if config:
         with open(os.path.join(config), encoding="utf-8") as file:
             exp_params = json.load(file)
         variant = deep_update_dict(exp_params, variant)
     variant["util_params"]["gpu_id"] = gpu
+    from shared_protocol.runtime import configure
+    configure(variant, shared_artifacts, data_dir)
 
     if len(seed_list) > 1:
         with mp.Pool(processes=len(seed_list)) as pool:

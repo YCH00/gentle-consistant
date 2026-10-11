@@ -25,12 +25,19 @@ import rlkit.torch.pytorch_util as ptu
 from configs.default import default_config
 from numpy.random import default_rng
 from rlkit.torch.algo.gentle import GENTLE
+from shared_protocol.runtime import (configure as configure_shared, make_training_env,
+    persist_bundle, pretrained_dir, check_pretrained)
 
 rng = default_rng()
 
 
 def _save_observation_normalizer(algorithm, log_dir):
     """Persist the exact training transform, without sampling or changing it."""
+    bundle = getattr(getattr(algorithm, 'env', None), 'shared_bundle', None)
+    if bundle is not None:
+        from shared_protocol.runtime import persist_bundle
+        persist_bundle(bundle, log_dir)
+        return
     normalizer = algorithm.obs_normalizer
     mean, var = np.asarray(normalizer.mean), np.asarray(normalizer.var)
     if (mean.shape != var.shape or not np.isfinite(mean).all() or not np.isfinite(var).all()
@@ -72,7 +79,8 @@ def _resolve_weights_dir(variant, seed):
         if not weights_dir.is_absolute():
             weights_dir = Path(__file__).parent.absolute() / weights_dir
         return weights_dir
-    return Path(__file__).parent.absolute() / 'encoder_decoder' / variant['env_name'] / f'expert_seed{seed}'
+    from shared_protocol.runtime import pretrained_dir
+    return pretrained_dir('encoder_decoder', variant, seed)
 
 
 def _find_weight_file(weights_dir, candidate_filenames):
@@ -117,6 +125,9 @@ def _load_pretrained_context_models(context_encoder, context_decoder, variant, s
             f'Found encoder={encoder_path is not None}, decoder={decoder_path is not None}.'
         )
 
+    if variant.get('shared_artifacts'):
+        from shared_protocol.runtime import check_pretrained
+        check_pretrained(weights_dir, variant)
     try:
         context_encoder.load(encoder_path)
         context_decoder.load(decoder_path)
@@ -138,7 +149,7 @@ def _load_pretrained_context_models(context_encoder, context_decoder, variant, s
 def experiment(variant, seed=None):
     variant = copy.deepcopy(variant)
     variant['seed'] = seed
-    env = NormalizedBoxEnv(ENVS[variant['env_name']](**variant['env_params']))
+    env = make_training_env(variant)
     
     if seed is not None:
         global_seed(seed)
@@ -208,7 +219,8 @@ def experiment(variant, seed=None):
                                      use_next_obs_in_context=use_next_obs_in_context,
                                      ensemble_size=variant['algo_params']['ensemble_size'],
                                      dynamics_weight_decay=[2.5e-5, 5e-5, 7.5e-5])
-    dynamics_dir_path = Path(__file__).parent.absolute()/'dynamics'/variant['env_name']/f'expert_seed{seed}'
+    dynamics_dir_path = pretrained_dir('dynamics', variant, seed)
+    check_pretrained(dynamics_dir_path, variant)
     try:
         task_dynamics.load(str(dynamics_dir_path))
     except RuntimeError as error:
@@ -289,6 +301,8 @@ def deep_update_dict(fr, to):
 @click.option('--output_prefix', default='')
 @click.option('--exp_name', default=None)
 @click.option('--path_to_weights', default=None)
+@click.option('--shared-artifacts', type=click.Path(exists=True, file_okay=False), default=None)
+@click.option('--data-dir', type=click.Path(exists=True, file_okay=False), default=None)
 @click.option('--n_vt', type=click.IntRange(min=0), default=None)
 @click.option('--M', 'virtual_neighbor_candidates', type=int, default=None)
 @click.option('--virtual_interpolation_lambda_max', type=float, default=None)
@@ -372,6 +386,8 @@ def main(
     virtual_consistency_weight_decay_start_itr,
     virtual_consistency_weight_decay_end_itr,
     virtual_consistency_final_weight,
+    shared_artifacts=None,
+    data_dir=None,
 ):
 
     variant = copy.deepcopy(default_config)
@@ -381,6 +397,8 @@ def main(
         variant = deep_update_dict(exp_params, variant)
         variant['config_path'] = str(Path(config).resolve())
     variant['seed_list'] = list(seed_list)
+    from shared_protocol.runtime import configure
+    configure(variant, shared_artifacts, data_dir)
     variant['util_params']['gpu_id'] = gpu
     variant['util_params']['debug'] = debug
     variant['algo_type'] = algo_type

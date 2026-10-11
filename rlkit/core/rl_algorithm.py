@@ -118,6 +118,16 @@ class OfflineMetaRLAlgorithm(metaclass=abc.ABCMeta):
         self.enc_obs_normalizer = ptu.RunningMeanStd(shape=self.obs_dim)
 
     def init_buffer(self, kwargs):
+        bundle = getattr(self.env, 'shared_bundle', None)
+        if bundle is not None:
+            from shared_protocol.runtime import install_normalizer, fill_buffer
+            if self.train_tasks != bundle['cfg']['train_tasks'] or self.eval_tasks != bundle['cfg']['eval_tasks']:
+                raise ValueError('Algorithm split differs from shared artifacts')
+            install_normalizer(self.obs_normalizer, bundle)
+            fill_buffer(self.train_buffer, self.train_tasks, bundle)
+            if self.load_eval_buffer:
+                fill_buffer(self.eval_buffer, self.eval_tasks, bundle)
+            return
         train_trj_paths = []
         eval_trj_paths = []
         # trj entry format: [obs, action, reward, new_obs]
