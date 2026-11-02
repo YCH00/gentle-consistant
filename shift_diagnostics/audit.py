@@ -1,4 +1,4 @@
-"""Read-only resource discovery for shift-diagnostics-v1 (Python >= 3.7).
+"""Read-only resource discovery for the current shift-diagnostics protocol (Python >= 3.7).
 
 This does NOT load checkpoints, import environments, select models, or certify
 stage A. Candidate filenames are evidence of existence, never of provenance.
@@ -16,13 +16,15 @@ import subprocess
 import sys
 
 
-METHODS = ["FOCAL", "CORRO", "CSRO", "GENTLE", "UNICORN-SS", "ER-TRL", "Ours"]
-ENVIRONMENTS = ["cheetah-vel", "walker-rand-params"]
+PROTOCOL = json.loads(Path(__file__).with_name("protocol.json").read_text(encoding="utf-8"))
+PROTOCOL_ID = PROTOCOL["protocol_id"]
+METHODS = PROTOCOL["methods"]
+ENVIRONMENTS = PROTOCOL["environments"]
 SKIP_DIRS = {
     ".git", ".aws", ".ssh", ".codex", ".agents", "__pycache__", ".pytest_cache",
     ".venv", "venv", "site-packages", "node_modules", "99_backup",
     "shared-artifact-tests", "test-runtime", "plot-runtime", "%SystemDrive%",
-    "diagnostics_audits", "shift-diagnostics-v1",
+    "diagnostics_audits", "shift-diagnostics-v1", "shift-diagnostics-v2",
 }
 METADATA_NAMES = {
     "variant.json", "config.json", "resolved_config.json", "run_manifest.json",
@@ -126,15 +128,18 @@ def blank_models():
                 entries.append(model_slot(method, env, seed, 499, ["evaluation"] + (
                     ["collector"] if method == "GENTLE" and seed == 0 else [])))
         entries.append(model_slot("GENTLE", env, 0, 200, ["collector"]))
-    return {"protocol": "shift-diagnostics-v1", "status": "unresolved",
+    return {"protocol": PROTOCOL_ID, "status": "unresolved",
             "note": "missing means no verified assignment, not proof that the server file is absent",
-            "expected_evaluation_models": 56, "expected_unique_model_slots": 58,
+            "expected_evaluation_models": len(METHODS) * len(ENVIRONMENTS) * 4,
+            "expected_unique_model_slots": len(entries),
             "models": entries}
 
 
 def model_slot(method, env, seed, iteration, roles):
     return {"method": method, "environment": env, "training_seed": seed,
-            "iteration": iteration, "roles": roles, "status": "missing",
+            "iteration": iteration, "roles": roles,
+            "status": "pending_training" if PROTOCOL.get("resource_status", {}).get(method + "/" + env) == "training_in_progress" else "missing",
+            "user_selected_run_directory": PROTOCOL.get("run_selection", {}).get(method),
             "checkpoint_files": [], "training_config": None, "source_root": None,
             "source_commit": None, "source_tree_sha256": None, "worktree_summary": None,
             "run_id": None, "same_run_and_iteration_evidence": None,
@@ -227,7 +232,7 @@ def main(argv=None):
     write_json(out / "models.json", blank_models())
     write_json(out / "candidates.json", candidates)
     audit = {
-        "protocol": "shift-diagnostics-v1", "stage": "A", "stage_complete": False,
+        "protocol": PROTOCOL_ID, "stage": "A", "stage_complete": False,
         "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "host_platform": platform.platform(), "python": sys.version,
         "python_executable": sys.executable, "installed_package_metadata": installed_versions(),
@@ -247,7 +252,7 @@ def main(argv=None):
         "expected_handoff_sha256": protocol["specification_sha256"],
         "audit_script": file_record(Path(__file__).resolve()),
         "blockers": [
-            "56 evaluation slots and 2 additional collector-200 slots have no verified assignment",
+            "{} evaluation slots and {} additional collector-200 slots have no verified assignment".format(len(METHODS) * len(ENVIRONMENTS) * 4, len(ENVIRONMENTS)),
             "Shared task manifests, normalizers and full offline pools require provenance/format verification",
             "Native adapters and original-GENTLE vs Ours identity require actual training source/config",
             "Real-environment shared-context smoke has not run; B/C/D remain pending",
@@ -259,11 +264,11 @@ def main(argv=None):
     command = " ".join(shlex.quote(arg) for arg in [sys.executable, str(Path(__file__).resolve())] + (
         list(argv) if argv is not None else sys.argv[1:]))
     (out / "commands.sh").write_text("#!/usr/bin/env bash\n# Recorded invocation; use a NEW --out to rerun.\n" + command + "\n", encoding="utf-8")
-    status = """# STATUS — shift-diagnostics-v1
+    status = """# STATUS — {protocol_id}
 
 - A: IN_PROGRESS — resource discovery finished; assignments/adapters/smoke pending.
 - B / C / D: NOT_STARTED.
-- Only seven complete methods; no component ablations; one shared raw context bank.
+- Only user-selected complete methods; no component ablations; one shared raw context bank.
 
 ## Executed command
 ```sh
@@ -275,7 +280,7 @@ def main(argv=None):
 - `resource_audit.json`: search coverage, missing roots, errors, versions and Git state.
 - `candidates.json`: {count} candidates; names do not establish method/seed/iteration identity.
 - `source_snapshots.json`: source/config/XML hashes; no checkpoint deserialization.
-- `models.json`: 58 unresolved slots (56 evaluation models + 2 collector-200 models).
+- `models.json`: {total_slots} unresolved slots ({eval_slots} evaluation models + {collector_slots} collector-200 models).
 - `protocol.json`: proposed fixed protocol; resource hashes remain unresolved.
 - True-environment smoke: NOT_RUN; stage A is NOT complete.
 
@@ -284,7 +289,9 @@ Review candidates and actual run configurations; assign all model slots and shar
 verify matching encoder/policy provenance and normalizer/task hashes, then implement native
 adapters and run each method/environment on the SAME raw smoke contexts. Do not start B yet.
 Append every later command, output path, validation evidence and next step here.
-""".format(command=command, out=out, count=len(candidates))
+""".format(command=command, out=out, count=len(candidates), protocol_id=PROTOCOL_ID,
+           total_slots=len(METHODS) * len(ENVIRONMENTS) * 4 + len(ENVIRONMENTS),
+           eval_slots=len(METHODS) * len(ENVIRONMENTS) * 4, collector_slots=len(ENVIRONMENTS))
     (out / "STATUS.md").write_text(status, encoding="utf-8")
     outputs = {p.name: sha256(p) for p in sorted(out.iterdir()) if p.is_file()}
     write_json(out / "audit_completion.json", {"resource_discovery_finished": True,

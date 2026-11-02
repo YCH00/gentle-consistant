@@ -12,11 +12,13 @@ import audit
 class AuditTests(unittest.TestCase):
     def test_all_required_model_slots_are_preserved(self):
         models = audit.blank_models()["models"]
-        self.assertEqual(len(models), 58)
-        self.assertEqual(sum("evaluation" in m["roles"] for m in models), 56)
+        self.assertEqual(len(models), 66)
+        self.assertEqual(sum("evaluation" in m["roles"] for m in models), 64)
         self.assertEqual(sum("collector" in m["roles"] for m in models), 4)
         self.assertEqual({m["method"] for m in models}, set(audit.METHODS))
-        self.assertTrue(all(m["status"] == "missing" for m in models))
+        self.assertTrue(all(m["status"] in ("missing", "pending_training") for m in models))
+        self.assertEqual(sum(m["status"] == "pending_training" for m in models), 4)
+        self.assertEqual({m['user_selected_run_directory'] for m in models if m['method'] == 'Ours-local'}, {'23_local_decay'})
 
     def test_protocol_is_bound_to_handoff(self):
         root = Path(__file__).resolve().parent.parent

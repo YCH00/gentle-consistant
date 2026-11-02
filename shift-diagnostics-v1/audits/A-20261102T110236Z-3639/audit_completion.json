@@ -1,0 +1,13 @@
+{
+  "resource_discovery_finished": true,
+  "stage_A_complete": false,
+  "output_sha256": {
+    "STATUS.md": "b38f8a03d1f23b607aa7eb7ce2ac630679eee106c29bbc4f5dfd5da0ef81c652",
+    "candidates.json": "04ca3a341416d3036ff35c77444c0880440d087a5478f555d1d14bfbe1c33a70",
+    "commands.sh": "510062505c699239ac97ea6c513133bef7a1622b21dd7733b22fa64655969b34",
+    "models.json": "dd0f6a1188dc834c554ba79e1e3f7305b46a761e3270b73c877729548dc05e35",
+    "protocol.json": "aa238143b7eb6fd35997e9f07e88d2ade47fbdec61055c055b87d4e6a850177e",
+    "resource_audit.json": "571e4465fa3093704571d7147984b55570eb59754f81a242e56cd818143c80ba",
+    "source_snapshots.json": "37342fb4e9df1b1a128b04e602a92ffed5f1646820eaa1a132c946d82e8d03b9"
+  }
+}

@@ -1,9 +1,14 @@
 {
-  "protocol_id": "shift-diagnostics-v1",
+  "protocol_id": "shift-diagnostics-v2",
   "status": "specified_pending_resource_verification_and_smoke",
   "specification": "docs/SHIFT_ROBUSTNESS_EXPERIMENT_HANDOFF.md",
   "specification_sha256": "4b16fa5dc8ffdd1daa7b0a8feb56e38040f22c40039f808bfef09766ebf8a850",
-  "methods": ["FOCAL", "CORRO", "CSRO", "GENTLE", "UNICORN-SS", "ER-TRL", "Ours"],
+  "methods": ["FOCAL", "CORRO", "CSRO", "GENTLE", "UNICORN-SS", "ER-TRL", "Ours-local", "Ours-global"],
+  "run_selection": {"GENTLE": "0_gentle_base", "Ours-local": "23_local_decay", "Ours-global": "28_global_decay"},
+  "resource_status": {"ER-TRL/cheetah-vel": "training_in_progress"},
+  "expected_evaluation_models": 64,
+  "expected_unique_model_slots": 66,
+  "expected_total_evaluation_episodes": 384000,
   "full_methods_only": true,
   "component_ablations": false,
   "environments": ["cheetah-vel", "walker-rand-params"],
@@ -127,7 +132,7 @@
     "record_sklearn_version": true,
     "main_training_seed": 0,
     "appendix_training_seeds": [1, 2, 3],
-    "main_methods": ["GENTLE", "CORRO", "CSRO", "ER-TRL", "Ours"],
+    "main_methods": ["GENTLE", "CORRO", "CSRO", "ER-TRL", "Ours-local", "Ours-global"],
     "appendix_all_methods": true,
     "exports": ["PDF", "SVG", "PNG >= 300 dpi", "coordinates", "raw_latents", "plotting_config.json"]
   },
@@ -138,5 +143,15 @@
     "D": "figures redrawable from saved latents/config; tables recomputable from episode/task records"
   },
   "shared_resources": {"cheetah-vel": null, "walker-rand-params": null},
-  "deviations": []
+  "deviations": [
+    {
+      "date": "2026-11-02",
+      "authority": "explicit user instruction before formal diagnostics",
+      "change": "Replace the single Ours entry with two separately reported complete methods, Ours-local and Ours-global",
+      "run_directories": {"Ours-local": "23_local_decay", "Ours-global": "28_global_decay", "GENTLE": "0_gentle_base"},
+      "reason": "User chose both full Ours versions and the GENTLE run; all eight entries share the same raw context bank",
+      "new_output_root": "/root/tievnas2/YinCH/shift-diagnostics-v2",
+      "prior_artifacts": "v1 resource audit retained read-only as discovery evidence; no formal v1 results exist"
+    }
+  ]
 }

@@ -1,10 +1,26 @@
-# shift-diagnostics-v1 执行入口
+# shift-diagnostics-v2 执行入口
+
+## 当前下一步：轻量导出证据
+
+服务器 v1 审计已回传且 7 个文件哈希通过，不需要重跑全盘审计。用户已指定完整方法目录：GENTLE=`0_gentle_base`，Ours-local=`23_local_decay`，Ours-global=`28_global_decay`。两个 Ours 分别报告；本轮共 8 个完整方法条目，不做消融，所有方法共用同一份 context bank。ER-TRL Cheetah 正在训练。
+
+同步更新后的 `shift_diagnostics/`、根 STATUS.md，并补齐 `docs/SHIFT_ROBUSTNESS_EXPERIMENT_HANDOFF.md`，然后执行：
+
+```bash
+cd /root/tievnas2/YinCH/GENTLE-consistant
+/root/miniconda3/envs/gentle/bin/python shift_diagnostics/export_evidence.py \
+  --audit-dir /root/tievnas2/YinCH/shift-diagnostics-v1/audits/A-20261102T110236Z-3639
+```
+
+下载终端打印的 `/root/tievnas2/YinCH/shift-diagnostics-v2/evidence/A-evidence-.../` 整个目录到本地即可，无需解压。工具只导出源码、选定 run 的配置、任务清单和小型 normalizer，不复制/加载/重算权重，不训练。哈希变化、缺文件及大小预算超限都会记录；不自动认为阶段 A 通过。
+
+v2 的方法条目变更已记录在 protocol.json 的 deviations 中；原交接文档是 v1 基础规范，方法集合以用户指定的 v2 覆盖，其余实验约束继续适用。正式数据使用新的 v2 输出目录，原 v1 审计只读保留。
 
 当前交付的是阶段 A 的**资源发现工具和协议配置**。还没有完整的模型适配器、bank 采集器、固定 context 评估器或 B/C/D 执行程序，不能把审计成功当作实验验收通过。
 
 完整规范见 `docs/SHIFT_ROBUSTNESS_EXPERIMENT_HANDOFF.md`；进度入口是仓库根目录 `STATUS.md`。
 
-## 现在先做：服务器资源核验
+## 资源核验工具用法（首次审计已完成，以下供之后有需要时参考）
 
 1. 同步整个 `shift_diagnostics/`、根目录 `STATUS.md` 和交接文档。只同步这些新增材料，保留服务器实际训练源码；服务器和本地可能不同。
 2. 激活成功运行主实验时的 Python 环境。审计使用 Python 3.7+ 标准库，不导入 torch/Gym/MuJoCo、不加载 pickle、不启动训练。
@@ -20,7 +36,7 @@ bash shift_diagnostics/server_audit.bash
 bash shift_diagnostics/server_audit.bash \
   /实际的/YinCH \
   /实际的/YinCH/GENTLE-consistant \
-  /实际的/YinCH/shift-diagnostics-v1
+  /实际的/YinCH/shift-diagnostics-v2
 ```
 
 其他模型在这个父目录之外时，直接使用 Python 入口追加多个 `--search-root`：
@@ -42,7 +58,7 @@ python shift_diagnostics/audit.py \
 
 ## A 后半段：确认模型与共享契约，再做 smoke
 
-- 56 个 evaluation 位置：7 方法 × 2 环境 × seeds 0–3 × iteration 499。GENTLE seed0/499 同时充当采集器；另外两个位置是各环境的 GENTLE seed0/200，共 58 个独立模型位置。
+- 64 个 evaluation 位置：8 方法 × 2 环境 × seeds 0–3 × iteration 499。GENTLE seed0/499 同时充当采集器；另外两个位置是各环境的 GENTLE seed0/200，共 66 个独立模型位置。
 - 每个位置填实际路径、SHA256、训练配置、源码版本/工作区摘要、原生 context 字段、posterior、latent 维度、actor 接口、任务清单与 normalizer 哈希。分离 encoder/policy 要有同一 run/iteration 证据。
 - `models.json` 当前是未确认清单，不自动按文件名选模型。相邻名为 GENTLE 的目录不能直接证明它是原版完整方法；同样不能将本仓库自动认作正式 Ours。
 - 对共享任务清单、原始完整离线池及归一化验证格式和 provenance；任务参数按 manifest 恢复，不重新采样。比较训练使用的归一化和任务内容，而非只比较文件名。
@@ -55,7 +71,7 @@ python shift_diagnostics/audit.py \
 
 | 阶段 | 工作 | 验收与产物 |
 | --- | --- | --- |
-| B | 唯一发布者采集并冻结共享 bank；所有完整方法读取同一 bank 做固定 context 评估 | 每环境 2,000 contexts，每 context 200 行；每方法/seed/环境 6,000 episodes；合计 336,000 episodes。输出 bank 哈希、逐 episode 回报、确定性 latent、seen/unseen 分表和行为变化图表 |
+| B | 唯一发布者采集并冻结共享 bank；所有完整方法读取同一 bank 做固定 context 评估 | 每环境 2,000 contexts，每 context 200 行；每方法/seed/环境 6,000 episodes；合计 384,000 episodes。输出 bank 哈希、逐 episode 回报、确定性 latent、seen/unseen 分表和行为变化图表 |
 | C | 复用 B 的 policy499_sigma000 回报；独立采集 probe train/val context 与 query；冻结 encoder 训练诊断预测器 | 只用 seen 训练/验证；query 与 context 轨迹不交叉；相同 query 跨方法共享。H0 是无 z 的诊断参考，并非 RL 消融。输出逐任务 MSE/NMSE、训练日志与选择证据 |
 | D | 复用 B latent，对固定 4 seen + 4 unseen 任务、2 条件、20 contexts 作图 | 每模型 320 点；按方法/seed 分别投影；输出 PDF/SVG/PNG、坐标、配置、Markdown/LaTeX 表格与解释边界 |
 
