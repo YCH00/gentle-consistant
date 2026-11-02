@@ -22,3 +22,9 @@ build.yml
 data/
 logs/
 dynamics/
+
+%SystemDrive%/
+docs/
+figures/
+output/
+result/

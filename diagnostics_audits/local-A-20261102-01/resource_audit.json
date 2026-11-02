@@ -1,0 +1,109 @@
+{
+  "protocol": "shift-diagnostics-v1",
+  "stage": "A",
+  "stage_complete": false,
+  "created_at": "2026-11-02T09:18:46.552746+00:00",
+  "host_platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.3 (tags/v3.12.3:f6650f9, Apr  9 2024, 14:05:25) [MSC v.1938 64 bit (AMD64)]",
+  "python_executable": "C:\\Python312\\python.exe",
+  "installed_package_metadata": {
+    "numpy": null,
+    "torch": null,
+    "gym": null,
+    "mujoco-py": null,
+    "scikit-learn": null
+  },
+  "search_roots": [
+    {
+      "path": "D:\\Desktop\\offline meta RL\\gentle-consistant",
+      "status": "present"
+    }
+  ],
+  "max_depth": 9,
+  "scan_errors": [],
+  "requested_roots": [
+    {
+      "path": "D:\\Desktop\\offline meta RL\\gentle-consistant",
+      "status": "present"
+    }
+  ],
+  "excluded_directory_names": [
+    "%SystemDrive%",
+    ".agents",
+    ".aws",
+    ".codex",
+    ".git",
+    ".pytest_cache",
+    ".ssh",
+    ".venv",
+    "99_backup",
+    "__pycache__",
+    "node_modules",
+    "plot-runtime",
+    "shared-artifact-tests",
+    "site-packages",
+    "test-runtime",
+    "venv"
+  ],
+  "follow_symlinks": false,
+  "checkpoint_hashes_requested": true,
+  "candidate_counts": {
+    "checkpoint_candidate": 0,
+    "shared_or_run_metadata": 1,
+    "entrypoint": 1,
+    "shared_source": 0
+  },
+  "repositories": [
+    {
+      "path": "D:\\Desktop\\offline meta RL\\gentle-consistant",
+      "head": {
+        "returncode": 0,
+        "stdout": "6e44eecb5427e57a8ac3453858d53f3f418f6908",
+        "stderr": ""
+      },
+      "worktree": {
+        "returncode": 0,
+        "stdout": "M .gitignore\n?? diagnostics_audits/\n?? shift_diagnostics/",
+        "stderr": ""
+      }
+    }
+  ],
+  "local_entrypoints": {
+    "evaluate_fixed_context.py": "missing",
+    "evaluate_fixed_context_suite.py": "missing",
+    "launch_shared_native_v2.py": "missing",
+    "run_gentle.py": "missing",
+    "run_gentle_pipeline.py": "missing",
+    "run_shared.py": "missing",
+    "run_shared_native_v2.py": "missing",
+    "train_gentle.py": "present",
+    "train_main.py": "missing"
+  },
+  "shared_python_sources": [],
+  "protocol_source": {
+    "path": "D:\\Desktop\\offline meta RL\\gentle-consistant\\shift_diagnostics\\protocol.json",
+    "size_bytes": 7152,
+    "sha256": "490dddd2258ce1e2dd2c4e6d820dae593fd5d8369fe48c99e0e20d5928a12822",
+    "status": "present_hashed"
+  },
+  "audit_script": {
+    "path": "D:\\Desktop\\offline meta RL\\gentle-consistant\\shift_diagnostics\\audit.py",
+    "size_bytes": 14349,
+    "sha256": "bbb4b721ed91921f7971db52f06d1409459645fd857d4c41c50a42c799c4c698",
+    "status": "present_hashed"
+  },
+  "blockers": [
+    "56 evaluation slots and 2 additional collector-200 slots have no verified assignment",
+    "Shared task manifests, normalizers and full offline pools require provenance/format verification",
+    "Native adapters and original-GENTLE vs Ours identity require actual training source/config",
+    "Real-environment shared-context smoke has not run; B/C/D remain pending"
+  ],
+  "checks_not_performed": [
+    "checkpoint deserialization",
+    "model strict loading",
+    "normalizer semantics",
+    "task restoration",
+    "MuJoCo reset/step",
+    "shared-context smoke"
+  ]
+}
