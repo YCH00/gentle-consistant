@@ -12,6 +12,7 @@
 .temp
 .ipynb_checkpoints
 *.sh
+!component-ablations-v1/commands.sh
 *.pyc
 *.DS_Store
 __pycache__

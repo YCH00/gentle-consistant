@@ -91,6 +91,10 @@ Data will be saved in `self.work_dir/gentle_data/$env_name/$goal_idx{i}`
 
 ## Training GENTLE 
 
+For the separate R/V/P component ablations, GPU-parallel launch commands, experiment
+numbering from 40, and stage/resource checks, see
+[component_ablations/README.md](component_ablations/README.md).
+
 The configration files to run GENTLE is in `./configs`. For example, to train GENTLE on Ant-Dir, first you need to pretrain the dynamics model:
 ```bash
 python pretrain_dynamics.py ./configs/ant-dir.json 

@@ -1,0 +1,526 @@
+{
+  "protocol_id": "component-ablations-v1",
+  "loss_family": "fixed-real-coefficient-with-virtual-bc",
+  "created_at": "2026-11-03T08:26:12.414933+00:00",
+  "source_baselines": {
+    "cheetah-vel": {
+      "selected_run": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed0/23_local_decay",
+      "resolved_config_record": {
+        "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed0/23_local_decay/variant.json",
+        "sha256": "eb42c7119befe8cbb0c5c74cddf489c313289f214d3ce7e6877208891ff456d3",
+        "size_bytes": 2857
+      },
+      "evidence_sha256": "83190442f48a8b04476a4ce76fb96976e92d230ee7c4d0040dc45aee4ddb2611",
+      "seed_records": [
+        {
+          "seed": 0,
+          "config": {
+            "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed0/23_local_decay/variant.json",
+            "sha256": "eb42c7119befe8cbb0c5c74cddf489c313289f214d3ce7e6877208891ff456d3",
+            "size_bytes": 2857
+          },
+          "checkpoint_records": [
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed0/23_local_decay/context_encoder_itr_499.pth",
+              "sha256": "fb9da7f5700aa166282b50b37055bc776f1568a24e934c0157095d1cfc8470f1",
+              "size_bytes": 563648
+            },
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed0/23_local_decay/policy_itr_499.pth",
+              "sha256": "e19d61d92a36def96057cafaedbd0a99a44dbad42d06eedafad6fa0a704dc3d1",
+              "size_bytes": 569178
+            }
+          ]
+        },
+        {
+          "seed": 1,
+          "config": {
+            "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed1/23_local_decay/variant.json",
+            "sha256": "eb42c7119befe8cbb0c5c74cddf489c313289f214d3ce7e6877208891ff456d3",
+            "size_bytes": 2857
+          },
+          "checkpoint_records": [
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed1/23_local_decay/context_encoder_itr_499.pth",
+              "sha256": "8db1a21f4316a5191ee7ffdf0ad29608a37acfaa15b079c87b344ca902ea28e0",
+              "size_bytes": 563648
+            },
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed1/23_local_decay/policy_itr_499.pth",
+              "sha256": "0423ac2278bc10443db09f12629b0db08f2ea83d540fcfdad4c3785ec731de4a",
+              "size_bytes": 569178
+            }
+          ]
+        },
+        {
+          "seed": 2,
+          "config": {
+            "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed2/23_local_decay/variant.json",
+            "sha256": "eb42c7119befe8cbb0c5c74cddf489c313289f214d3ce7e6877208891ff456d3",
+            "size_bytes": 2857
+          },
+          "checkpoint_records": [
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed2/23_local_decay/context_encoder_itr_499.pth",
+              "sha256": "a59764f67d4a66b38b8f8850a8c2fca30840f6ae6b6e1fb26ecd5f499368f900",
+              "size_bytes": 563648
+            },
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed2/23_local_decay/policy_itr_499.pth",
+              "sha256": "31c6678c4ac47dcf3a0236cc5bed5792c709232b962a99f282c76d26cf29abff",
+              "size_bytes": 569178
+            }
+          ]
+        },
+        {
+          "seed": 3,
+          "config": {
+            "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed3/23_local_decay/variant.json",
+            "sha256": "eb42c7119befe8cbb0c5c74cddf489c313289f214d3ce7e6877208891ff456d3",
+            "size_bytes": 2857
+          },
+          "checkpoint_records": [
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed3/23_local_decay/context_encoder_itr_499.pth",
+              "sha256": "f700cd89d020ff90f1ef4afcd2f1f0b6d2b3b0511bc4562bed4a188e8e686cea",
+              "size_bytes": 563648
+            },
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed3/23_local_decay/policy_itr_499.pth",
+              "sha256": "7ceea82d4bf02baef757eddd8c50e517ed968daa0cb76ab328b636d26bcfc045",
+              "size_bytes": 569178
+            }
+          ]
+        }
+      ],
+      "historical_source_version": "not proven by checkpoint hashes; source must be audited separately",
+      "four_seed_scientific_settings_match": true,
+      "global_generator_source": {
+        "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/cheetah-vel/gentle/seed0/28_global_decay/variant.json",
+        "sha256": "5f15cf33c47e245231991f684b391b1101b55d2986f1b6fd4740328ae0268e6e",
+        "size_bytes": 2859
+      },
+      "reuse_historical_full": false
+    },
+    "walker-rand-params": {
+      "selected_run": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed0/23_local_decay",
+      "resolved_config_record": {
+        "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed0/23_local_decay/variant.json",
+        "sha256": "cce4367ca78afac6bed9bba66e455a9bbd02c72ded157a113b15f7e4471aef24",
+        "size_bytes": 2870
+      },
+      "evidence_sha256": "83190442f48a8b04476a4ce76fb96976e92d230ee7c4d0040dc45aee4ddb2611",
+      "seed_records": [
+        {
+          "seed": 0,
+          "config": {
+            "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed0/23_local_decay/variant.json",
+            "sha256": "cce4367ca78afac6bed9bba66e455a9bbd02c72ded157a113b15f7e4471aef24",
+            "size_bytes": 2870
+          },
+          "checkpoint_records": [
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed0/23_local_decay/context_encoder_itr_499.pth",
+              "sha256": "f4a4a6fa4427e661f0fded80d5f7cbdaf3dd60f941a523768aed0732c0174d0a",
+              "size_bytes": 583104
+            },
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed0/23_local_decay/policy_itr_499.pth",
+              "sha256": "b7784ce9ff6016461fc89de4e54620c90dc945122039ddd294948d2d798a9854",
+              "size_bytes": 571226
+            }
+          ]
+        },
+        {
+          "seed": 1,
+          "config": {
+            "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed1/23_local_decay/variant.json",
+            "sha256": "cce4367ca78afac6bed9bba66e455a9bbd02c72ded157a113b15f7e4471aef24",
+            "size_bytes": 2870
+          },
+          "checkpoint_records": [
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed1/23_local_decay/context_encoder_itr_499.pth",
+              "sha256": "4672ed753094963034462611a0ac4890ba3c30e15e7c3da724a0fc684db94a79",
+              "size_bytes": 583104
+            },
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed1/23_local_decay/policy_itr_499.pth",
+              "sha256": "27eb2d62d7c1522147c11af977a500d977e4784fd64ebc78800610df0058dd96",
+              "size_bytes": 571226
+            }
+          ]
+        },
+        {
+          "seed": 2,
+          "config": {
+            "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed2/23_local_decay/variant.json",
+            "sha256": "cce4367ca78afac6bed9bba66e455a9bbd02c72ded157a113b15f7e4471aef24",
+            "size_bytes": 2870
+          },
+          "checkpoint_records": [
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed2/23_local_decay/context_encoder_itr_499.pth",
+              "sha256": "fe1d840b583b93cc544905f44dd03e930f13aab4370188323bdd18e38360b574",
+              "size_bytes": 583104
+            },
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed2/23_local_decay/policy_itr_499.pth",
+              "sha256": "a9d0801add54b871f058e934d34765d2064f0bc607dfe894ff611a994c353f16",
+              "size_bytes": 571226
+            }
+          ]
+        },
+        {
+          "seed": 3,
+          "config": {
+            "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed3/23_local_decay/variant.json",
+            "sha256": "cce4367ca78afac6bed9bba66e455a9bbd02c72ded157a113b15f7e4471aef24",
+            "size_bytes": 2870
+          },
+          "checkpoint_records": [
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed3/23_local_decay/context_encoder_itr_499.pth",
+              "sha256": "f5508bd6363353a33da621394a8f6851f100ba8e6eb1727d708c6c4f703d050b",
+              "size_bytes": 583104
+            },
+            {
+              "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed3/23_local_decay/policy_itr_499.pth",
+              "sha256": "b3cb3fc9dd07e273a1dd2128db01112478392f509820b9e300a0965f29018243",
+              "size_bytes": 571226
+            }
+          ]
+        }
+      ],
+      "historical_source_version": "not proven by checkpoint hashes; source must be audited separately",
+      "four_seed_scientific_settings_match": true,
+      "global_generator_source": {
+        "path": "/root/tievnas2/YinCH/GENTLE-consistant/logs/walker-rand-params/gentle/seed0/28_global_decay/variant.json",
+        "sha256": "68132b828b2a3ff1b2b0a60351f25065c77bc8523b12433212c425704e3c3b19",
+        "size_bytes": 2872
+      },
+      "reuse_historical_full": false
+    }
+  },
+  "current_source": {
+    "git_head": "ed3a03159c04f0cea39bc114e6f42d46cdd4cf62",
+    "worktree_status": "M .gitignore\n M README.md\n?? component-ablations-v1/\n?? component_ablations/\n?? run_component_ablations.py\n?? tests/",
+    "source_files": {
+      "component_ablations/__init__.py": "7ab97b88c69bc163074ce3fc8fc4b8e19ef91bd1da94c1632942ce243b6a4a0b",
+      "component_ablations/__main__.py": "70406ee51b05fb31b44a8cfd84fc1eab80fe3d588729eadbad4ba49fe173c3e8",
+      "component_ablations/artifacts.py": "edbc2eae7f73406c75c03cb56ee79b3f3ab918e280c2473cb865eea09ad9b585",
+      "component_ablations/common.py": "ef18557e45f59a98366d14b6958d7a7e14fa746b443081424d4219dfb4701441",
+      "component_ablations/evaluation.py": "4322f48fe3ec14a4a7d4849866862b7bc94e5429c53d3396c1e6643098b71e6a",
+      "component_ablations/losses.py": "f240a97b70b1b065d3d0a394c2f744975527db4108438ea799604614ddb49a33",
+      "component_ablations/planning.py": "a4fdbd467476421dc1d0d428d3ba32474f8e201e4747a3b62a46e1adf2f024cc",
+      "component_ablations/plotting.py": "e2a017c85af390c9c3d07d76298a05fea3aefa869cdabe19b58a60aedd196d34",
+      "component_ablations/probe.py": "6b15fbebef1b87dcd209905661cba4201c9e47e12b0f107bb697cf92dc8761b8",
+      "component_ablations/randomness.py": "0a3a70470a138c8e06f440e5c0cc06ee970b848f9787acfa0857aaccbeb86265",
+      "component_ablations/reporting.py": "8c26437d03c684be29aea0c51c167489b5a00cfce1bac80c6fa5aac60e213508",
+      "component_ablations/runtime.py": "26d57a2c0ee1cdecf5614408297ff8c01c4f7decbc5f87f6aacfd89a5b885187",
+      "component_ablations/scheduler.py": "5af6f658db73576a4311d979cc8b0560ef4608df228fd001fd1011ea4c40ef57",
+      "component_ablations/state.py": "b9fa39b2e8022ea080e8675da071807ba48dd1a1c89efa21ae921248b06939ba",
+      "component_ablations/step.py": "1b9ef83cb2a70587f71b91f73143164fd158457974999fc5b5fbe035020b54db",
+      "component_ablations/worker.py": "6737fdf71daba922111356555c32b14adeeaf4b4c538d1985950c0a3f5a322c5",
+      "configs/default.py": "3953aecf7dc9e535cdecf076f33c03289f58ddf381eff1f3506fd12ffc061cdf",
+      "rand_param_envs/__init__.py": "1389fb417fbace64943c30893f5265d2d25e3fb4667530eb86673db0d6690f37",
+      "rand_param_envs/base.py": "644f3eb2b732284676dc9492bb17d0bc0df04ec5270e0648df4db42d11db93ca",
+      "rand_param_envs/gym/__init__.py": "a9111ddf7bd289db046f575db01c72ecc03118f39d2be9d72fca8e76fe039488",
+      "rand_param_envs/gym/benchmarks/__init__.py": "68e21280544cff46edbe00a6abd28fab5229f9047d3bd7ea9caffbab8a74171e",
+      "rand_param_envs/gym/benchmarks/registration.py": "04fbbb7c5a77f45ab0e54e740b88a1fcf09653ee5c4dd3a917749bafcb0c2154",
+      "rand_param_envs/gym/benchmarks/scoring.py": "f971e22256f67ef232c23b1b14f46714f6d4154c3b6800f3899bbca309114cbe",
+      "rand_param_envs/gym/benchmarks/tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rand_param_envs/gym/benchmarks/tests/test_benchmark.py": "4d4c77d88f3b77df15329c260605ce44fdacf7502545277b96394173085f7d91",
+      "rand_param_envs/gym/configuration.py": "586898952112578bf744997f765f046e3c648a140373558182b87ad26ad1f09f",
+      "rand_param_envs/gym/core.py": "fa08b636ef0d7355fedb9299512ea38c14d2d6ddba41d5408c9c7722f7d1207c",
+      "rand_param_envs/gym/envs/__init__.py": "e3210c6e9e299d3a8e5f631d3c14ac79576daf958cbe66403d8b5477036bcd5a",
+      "rand_param_envs/gym/envs/algorithmic/__init__.py": "d1d3db18b20f59b549462d92c1286cda59f6f5b77c4bbd6557514005a949f61c",
+      "rand_param_envs/gym/envs/algorithmic/algorithmic_env.py": "aa1cfa7bc019c04555f5fe3c8d383ec5cd886b7d5cb9b39eece7fb060a339c15",
+      "rand_param_envs/gym/envs/algorithmic/copy_.py": "945bc7884cf4177cad432f28c09ef2780b7624aa894daf7496eb6ee41b465b9e",
+      "rand_param_envs/gym/envs/algorithmic/duplicated_input.py": "c7ad69f554eb3ad021b45c71e57841a75bc9a9df0f1ebfea466c57e0dc9d48e8",
+      "rand_param_envs/gym/envs/algorithmic/repeat_copy.py": "bfedb24c7df21b7e0ca70b39a53bf86e081feb5d324fab7e5cafc1785e5c8668",
+      "rand_param_envs/gym/envs/algorithmic/reverse.py": "2185b0468be3deda3e8cbff37f91df3ea04f76c8f7ef8350a96b71fbdd9736aa",
+      "rand_param_envs/gym/envs/algorithmic/reversed_addition.py": "61d3d3e4845755ad51d883964a0520b9e1bcf86807510e770224da6cb85ba09c",
+      "rand_param_envs/gym/envs/algorithmic/tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rand_param_envs/gym/envs/algorithmic/tests/test_algorithmic.py": "9f6daee1705aaa3e4ad0653247bbec97e7539926727e290145dc7f15c197c162",
+      "rand_param_envs/gym/envs/atari/__init__.py": "4048ae81abf7b79dea87a8a49f91db6434f71d359c9d6e6cb5671545d53c24ca",
+      "rand_param_envs/gym/envs/atari/atari_env.py": "6dcd141520e7e2fcd59d1bcfd8e0d39567087ddfffde729a003a967300ea7259",
+      "rand_param_envs/gym/envs/board_game/__init__.py": "e74a299ee1bc31286fd339fe5c0d77aab899fd4d096d4988e1b7d6268464c302",
+      "rand_param_envs/gym/envs/board_game/go.py": "3580554da75f68e6dec2e6263f48900cf6f2344880c8b34f45ee024cd5d10f19",
+      "rand_param_envs/gym/envs/board_game/hex.py": "aaf6aae182e1f91395ada1045ea06a3956806421b66db7087451f64d33fc5fc0",
+      "rand_param_envs/gym/envs/box2d/__init__.py": "7f61d31dfb9342b1a985178d2dc68a8560105623e824ecc5f7b7bf91fc617cd7",
+      "rand_param_envs/gym/envs/box2d/bipedal_walker.py": "4ce9a5c3a6f64a8840abe4b6a786186b3afe7169c7c647a2e37bbe0fd07fde10",
+      "rand_param_envs/gym/envs/box2d/car_dynamics.py": "8679f0d92d6cc6a55fbda9eed4d2e864cdb93c4fbb0212dcf2a19d691a7f9281",
+      "rand_param_envs/gym/envs/box2d/car_racing.py": "15b7934e1466bc04736c3b32055c9129f3a2078f72263d3ca2da336097534133",
+      "rand_param_envs/gym/envs/box2d/lunar_lander.py": "47250293f6881f80a007262bb6919c136d3cc38f0e99d48521c44560a4e6dd90",
+      "rand_param_envs/gym/envs/classic_control/__init__.py": "ca116a10e53275a8952d96ffbb0a6279880741770bd9f515b3f397ae4fbc810a",
+      "rand_param_envs/gym/envs/classic_control/acrobot.py": "960ac22d204679c24461cdb3e074019149c257f5861d70360ef7f8d49bf2d678",
+      "rand_param_envs/gym/envs/classic_control/cartpole.py": "a52a05268096037b77f26873850ab62e6a3be1f5640f2ebaf45746d4125ec01d",
+      "rand_param_envs/gym/envs/classic_control/continuous_mountain_car.py": "952793a2b13a267558eda30e3cd2e2385185bbf10ad02d4d61484a7db46ccc01",
+      "rand_param_envs/gym/envs/classic_control/mountain_car.py": "924d77422cb0fcfa85c5a89b52641507f61c6669fd03de77ab2ec5c830a1d483",
+      "rand_param_envs/gym/envs/classic_control/pendulum.py": "e28eb9f86c42a59c085ba13826f8907008502070eb76c4681448eee67861db10",
+      "rand_param_envs/gym/envs/classic_control/rendering.py": "70173c82cf33692befe94a4daf3126208b8822098f5e4a1d2facb7812b3358ac",
+      "rand_param_envs/gym/envs/debugging/__init__.py": "cae862e159599021f01795ae11a148d521f5ed1fa10c9a4ac0374122eb4bad5c",
+      "rand_param_envs/gym/envs/debugging/one_round_deterministic_reward.py": "2d4b4a929aee1c719ad002f99838b22e0063d9dc933dd2476f8a86e2da46a8dc",
+      "rand_param_envs/gym/envs/debugging/one_round_nondeterministic_reward.py": "6badd5518386a6f99058a946441e493326389343ae466fef17e6f53a128a779a",
+      "rand_param_envs/gym/envs/debugging/two_round_deterministic_reward.py": "fd6e1026aa6159ac5113ea8075d6d0bd65a62b1a4c63dccf8f364aaa3ba2d3d7",
+      "rand_param_envs/gym/envs/debugging/two_round_nondeterministic_reward.py": "5a70ad62cbf6b25d4ea0f9e137ebdd93b97f242cdeb05ff4c30e9321d1bb3fc0",
+      "rand_param_envs/gym/envs/mujoco/__init__.py": "d9db6fd26d6abeae4c1ca657595930364ee495e04fce625d3d0027684045e465",
+      "rand_param_envs/gym/envs/mujoco/ant.py": "51d227d4ae5d9c156239175e41fdb73008d014a25037ae5d1f1e5fea29bbd25f",
+      "rand_param_envs/gym/envs/mujoco/half_cheetah.py": "6711693bdd3d282d69a446483eb4da9e16566e733b74cd7086fdd4f3e0db0204",
+      "rand_param_envs/gym/envs/mujoco/hopper.py": "3d7a7f233ef8240bcd21a49aaec91b8a3c0fcf4adbd4c1a6b3d237b06adfdc84",
+      "rand_param_envs/gym/envs/mujoco/humanoid.py": "67ffc0101be01a00372945ddd92c7aed5999750aa1a032bcd766a52f21a00514",
+      "rand_param_envs/gym/envs/mujoco/humanoidstandup.py": "0da2703f2c4233a8dacf839cdcc6de97b50821fab47fe49b52bca0f8143474c7",
+      "rand_param_envs/gym/envs/mujoco/inverted_double_pendulum.py": "a6259b484c8a2fc3b2e8aba0a2bbc95be8fb90281bc5c8c22c744e4d5a07323d",
+      "rand_param_envs/gym/envs/mujoco/inverted_pendulum.py": "0170835420874979201c068f1153c8975fd2800a70a622f442cda3161eec778e",
+      "rand_param_envs/gym/envs/mujoco/mujoco_env.py": "52791ba64557d910ceda32f8c87b8cfb41177ee0731fcd664fcfd3ead62929e9",
+      "rand_param_envs/gym/envs/mujoco/reacher.py": "b3506b4be103eb738ead534f23e7f1eed21eef23b8665d2b4efa36da5adc1455",
+      "rand_param_envs/gym/envs/mujoco/swimmer.py": "cc771a124f9d536aa4b6e50b4cee1d22e05638163b5549c71f4cca250b0f9206",
+      "rand_param_envs/gym/envs/mujoco/walker2d.py": "c41a39d243714d92ba620be65ec0092d2ccc2314a517a2bd50acb689dab424af",
+      "rand_param_envs/gym/envs/parameter_tuning/__init__.py": "cf56fda27f9c3fd9ae9f2a549695feae9223a6ef36a03937a8038c9d5a9ab0ef",
+      "rand_param_envs/gym/envs/parameter_tuning/convergence.py": "8d23a9526fdcbb359d239121ce3f8e055a9834aad9861078258627790c6671e9",
+      "rand_param_envs/gym/envs/parameter_tuning/train_deep_cnn.py": "7088493d7ac38803d8362f110c8843491d64d7838d11cd8526f926ba76cb0aec",
+      "rand_param_envs/gym/envs/registration.py": "d13ef49c0e46c4435f4f968818000f18b3051aec2d0b7b49a09709098970d4fc",
+      "rand_param_envs/gym/envs/safety/__init__.py": "6598b99304ff4420ca48bb719c360465ba6dd235df36a50d0bd2639fc482b050",
+      "rand_param_envs/gym/envs/safety/offswitch_cartpole.py": "e2ca49e68cd9c46052b45ba0a0e932218bf190ad906eed4f2df94619f47906ea",
+      "rand_param_envs/gym/envs/safety/offswitch_cartpole_prob.py": "e60abb211b607d9e935e260d435de5f3e797a1ad404fdde6dde75226e4c1a560",
+      "rand_param_envs/gym/envs/safety/predict_actions_cartpole.py": "680ccf698a94cb5417beba0abd82f8dc38a5317a93966f1a87ec245ce9387d8b",
+      "rand_param_envs/gym/envs/safety/predict_obs_cartpole.py": "57254d2c16f53b42c3816a1b5a32618ee9f886e9f5a515a052748acacefa212e",
+      "rand_param_envs/gym/envs/safety/semisuper.py": "55b90240a1d1167c8eeb4f1fc5d0c3552b94dbd9dc7243826607b849e5fb73dc",
+      "rand_param_envs/gym/envs/tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rand_param_envs/gym/envs/tests/spec_list.py": "239acae4478e74d60348a385df66252982a7ed1abaa07c6d6efea0b67ac770bc",
+      "rand_param_envs/gym/envs/tests/test_determinism.py": "553ae95f3fe7511a441ebc0151b547f6bb51a3ee4e214f3233120c919fea2b14",
+      "rand_param_envs/gym/envs/tests/test_envs.py": "8584de10bea02b2fe65f996319f2b860fb9fbb1a5b06cecde7c03147e740736d",
+      "rand_param_envs/gym/envs/tests/test_envs_semantics.py": "db30fe07228148ed81291bd54ace0c7e38b8dc8f44559f5e95cd9da6e504d600",
+      "rand_param_envs/gym/envs/tests/test_registration.py": "8947b69f228dfe33204dee3ed6acabeed8ace112b5485cda351530904db34945",
+      "rand_param_envs/gym/envs/tests/test_safety_envs.py": "97e60d204c757956f0f822ecbaffb22396a886d1e7673b26bce0d554e2713e8a",
+      "rand_param_envs/gym/envs/toy_text/__init__.py": "124e0fd4a84f33fa0161f3517ebf016741b4daa94d4ac970ff413ac709aa27ed",
+      "rand_param_envs/gym/envs/toy_text/blackjack.py": "deaa2faaaec51587b4bf97a4b0b114353938e6ead01f900fe2968936d958b785",
+      "rand_param_envs/gym/envs/toy_text/discrete.py": "12ca7b9ce457ec9abb08827ca55954f364e5563c9da796504017e84705b5d2a5",
+      "rand_param_envs/gym/envs/toy_text/frozen_lake.py": "bd595a90094d75da5feecb7ee19bc524307ed94da6a7667aea2cc40f6f2e467e",
+      "rand_param_envs/gym/envs/toy_text/guessing_game.py": "93aae2866c66562c3be4f177096ddc5f42f9198a22cd9f50f2f01d37e01fe091",
+      "rand_param_envs/gym/envs/toy_text/hotter_colder.py": "377fcf9794f88c4efcc58680acdf16fed00a237826ae3994ff380736cbeff586",
+      "rand_param_envs/gym/envs/toy_text/nchain.py": "e874e065e2a5d9c5000ffc9074fe83305d4245b3cbc74af1401c7fd9c434e579",
+      "rand_param_envs/gym/envs/toy_text/roulette.py": "faada7a1b752792024462409cce88bdc7c31244386f3963bff180d865edc8d49",
+      "rand_param_envs/gym/envs/toy_text/taxi.py": "97d494ee763fdd99a97ab5d814983292d7e5d1a7b9d9072e187adf43b5d0189f",
+      "rand_param_envs/gym/error.py": "bcca252ce32d71dab38fb3d7f15526f6fa4ba409d63fccb18f99ed95dcb68567",
+      "rand_param_envs/gym/monitoring/__init__.py": "93c6ab48ec8ddc2797a7fef3f8e407a9f27ee51b99a3d7ed08fcf2f48c394eee",
+      "rand_param_envs/gym/monitoring/stats_recorder.py": "3d91cee01f2c509c0ea85bccdab1279f888805950d2a68e25bd99d4c6d045c79",
+      "rand_param_envs/gym/monitoring/tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rand_param_envs/gym/monitoring/tests/helpers.py": "ccba33f1b85a944b172b0c9d092e41a0cfbbc7df7613db93b09c30c3cf49fae9",
+      "rand_param_envs/gym/monitoring/tests/test_monitor.py": "c602bb9a0f89a857df2e2f3914bcbe57a2431a524f5e08f1ebd3408c18eb3208",
+      "rand_param_envs/gym/monitoring/tests/test_video_recorder.py": "92bc0872783ba1dbd19cffa83938846c6f0d0912729c69c228490c44200a6eb3",
+      "rand_param_envs/gym/monitoring/video_recorder.py": "598ae43e2d66efd9d63a32b1d8e688720f91a49bb0686412f2f8e75da57e78e5",
+      "rand_param_envs/gym/scoreboard/__init__.py": "d92101711cc2ba8989d5606c4c620d50be10b64f216755d620a2bddc9735cea8",
+      "rand_param_envs/gym/scoreboard/api.py": "ec62e40e6a896d3eb08c32553b1b1433a0f00f09378b1154de937c1c5b22b205",
+      "rand_param_envs/gym/scoreboard/client/__init__.py": "97d4caa4d02822c16cb4888197cbf8db9ff5dd914e2841f4643360d088e0b87b",
+      "rand_param_envs/gym/scoreboard/client/api_requestor.py": "e569305de6a7d47b50722bcfef15d16bce4353aa0dc7a68ed4bf495bbe85e67f",
+      "rand_param_envs/gym/scoreboard/client/http_client.py": "5a881a8d6afeb44940c95d1659ad1b71338e6a10e2c0b30c1b9682461eebe8e6",
+      "rand_param_envs/gym/scoreboard/client/resource.py": "6c8d4f5998dd31e288b5b73f512814d12dccd10f3d86143104688397d85f15e7",
+      "rand_param_envs/gym/scoreboard/client/tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rand_param_envs/gym/scoreboard/client/tests/helper.py": "3cffc9c1b7305b9435309ee7677393a64a5c576e8c84737baf34f866ac3d204b",
+      "rand_param_envs/gym/scoreboard/client/tests/test_evaluation.py": "c44b3da3714acb0d0920565acfb5ab989e2f96d59127eff81a77aacd0fce9f67",
+      "rand_param_envs/gym/scoreboard/client/tests/test_file_upload.py": "cbe5160da064bf885fc2273297e31501cddaeacedd005f7534b0a7748038ada4",
+      "rand_param_envs/gym/scoreboard/client/util.py": "8895e97c08c02d71de1b447e0a4b8ea077e870844db15df47369ecc5cce03e5d",
+      "rand_param_envs/gym/scoreboard/registration.py": "c24c49a1e5eb31a91b7a892b914e4575f67adbcd52eeeb8699f02089d5ceee83",
+      "rand_param_envs/gym/scoreboard/scoring.py": "62778e4a55b0f0c5a1ebbed3cbe5a4579f297d988bc71dc540022e11ba3fff04",
+      "rand_param_envs/gym/scoreboard/tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rand_param_envs/gym/scoreboard/tests/test_registration.py": "98ad3cd9ab727c687ce82185fa5feed0920ae11045f6bae3e77804d2a81f2c02",
+      "rand_param_envs/gym/scoreboard/tests/test_scoring.py": "ebf4b45a5a8f35aafb462a4f059c5bafa8c96ce12d72c2f1b0b75a85b0110eee",
+      "rand_param_envs/gym/spaces/__init__.py": "0b3fa072865c4e5cfadd42c0438f867137fb9dd03462ed3cf8f7902e6a2b3c82",
+      "rand_param_envs/gym/spaces/box.py": "753e86995024f30f37680e0a3d968c8cda1bb6f1170d2ae52ea2b6a3f1fa68ed",
+      "rand_param_envs/gym/spaces/discrete.py": "30e227fe2ad7dd6d94223d6d8efbe1c76377c8dbed1b7aa5177a5d3ac761af18",
+      "rand_param_envs/gym/spaces/multi_binary.py": "2745709c5f0f0e29a7de1dd6e18b1b6724a7f9646c86c0740ada49695d2a411a",
+      "rand_param_envs/gym/spaces/multi_discrete.py": "6bda41b815df52c379c6da8b1c518c69e998b45123444032db62e7ae6ccc319f",
+      "rand_param_envs/gym/spaces/prng.py": "09a7f76846ebfe8f7956abdf15e490fc8a11938ca88f9cf922d36401b070866e",
+      "rand_param_envs/gym/spaces/tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rand_param_envs/gym/spaces/tests/test_spaces.py": "7ec038218b24378eb5470a92c161b8f8210981edb284b0fe59d83be655037a10",
+      "rand_param_envs/gym/spaces/tuple_space.py": "a5870831fc8c35b212903a5bb0157cb858ace6ee9b2ac29ab25c040493445247",
+      "rand_param_envs/gym/tests/test_core.py": "bb93574ff772069669617e74f27cff179423e728538e8ac048cd44c32a5e8c2e",
+      "rand_param_envs/gym/utils/__init__.py": "71827e96df8884a6590d89e06d580b84e8d982855f11d0ec752aad96b8aa3af7",
+      "rand_param_envs/gym/utils/atomic_write.py": "0f42939634276cc09d3a0ddf28aa14ca03fbbf4e38f4997051bd73e1deb226ba",
+      "rand_param_envs/gym/utils/closer.py": "866e90ec44969760bcd4420dd7eb9b64f3242c80bd3e734a9cbe0c18cf762319",
+      "rand_param_envs/gym/utils/colorize.py": "cb7f90cb7ea15aaecd934090b13b8f2c3effbdaa6a904ac3759d8daf7930113d",
+      "rand_param_envs/gym/utils/ezpickle.py": "c047a09791195a54b5ceb4f7a9e008eb858a39c1024aaba838bdc47ace6aeb21",
+      "rand_param_envs/gym/utils/json_utils.py": "d439ffdd4df4a1699e5d72e36f19528bf10dfd2b630ee39c74effae295fdbbdd",
+      "rand_param_envs/gym/utils/play.py": "14c5ed01d95144c16127e2b3ada73e2cc91a8d04993b0019f36b60e7733fa585",
+      "rand_param_envs/gym/utils/reraise.py": "2d9683a980381b669135cdfc29b70e80e9998c4697ef2f7e881e539124160726",
+      "rand_param_envs/gym/utils/reraise_impl_py2.py": "19e78f92d4e0930a9ab840e91e09a31c6e3becf50cde71997bd7ff3644917294",
+      "rand_param_envs/gym/utils/reraise_impl_py3.py": "8e6b60d23bc033c0c01c522146fcd2647acda66c839ec4c7bef2918527fa11fd",
+      "rand_param_envs/gym/utils/seeding.py": "5c5ff13fac663154bf81c0309e1cc0242971e49ddb83e607c6cddad445fcf355",
+      "rand_param_envs/gym/utils/tests/test_atexit.py": "58c3b9db1bcfb2b2d6e6c8688fed06dea1fb616e752574a50a15e7eabd59ed1b",
+      "rand_param_envs/gym/utils/tests/test_seeding.py": "221b3bb3be6ae24b43fb5fd20e5a5d99651627a20e6532a16a241b0d36dee45f",
+      "rand_param_envs/gym/version.py": "b7e664bfeed6013ecc7585619a1351016801c61bb495e0a018d399c763c4f929",
+      "rand_param_envs/gym/wrappers/__init__.py": "9387dc7851d3b0d334471610c43be9fa75887beeb6d8633ac8dda1d6e26a32bb",
+      "rand_param_envs/gym/wrappers/frame_skipping.py": "02ecd9152b4293a9e2ea66e433c0dc3d8b1ea66b5fe2d173d7afa1451c4e8da7",
+      "rand_param_envs/gym/wrappers/monitoring.py": "14790b5053fb0d2d2d1ed8590f2c2e862b53ac23ea4291adf2264e4fec8718f8",
+      "rand_param_envs/gym/wrappers/tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rand_param_envs/gym/wrappers/tests/test_wrappers.py": "cbdb95c71a60113d7339e7cfd291e55b00f4b0dcbcd156f79f05aa57cfd8ed76",
+      "rand_param_envs/gym/wrappers/time_limit.py": "fcf4e67d2cc8bd798c11169ef123fc5a294b00cacb46b4e56c2838d3f6b4096d",
+      "rand_param_envs/hopper_rand_params.py": "caa5b10a938fa05bfcb1b4e7908ec726eb4df9b76d6140b8a380854988911565",
+      "rand_param_envs/mujoco_py/__init__.py": "8f618b6d4cf1a0cf8564d33bd61168fdddf7f38937d5212a59a44cd9ab643b06",
+      "rand_param_envs/mujoco_py/config.py": "c10facf43d5a8d4b70f4331f34ab261790b3aa30d8c9fcc73d22b93735901581",
+      "rand_param_envs/mujoco_py/error.py": "75baffdc11fd0f32b15547f7c84acb6a64ce9ed57e32ac1c0d3799c88c98a245",
+      "rand_param_envs/mujoco_py/glfw.py": "aa395fe2d03a8187f5580984e37444f3de967bb20b4ee31fa5827017cafb155d",
+      "rand_param_envs/mujoco_py/mjconstants.py": "db6bd385caf7b0947bda06c6133ff062b1598a9f8f1731347d504772b07a5c95",
+      "rand_param_envs/mujoco_py/mjcore.py": "1980648fd1651c21d712e340c2aa955c3526fc7c08e61542e20e6c94af983d85",
+      "rand_param_envs/mujoco_py/mjextra.py": "3338132565e2789b46e0fce686ac655f2a7b75ae38e3ee9228208f4f46ce0a38",
+      "rand_param_envs/mujoco_py/mjlib.py": "b28f7ffb646b24d92c13b774d9ea086acfbb5175e233aee44f75887b72599251",
+      "rand_param_envs/mujoco_py/mjtypes.py": "c6ac80bb03c50de24a39c730b04e022c406cb18c7e9b1d553b799e67920c422d",
+      "rand_param_envs/mujoco_py/mjviewer.py": "8915afb5abadc8bf90666b21dcdbce2489e85ee6f06e807de3dbbca8b05d5779",
+      "rand_param_envs/mujoco_py/platname_targdir.py": "27073751f0be9d95bb1ea4d9c0d35e78673552f57d36aeed02efce63bbc459f5",
+      "rand_param_envs/mujoco_py/util.py": "48a6659d31716350b69d77fb8f58e05f499b9a1d3904e6ce9a085a71d7a9ce4e",
+      "rand_param_envs/pr2_env_reach.py": "97d0b2ffec7689492fc829a3e76be6c6bf867c40fbceb9c767fc4f6d7ad770d5",
+      "rand_param_envs/setup.py": "bbe2368d1cb74723d11364459f9498a15a2ba7747763b32c9501a2a60cd639df",
+      "rand_param_envs/walker2d_rand_params.py": "cef257897e31998316a306c92bbdb3eb5e9126171323603990fa8419607d017e",
+      "rlkit/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rlkit/core/__init__.py": "dfe399df1cebdf4d3f8a79aeafe82cfa04b09dd52bd3db70bd164b2daded0571",
+      "rlkit/core/eval_util.py": "33bc01269a3093ac2bb9676ea14096dca6741b7efc0d0ed25dbcf13196ea93b7",
+      "rlkit/core/logger.py": "deaf9aa88b84f148d838c525ba2513a7e407e927f5a5041315c1a7e340a9ba27",
+      "rlkit/core/rl_algorithm.py": "027cc59459a2198eaede867ca3d37c2427e3b460526a311a6641db5782ed24a8",
+      "rlkit/core/serializable.py": "60c3ae6875e46191474a5cafcb33a8e535066dad9ca564dd3635ef5cd52737ed",
+      "rlkit/core/tabulate.py": "0a17c198614e078fbb9bd51f181e12671becd463f5cd56b66829c6d996b76b25",
+      "rlkit/core/util.py": "2ec07c372a92149282cb59a39faa4d718f5132510ee38e520467d05830419486",
+      "rlkit/data_management/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rlkit/data_management/env_replay_buffer.py": "eb76d22ba46a2b3c9347ab9f26d1f8aa42ab37e707aa6669411d64b3f931988e",
+      "rlkit/data_management/normalizer.py": "796e5f9e1f528ad7734ef2f2cfe1281cec674f118256fa15d8ceca925689be86",
+      "rlkit/data_management/path_builder.py": "b84d683333592c23c0820ae6bf7ec7b8da454a0af2bf3117f3ef39d3786f2dd5",
+      "rlkit/data_management/replay_buffer.py": "0c1a17d14cb2fc6cd402d886d86dd90b8a757f6b6c3ff630bf8d7ba18b74c80a",
+      "rlkit/data_management/simple_replay_buffer.py": "d4c9ce9e1980b73e8cd1af563b875b5fab7a531d8d52aa17d9f00998e85be2cf",
+      "rlkit/envs/__init__.py": "00b9e4ed335042059b34d5c2cad3632125cd1b790c9d632a7c5e7c93e26f7d31",
+      "rlkit/envs/ant_dir.py": "0ba7b885c6cd990c32be069533e17d95d7a913b5b23dd1fa0b24c5ef03148e4b",
+      "rlkit/envs/ant_goal.py": "9e2acbedc74ad58efad07d99dfd999235363d9f41feed2c87fbb9ba5430c2d23",
+      "rlkit/envs/half_cheetah_dir.py": "6f78ce4cdfa613483b228d5388e7a633a1a7f44d075e379ffc65c5c447fa090f",
+      "rlkit/envs/half_cheetah_vel.py": "dfebe98f42498ce02966ea40e1fa29a29389ad63568e601a75ec3fb0bdc30d7c",
+      "rlkit/envs/hopper_rand_params_wrapper.py": "44929fb61fb02288ca52de281ae4d98dc4d96fb07edf29551e5521b28fad45c0",
+      "rlkit/envs/humanoid_dir.py": "68483a415263973b9cb25b7162009d90b5a7c06365a4d4baeab446c463db25a2",
+      "rlkit/envs/mujoco/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rlkit/envs/mujoco/ant.py": "35719a6205aca35aa3dc656e986eeef7ae494b7907e087c87d1dcbf350733281",
+      "rlkit/envs/mujoco/ant_dir.py": "5ea7990a4698bc4cf455f7253389131464f160500427096120c4b52906fe1dc1",
+      "rlkit/envs/mujoco/ant_goal.py": "2a1f10b3cab4b47d600b5e83e409158cfd982f5fcc60198e61be3c1da68050fa",
+      "rlkit/envs/mujoco/ant_multitask_base.py": "a76b223099038e4eb4aa064bd3cc8f0b62bdd59db567b039d37a1232031ab7d5",
+      "rlkit/envs/mujoco/half_cheetah.py": "9155b9010fee146cd7dd12f2b0ec88794db885724ce73f34b94e1ba1cf03c835",
+      "rlkit/envs/mujoco/half_cheetah_dir.py": "8bea0c72d0aee60a6f045e288ce635b7c4e79b2d14b02ee76d6e774cfd127c5c",
+      "rlkit/envs/mujoco/half_cheetah_vel.py": "c0f2ef21990e829d41bccfd796e00ac8dcd29a1b23563364c98454538336df8b",
+      "rlkit/envs/mujoco/hopper_rand_params_wrapper.py": "086be0fa746103fd747eff6b1225d3902a86246950be101833db7a5ae99115f5",
+      "rlkit/envs/mujoco/humanoid_dir.py": "0faaa0c6a41290edcd13dbdcbf52696d065f58a528785a0a6da85dd57536b35e",
+      "rlkit/envs/mujoco/mujoco_env.py": "ebc49f7206cb0bd3803deff87546f54d36e4f83bb39f865e662ef18551f6ed68",
+      "rlkit/envs/mujoco/walker_rand_params_wrapper.py": "e5aab05f36f17f338fe58d023d51e3af49f0d7f02b3765802787228d26caec7c",
+      "rlkit/envs/non_mujoco_ant_dir.py": "32cfae69527c98fd533630125ec30e512410a2280196ea2187932195e8f642c9",
+      "rlkit/envs/non_mujoco_half_cheetah_vel.py": "796650859b7eb913092842eb4bad5adec7047086762380f7d98b5db1fc3ab1d3",
+      "rlkit/envs/non_mujoco_point_robot.py": "ace44c8c7aaee50d5d60239a5b96a31f84af199a33329aab658f3832adb50821",
+      "rlkit/envs/point_robot.py": "b86f17f809c59e47d56c28d57d133527e01d07b81477b049ee15cbbe8baeab04",
+      "rlkit/envs/walker_rand_params_wrapper.py": "994dc3fcaf21e15577d9a118acd8277fba4884c9480292308e35c91fe8fa28b7",
+      "rlkit/envs/wrappers.py": "1af15dcdbc6fb140ffe26a96a5f48b760a93e02e4a009065df34d91a443bbeab",
+      "rlkit/launchers/__init__.py": "bea8d07253e74e2bbbff2842539815be0d1c027553b958f7646ef83d271f682a",
+      "rlkit/launchers/config.py": "fa257906ae15a148f259678f85a38f76d47e46d622e976179c8e8746f448b330",
+      "rlkit/launchers/launcher_util.py": "00a810c6552a28d45c01376dbe57d7904462b68e0a4d449fa6c871f9cdd4330d",
+      "rlkit/policies/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rlkit/policies/argmax.py": "03fda6533beff4f3927b63609d8a2d5807a379164c186682ea1c9c0ceefbdf43",
+      "rlkit/policies/base.py": "c48f15a70eb8e68160815e546a4b7c958c18826210fb0c2f27cb07d95b09b180",
+      "rlkit/policies/simple.py": "0bab04e2162f3f97bba4b95bb2972a3b1c7997aed8d31bd0f77fb4a2869c624e",
+      "rlkit/samplers/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rlkit/samplers/in_place.py": "7ca5acb0412b4af28a35aaebc53f74f51f15d8525982375f2a6d0fe7523f4132",
+      "rlkit/samplers/util.py": "933c8792876a74b4364cb77c1ee549bb20548565c4c4e6843f47e71b5d4aa7ef",
+      "rlkit/torch/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rlkit/torch/algo/gentle.py": "e65c4d85bc85c6f095e7979d9b610c4425697a0b8652cce1730c74cf27ef551a",
+      "rlkit/torch/autoencoder.py": "831dc7832d7b1e6370b9cd66bb152421a8ef3f837ad5955a7d524606ddaa1691",
+      "rlkit/torch/core.py": "1fbaa0ca0e024d859b176f914fb3330c30f2e96ead10ebfc3902d518745b761f",
+      "rlkit/torch/data_management/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rlkit/torch/data_management/normalizer.py": "fcf72a6be9e0ec4084ced55ebe14cdbc2e141b93b86ffca188076145dd6b9e74",
+      "rlkit/torch/distributions.py": "959b96e78245e4a0f43b4754beb6a707546ae8658c97244fb303cc1666e887be",
+      "rlkit/torch/modules.py": "66cb6e142ae16a38ed25cfda32c1335caa5df153026fdb4296f7d1f96fa89d92",
+      "rlkit/torch/multi_task_dynamics.py": "df4c0fca79c68397e8a48dd2118c13f5e4eaf4b6b635c3f7d0f4e922a7807c0b",
+      "rlkit/torch/networks.py": "ad3d729bcf0ea88bb8582130650bc46bc0578cc1356705bd389549fcaa540ada",
+      "rlkit/torch/pytorch_util.py": "b31be4a9a588217d030de5ff84c2a98eca2888c266990db892c7539341239ce9",
+      "rlkit/torch/sac/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rlkit/torch/sac/agent.py": "98b89c36935f9a18aa984ccb9c6286a80627b4b720bb8a0cff3336db595bc7aa",
+      "rlkit/torch/sac/policies.py": "d11afe893fb4aed338264cf70a00ce796a6be3d298676a3fc2f7fb66bc071bf1",
+      "rlkit/torch/sac/pytorch_sac/agent/__init__.py": "78f71ed53acd03dda3fbfed1332490df26ea78a27f182ed928c391ff3c6d8c07",
+      "rlkit/torch/sac/pytorch_sac/agent/actor.py": "44d2a9251c2f2dcaa828c2fb79fae80c20dff3fec1f882c9c4b086329cf24093",
+      "rlkit/torch/sac/pytorch_sac/agent/critic.py": "ae9624cc7c7343fc88c9b63467503fb0d5e73e393eb592803e8ea0cc7bf3c4e2",
+      "rlkit/torch/sac/pytorch_sac/agent/sac.py": "be5d182277e8361058ba6867db888612be555752abddc75943506eacbdfaee8b",
+      "rlkit/torch/sac/pytorch_sac/logger.py": "ef8b9e3d4256068b60374c1eb2144b2e657215b8d83e9ec208e03ac09e2a7675",
+      "rlkit/torch/sac/pytorch_sac/replay_buffer.py": "b0e5054787ae7dee196344b7f6db568afd5f2b8c6f1c2a15425f82a02a9770a6",
+      "rlkit/torch/sac/pytorch_sac/train.py": "d4b84bb0e67b95b9ee28c8a99b6b9d73afef953a4d99e1028040fa057471d646",
+      "rlkit/torch/sac/pytorch_sac/utils.py": "8ce89c6c79a38f177b48c05037598efeb9415bf29f165e45bc7be6500e234a4c",
+      "rlkit/torch/sac/pytorch_sac/video.py": "acd8f06e452bfc9b4d3bb8abbfa15a1fb83a82c7dfd553d4eff94a7ef95ba619",
+      "run_component_ablations.py": "3f396fa29fff863c248f872205e32adecea50d1de44154ec7a092f61194d082b",
+      "tests/test_component_ablations.py": "54d8922f4e1689c53f58fe29675f9849066cf9f843fd6ff7b90e1907c4615576",
+      "tests/test_component_orchestration.py": "2735c57e182c12f6c4471f4b07a16ec0c392dd3ac2046af99ec38d921e8293b1",
+      "train_gentle.py": "13f87697b9cff57d2a4d2aa9ec8b4531b62b0112170b2b22fc54a652e74584c7"
+    },
+    "source_digest": "eb092b2f554130f092d52874357e58930d79352f5774ad8f25061204fba89fc3"
+  },
+  "historical_full_equivalent": false,
+  "matched_full_retraining_required": true,
+  "R_V": {
+    "element_error": "(reencoded_z - stopgrad(target_z))**2; mean over latent elements and tasks",
+    "context_length": "unchanged per-environment resolved embedding_mini_batch_size",
+    "lambda_R": "consistency_loss_weight * actual_real_elements / actual_total_elements_before_masks",
+    "lambda_V": "consistency_loss_weight * actual_virtual_elements / actual_total_elements_before_masks",
+    "zero_virtual": "virtual contribution zero; coverage/skipped logged",
+    "synthetic_context": "one combined construction under no_grad; re-encode with gradient",
+    "base": "recon_loss_weight * mean((decoder(s,a,encoder(context))-target)**2); decoder frozen, encoder gradient preserved"
+  },
+  "critic": "mean_real((Q1-y)^2+(Q2-y)^2) + P*w(t)*mean_virtual(q*((Q1-y)^2+(Q2-y)^2))",
+  "actor_Q": "-alpha*(mean_real(Q) + P*w(t)*mean_virtual(q*Q))",
+  "alpha": "bc_weight / stopgrad(mean_real(abs(Q))).clamp(min=1e-6)",
+  "actor_BC": "mean_real(mean_action((pi-a)^2)) + P*w(t)*mean_virtual(q*mean_action((pi-a)^2))",
+  "virtual_bc": true,
+  "virtual_bc_authority": "Explicit user reply 2026-11-03: retain virtual BC when P=1; supersedes handoff section 5.2",
+  "quality": "q=1; cycle and reconstruction weighting disabled; no nearest-real distance logging",
+  "generation_comparison": {
+    "global_parameters": {
+      "cheetah-vel": {
+        "M": 2,
+        "beta": 2.0
+      },
+      "walker-rand-params": {
+        "M": 2,
+        "beta": 1.0
+      }
+    },
+    "reason_for_M_difference": "Local M=1 selects one nearest neighbor; Global M=2 mixes two tasks. M=1 Global would be degenerate. Parameters copied from historical Global evidence; all loss/budget/initialization settings remain matched."
+  },
+  "schedule": {
+    "cheetah-vel": {
+      "virtual_transition_final_loss_weight": 0.0,
+      "virtual_transition_loss_weight": 1.0,
+      "virtual_transition_weight_decay_end_itr": 250,
+      "virtual_transition_weight_decay_start_itr": 100,
+      "virtual_transition_weight_schedule": "linear_decay"
+    },
+    "walker-rand-params": {
+      "virtual_transition_final_loss_weight": 0.0,
+      "virtual_transition_loss_weight": 0.4,
+      "virtual_transition_weight_decay_end_itr": 200,
+      "virtual_transition_weight_decay_start_itr": 50,
+      "virtual_transition_weight_schedule": "linear_decay"
+    }
+  },
+  "gradient_paths": {
+    "decoder_parameters": "frozen",
+    "base_reconstruction_to_encoder": true,
+    "recovery_targets": "detached",
+    "recovery_synthetic_context": "no_grad",
+    "virtual_RL_to_encoder": false,
+    "R_V_reencoding_to_encoder": true
+  },
+  "update_schedule": {
+    "main_updates": 200000,
+    "actor_updates_per_main_update": 1,
+    "critic_optimizer_pairs_per_main_update": 1,
+    "target_events_per_main_update": 1,
+    "target_networks_per_event": 3,
+    "policy_freq_note": "config says 2, but audited GENTLE._take_step updates actor and targets EVERY step; matched implementation preserves actual behavior"
+  },
+  "rng": "counter-keyed independent auxiliary streams; masks never skip generation; real stream restored; evaluation isolated",
+  "resumption": "epoch-boundary complete state only; no native network-only resume",
+  "differences_from_historical": [
+    "independent real/virtual RL denominators",
+    "real-only alpha normalization",
+    "isolated auxiliary RNG",
+    "strict resource loading and frozen task/normalizer inputs"
+  ]
+}

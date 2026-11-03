@@ -1,0 +1,215 @@
+# component-ablations-v1 — STATUS
+
+Updated (UTC): 2026-11-03T08:29:45.601069+00:00
+
+## A
+
+{
+  "status": "LOSS_AND_RESOURCE_AUDIT_RECORDED; TRAINING_RESOURCES_BLOCKED",
+  "verified_files": 4,
+  "expected_files": 2100,
+  "missing_data": 2000,
+  "missing_encoder_decoder": 16,
+  "missing_dynamics": 80,
+  "loss_contract": "loss_contract.json",
+  "resource_records": "resource_audit.json",
+  "historical_full_reuse": false
+}
+
+## B
+
+{
+  "status": "21_TESTS_PASSED; REAL_MUJOCO_SMOKE_PENDING",
+  "core_real_smoke": "0/12",
+  "supplementary_real_smoke": "0/4",
+  "test_report": "smoke/unit-tests.xml",
+  "test_log": "smoke/unit-checks.log",
+  "source_digest": "c8c24e3db0ce1d91d4f1d474082cb422c9d335fb5b011f67ad6ff341bdd4e995",
+  "gpu_queue_preview": "smoke/launch_preview.json",
+  "missing_resource_gate_test": "smoke/blocked_launch.json",
+  "bash_newlines": "LF verified",
+  "bundled_audit_inputs": "planning_evidence/: 8 files; no evaluation context bank"
+}
+
+## C
+
+{
+  "status": "NOT_STARTED_RESOURCE_BLOCKED",
+  "core_completed": 0,
+  "core_total": 48,
+  "supplementary_completed": 0,
+  "supplementary_total": 16,
+  "experiment_ids": "40-47",
+  "name": "exp44"
+}
+
+## D
+
+{
+  "status": "IMPLEMENTED_INTERFACE; REAL_DATA_END_TO_END_VALIDATION_PENDING",
+  "formal_fixed_context_bank_available": false,
+  "formal_probe_queries_available": false,
+  "main_completed": 0,
+  "fixed_completed": 0,
+  "probe_completed": 0,
+  "resource_contract": "../component_ablations/RESOURCE_SCHEMAS.md"
+}
+
+## E
+
+{
+  "status": "REPORTING_IMPLEMENTED; AWAITING_REAL_FOUR_SEED_RESULTS",
+  "summary_directory": "summaries/",
+  "missing_cells": "incomplete; mean/std null",
+  "performance_figures_generated": 0
+}
+
+## decisions
+
+{
+  "virtual_bc": true,
+  "retrain_matched_full": true,
+  "numbering": [
+    {
+      "arm": "backbone",
+      "name": "40_exp44_backbone",
+      "id": 40,
+      "masks": {
+        "R": 0,
+        "V": 0,
+        "P": 0
+      }
+    },
+    {
+      "arm": "real_only",
+      "name": "41_exp44_real_only",
+      "id": 41,
+      "masks": {
+        "R": 1,
+        "V": 0,
+        "P": 0
+      }
+    },
+    {
+      "arm": "no_real",
+      "name": "42_exp44_no_real",
+      "id": 42,
+      "masks": {
+        "R": 0,
+        "V": 1,
+        "P": 1
+      }
+    },
+    {
+      "arm": "no_virtual_recovery",
+      "name": "43_exp44_no_virtual_recovery",
+      "id": 43,
+      "masks": {
+        "R": 1,
+        "V": 0,
+        "P": 1
+      }
+    },
+    {
+      "arm": "no_virtual_rl",
+      "name": "44_exp44_no_virtual_rl",
+      "id": 44,
+      "masks": {
+        "R": 1,
+        "V": 1,
+        "P": 0
+      }
+    },
+    {
+      "arm": "full",
+      "name": "45_exp44_full",
+      "id": 45,
+      "masks": {
+        "R": 1,
+        "V": 1,
+        "P": 1
+      }
+    },
+    {
+      "arm": "full_global",
+      "name": "46_exp44_full_global",
+      "id": 46,
+      "masks": {
+        "R": 1,
+        "V": 1,
+        "P": 1
+      }
+    },
+    {
+      "arm": "full_constant",
+      "name": "47_exp44_full_constant",
+      "id": 47,
+      "masks": {
+        "R": 1,
+        "V": 1,
+        "P": 1
+      }
+    }
+  ]
+}
+
+## validation
+
+{
+  "passed": true,
+  "unit_tests": 21,
+  "source_digest": "c8c24e3db0ce1d91d4f1d474082cb422c9d335fb5b011f67ad6ff341bdd4e995",
+  "warning": "Local torch/NumPy bridge warning; real training runtime NOT validated",
+  "syntax": "19 Python files compiled in memory",
+  "original_training_files_changed_this_task": false
+}
+
+## blockers
+
+[
+  "2000 offline data files, 16 encoder/decoder weights and 80 task dynamics files are missing locally",
+  "gym and gtimer missing in the local test interpreter; MuJoCo backend and torch/NumPy compatibility require validation on training host",
+  "No complete formal v3 fixed context bank or frozen probe query manifest; old smoke contexts are not accepted"
+]
+
+## commands
+
+[
+  "python -m component_ablations plan --root component-ablations-v1 --start-id 40 --name exp44 --suite all --gpus 0,1,2,3 --jobs-per-gpu 1",
+  "Anaconda3/python.exe -m component_ablations audit --root component-ablations-v1 [expected resource failure]",
+  "Anaconda3/python.exe -m component_ablations check --root component-ablations-v1 [21 passed]",
+  "python -m component_ablations launch --root component-ablations-v1 --phase train --gpus 2,3 --jobs-per-gpu 1 --max-parallel 2 --dry-run [64 slots]",
+  "python -m component_ablations launch --root component-ablations-v1 --phase train --gpus 2,3 [expected resource gate failure]",
+  "python -m component_ablations plot --root component-ablations-v1 [incomplete summaries; no plots]"
+]
+
+## resource_audit
+
+{
+  "resource_count": 2100,
+  "verified_count": 4,
+  "missing_or_mismatch_count": 2096,
+  "dependencies": {
+    "torch": true,
+    "numpy": true,
+    "gym": false,
+    "gtimer": false,
+    "click": true,
+    "matplotlib": true,
+    "sklearn": true,
+    "tensorboard": true
+  },
+  "resources_ready": false
+}
+
+## next_steps
+
+On the training host: verify resource paths, then bash component-ablations-v1/commands.sh component-ablations-v1 0,1,2,3 1. Stages: audit, check, init, real smoke, core training, supplementary training, summaries. Bind formal bank/probe resources before diagnostic evaluation; see ../component_ablations/README.md.
+
+## summaries
+
+Generated from actual records only; missing cells explicitly incomplete
+
+## scope
+
+Three-component R/V/P ablations. User-approved virtual critic + actor-Q + actor-BC. Core decay-only, no reconstruction/cycle weights or nearest-distance logging; constant schedule only in separately identified supplementary control.
