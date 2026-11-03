@@ -80,3 +80,12 @@ cd /root/tievnas2/YinCH/GENTLE-consistant
 - smoke 数据不能用于 B/C/D 正式图表；B/C/D 程序待 A 接口验收后继续补齐。
 
 服务器每次运行在输出 STATUS 和项目根 STATUS 记录实际命令、路径、退出码、验证结果和下一步。下一轮依据回传结果修复或验收 A，再继续 B→C→D。
+
+
+## Server stage-A execution: 2026-11-03T01:17:25.295888+00:00
+
+Status: IN_PROGRESS. Exit code: 2. Evaluation models: 56/64; collector200: 2/2.
+
+Output: `/root/tievnas2/YinCH/shift-diagnostics-v3/smoke/A-20261103T011150Z-15243`. Actual commands: `commands.sh`. Validation: `completion.json`, `jobs.json`.
+
+Next: Resolve unavailable/failed jobs; remain in A.

@@ -30,3 +30,5 @@ output/
 result/
 diagnostics_audits/
 /shift-diagnostics-v*/
+
+encoder_decoder/
