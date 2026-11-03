@@ -27,3 +27,7 @@ figures/
 result/
 %SystemDrive%/
 output/
+
+diagnostics_audits/
+docs/
+shift-diagnostics-v*/

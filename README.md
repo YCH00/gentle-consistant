@@ -102,6 +102,34 @@ python train_gentle.py ./configs/ant-dir.json
 
 Logs will be written to `./logs/ant-dir/gentle/`
 
+Virtual transition training uses the following settings in `configs/default.py`
+and all environment JSON configs:
+
+```json
+{
+    "virtual_transition_weight_schedule": "linear_decay",
+    "virtual_transition_train_policy_q": true,
+    "virtual_transition_train_policy_bc": true,
+    "virtual_transition_use_recon_weight": false,
+    "virtual_transition_use_cycle_weight": false,
+    "virtual_transition_log_nearest_distance": false
+}
+```
+
+Virtual transitions participate in the critic loss and both actor terms (Q and
+BC), with the same scheduled sample weight. The weight stays at
+`virtual_transition_loss_weight` through `virtual_transition_weight_decay_start_itr`,
+then decreases linearly to `virtual_transition_final_loss_weight` at
+`virtual_transition_weight_decay_end_itr`. All supplied JSON configs end at zero,
+so virtual transitions stop contributing to these losses after decay completes.
+Reconstruction loss still trains the encoder/decoder; it does not adjust virtual
+transition weights. Cycle weighting and nearest-real-z distance logging are disabled.
+
+Use `configs/<env>.json` or `configs/<env>-vt-decay.json` for training. The legacy
+`*-vt-decay-cycle-critic.json` filenames are retained for existing commands, but
+now also use decay weighting and include virtual transitions in both actor terms.
+Command-line options in `train_gentle.py` can override these config settings.
+
 visualize
 ```
 python replot_tsne.py ^

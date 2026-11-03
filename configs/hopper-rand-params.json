@@ -41,6 +41,7 @@
         "virtual_transition_train_policy_bc": true,
         "virtual_transition_use_cycle_weight": false,
         "virtual_transition_cycle_weight_temperature": 1.0,
-        "virtual_transition_log_nearest_distance": false
+        "virtual_transition_log_nearest_distance": false,
+        "virtual_transition_use_recon_weight": false
     }
 }
