@@ -1,6 +1,6 @@
 {
   "protocol_id": "component-ablations-v1",
-  "created_at": "2026-11-03T08:29:02.067731+00:00",
+  "created_at": "2026-11-03T09:11:10.844638+00:00",
   "resource_count": 2100,
   "verified_count": 4,
   "missing_or_mismatch_count": 2096,
@@ -16,13 +16,13 @@
     "tensorboard": true
   },
   "source": {
-    "git_head": "ed3a03159c04f0cea39bc114e6f42d46cdd4cf62",
-    "worktree_status": "M .gitignore\n M README.md\n?? component-ablations-v1/\n?? component_ablations/\n?? run_component_ablations.py\n?? tests/",
+    "git_head": "40cb97915c466533d3465424361d46e9393397a5",
+    "worktree_status": "M component_ablations/common.py\n M tests/test_component_orchestration.py\n?? .gitattributes",
     "source_files": {
       "component_ablations/__init__.py": "7ab97b88c69bc163074ce3fc8fc4b8e19ef91bd1da94c1632942ce243b6a4a0b",
       "component_ablations/__main__.py": "70406ee51b05fb31b44a8cfd84fc1eab80fe3d588729eadbad4ba49fe173c3e8",
       "component_ablations/artifacts.py": "edbc2eae7f73406c75c03cb56ee79b3f3ab918e280c2473cb865eea09ad9b585",
-      "component_ablations/common.py": "ef18557e45f59a98366d14b6958d7a7e14fa746b443081424d4219dfb4701441",
+      "component_ablations/common.py": "4640c66ed7cb066ec6246cdc7d3cbd6a094ca00f396af2befb119b742ef8ff97",
       "component_ablations/evaluation.py": "4322f48fe3ec14a4a7d4849866862b7bc94e5429c53d3396c1e6643098b71e6a",
       "component_ablations/losses.py": "f240a97b70b1b065d3d0a394c2f744975527db4108438ea799604614ddb49a33",
       "component_ablations/planning.py": "5fe0e15e5ec2b6cf50e4f4e279f306c78cb4495fbfe0685bd5998955a6c9d044",
@@ -260,10 +260,10 @@
       "rlkit/torch/sac/pytorch_sac/video.py": "acd8f06e452bfc9b4d3bb8abbfa15a1fb83a82c7dfd553d4eff94a7ef95ba619",
       "run_component_ablations.py": "3f396fa29fff863c248f872205e32adecea50d1de44154ec7a092f61194d082b",
       "tests/test_component_ablations.py": "54d8922f4e1689c53f58fe29675f9849066cf9f843fd6ff7b90e1907c4615576",
-      "tests/test_component_orchestration.py": "380ea0ea6753de9db0f7748d39d803a871bb5ebb94aa3147335cab45cdf88453",
+      "tests/test_component_orchestration.py": "fd6b94ec8690872cd7637c084f3f64f55555beee2bf8fdd78d95296cb0c12017",
       "train_gentle.py": "13f87697b9cff57d2a4d2aa9ec8b4531b62b0112170b2b22fc54a652e74584c7"
     },
-    "source_digest": "c8c24e3db0ce1d91d4f1d474082cb422c9d335fb5b011f67ad6ff341bdd4e995"
+    "source_digest": "40709ed1a2381ce3241bdcea81eeaead854fc926d7989772e6dd0b50af3f4222"
   },
   "resources_sha256": "96a82158a3e17f06ce1a1673673646b6079c2c85969043375abf7e411e5db36a",
   "records": [

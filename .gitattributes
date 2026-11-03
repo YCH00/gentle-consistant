@@ -1,0 +1,3 @@
+# Preserve the exact bytes pinned by frozen experiment manifests.
+component-ablations-v*/** -text
+*.sh text eol=lf

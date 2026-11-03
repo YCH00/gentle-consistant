@@ -22,11 +22,12 @@ def write_json(path, value, exclusive=False):
     path.parent.mkdir(parents=True, exist_ok=True)
     data = json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
     if exclusive:
-        with path.open("x", encoding="utf-8") as stream:
+        with path.open("x", encoding="utf-8", newline="\n") as stream:
             stream.write(data)
     else:
         tmp = path.with_name(path.name + ".tmp")
-        tmp.write_text(data, encoding="utf-8")
+        with tmp.open("w", encoding="utf-8", newline="\n") as stream:
+            stream.write(data)
         os.replace(tmp, path)
 
 

@@ -15,6 +15,20 @@ from component_ablations.reporting import complete_statistics, aggregate_main, s
 from component_ablations.scheduler import select_jobs, process_environment, make_command
 
 
+def test_json_write_keeps_pinned_bytes_after_linux_checkout(tmp_path):
+    from component_ablations.common import sha256, verify_file
+    payload = {"tasks": [{"velocity": 1.25}], "train_tasks": [0]}
+    path = tmp_path / "task_manifest.json"
+    for exclusive in (True, False):
+        write_json(path, payload, exclusive=exclusive)
+        original = path.read_bytes()
+        record = {"path": str(path), "sha256": sha256(path)}
+        assert b"\r" not in original
+        path.write_bytes(original.replace(b"\r\n", b"\n"))
+        verify_file(record)
+        assert read_json(path) == payload
+
+
 @pytest.fixture
 def project(tmp_path):
     args = SimpleNamespace(root=str(tmp_path / "component-project"), evidence=EVIDENCE, start_id=40,
