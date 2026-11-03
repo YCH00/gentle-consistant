@@ -1,5 +1,5 @@
 {
-  "protocol_id": "shift-diagnostics-v2",
+  "protocol_id": "shift-diagnostics-v3",
   "status": "specified_pending_resource_verification_and_smoke",
   "specification": "docs/SHIFT_ROBUSTNESS_EXPERIMENT_HANDOFF.md",
   "specification_sha256": "4b16fa5dc8ffdd1daa7b0a8feb56e38040f22c40039f808bfef09766ebf8a850",
@@ -13,7 +13,9 @@
   "component_ablations": false,
   "environments": ["cheetah-vel", "walker-rand-params"],
   "training_seeds": [0, 1, 2, 3],
-  "evaluation_iteration": 499,
+  "evaluation_iteration": "verified_final_native_plan_per_method",
+  "expected_final_iteration_zero_based": {"FOCAL": 499, "CORRO": 999, "CSRO": 499, "GENTLE": 499, "UNICORN-SS": 999, "ER-TRL": 99, "Ours-local": 499, "Ours-global": 499},
+  "checkpoint_selection": "latest complete four-seed run group by completion-file time, selected before diagnostics; no selection by return; freeze exact paths and hashes",
   "task_source": "verified shared-main-v1 task_manifest; never resample",
   "expected_tasks_per_environment": {"seen": 10, "unseen": 10},
   "context_length": 200,
@@ -54,12 +56,14 @@
     "expected_contexts_per_environment": 2000
   },
   "preprocessing": {
-    "normalizer": "verified frozen main-experiment shared observation_normalizer",
-    "obs_and_next_obs": "normalize exactly once in method adapter",
+    "normalizer": "native training preprocessing per method; preserve identity for raw-observation methods",
+    "obs_and_next_obs": "apply the model training transform exactly once in the adapter; shared bank remains raw",
+    "method_transforms": {"FOCAL": "identity", "CORRO": "identity", "CSRO": "published_shared_RMS", "GENTLE": "native_training_RMS", "UNICORN-SS": "identity", "ER-TRL": "identity", "Ours-local": "native_training_RMS", "Ours-global": "native_training_RMS"},
+    "legacy_GENTLE_RMS": "prefer saved run statistics; if absent, reconstruct the original single RunningMeanStd update only from hash-verified original training files in the native loader order, record provenance and compare to shared RMS; never use evaluation data or refit on diagnostic context",
     "reward": "raw; no Bellman reward_scale",
     "context_fields": "native per method",
     "normalizer_refit": false,
-    "training_normalizer_mismatch": "block compatibility until provenance and contract are resolved"
+    "training_normalizer_mismatch": "do not replace native input coordinates; verify provenance and record the native contract"
   },
   "inference": {
     "representation": "posterior mean or native deterministic latent",
@@ -152,6 +156,14 @@
       "reason": "User chose both full Ours versions and the GENTLE run; all eight entries share the same raw context bank",
       "new_output_root": "/root/tievnas2/YinCH/shift-diagnostics-v2",
       "prior_artifacts": "v1 resource audit retained read-only as discovery evidence; no formal v1 results exist"
+    },
+    {
+      "date": "2026-11-02",
+      "authority": "explicit user approval: reuse main-experiment native settings",
+      "change": "Preserve each complete method's native training preprocessing and verified final checkpoint instead of requiring shared RMS and iteration 499 for all methods",
+      "reason": "Evidence shows identity observation preprocessing in FOCAL/CORRO/UNICORN-SS/ER-TRL and different native training lengths; changing input coordinates at evaluation would invalidate the trained policies",
+      "invariants": "Same raw context bank, task manifest, action coordinates, H/K/L, frozen parameters, paired resets, complete methods only",
+      "new_output_root": "/root/tievnas2/YinCH/shift-diagnostics-v3"
     }
   ]
 }

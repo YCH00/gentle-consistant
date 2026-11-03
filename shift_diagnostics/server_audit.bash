@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 SEARCH_ROOT="${1:-$HOME/tievnas2/YinCH}"
 REF_ROOT="${2:-$SEARCH_ROOT/GENTLE-consistant}"
-DIAG_ROOT="${3:-$SEARCH_ROOT/shift-diagnostics-v2}"
+DIAG_ROOT="${3:-$SEARCH_ROOT/shift-diagnostics-v3}"
 PYTHON_BIN="${PYTHON_BIN:-python}"
 if [[ ! -d "$SEARCH_ROOT" || ! -d "$REF_ROOT" ]]; then
     printf '%s\n' 'Historical paths do not exist. Pass actual search root, repo root, and diagnostic root as arguments.' >&2

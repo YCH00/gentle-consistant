@@ -133,7 +133,7 @@ def main(argv=None):
     parser.add_argument('--out', type=Path)
     args = parser.parse_args(argv)
     request = json.loads(args.request.read_text(encoding='utf-8'))
-    if request.get('protocol') not in ('shift-diagnostics-v1', 'shift-diagnostics-v2'):
+    if request.get('protocol') not in ('shift-diagnostics-v1', 'shift-diagnostics-v2', 'shift-diagnostics-v3'):
         raise ValueError('Unrecognized protocol output directory')
     out = args.out or (Path(request['server_base']) / request['protocol'] / 'evidence' /
                        ('A-evidence-' + datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + str(os.getpid())))

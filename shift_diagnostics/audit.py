@@ -24,7 +24,7 @@ SKIP_DIRS = {
     ".git", ".aws", ".ssh", ".codex", ".agents", "__pycache__", ".pytest_cache",
     ".venv", "venv", "site-packages", "node_modules", "99_backup",
     "shared-artifact-tests", "test-runtime", "plot-runtime", "%SystemDrive%",
-    "diagnostics_audits", "shift-diagnostics-v1", "shift-diagnostics-v2",
+    "diagnostics_audits", "shift-diagnostics-v1", "shift-diagnostics-v2", "shift-diagnostics-v3",
 }
 METADATA_NAMES = {
     "variant.json", "config.json", "resolved_config.json", "run_manifest.json",
@@ -125,7 +125,7 @@ def blank_models():
     for env in ENVIRONMENTS:
         for method in METHODS:
             for seed in range(4):
-                entries.append(model_slot(method, env, seed, 499, ["evaluation"] + (
+                entries.append(model_slot(method, env, seed, PROTOCOL['expected_final_iteration_zero_based'][method], ["evaluation"] + (
                     ["collector"] if method == "GENTLE" and seed == 0 else [])))
         entries.append(model_slot("GENTLE", env, 0, 200, ["collector"]))
     return {"protocol": PROTOCOL_ID, "status": "unresolved",

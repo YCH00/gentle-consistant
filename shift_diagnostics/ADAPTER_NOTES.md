@@ -1,30 +1,35 @@
-# 阶段 A 源码核验笔记（2026-11-02）
+# 原生接口与证据边界（2026-11-02，v3）
 
-范围：当前本地 checkout `6e44eecb5427e57a8ac3453858d53f3f418f6908`。这是静态源码证据，不代表服务器 checkpoint 已通过适配或已确认本仓库对应原版 GENTLE/Ours。
+依据：`A-evidence-20261102T121715Z-5124/evidence.zip`，全部 2,203 个成员哈希通过。当前本地/服务器报告 commit=`49857cc2bc0f7d343b1695c7e645497152982459`；行为以实际源码哈希为准。初次笔记归档于 `diagnostics_audits/ADAPTER_NOTES-initial-20261102.md`。
 
-## 当前 GENTLE 风格接口
+## 原生接口
 
-| 项目 | 本地证据 | 适配要求 |
+| 实现 | 编码与动作 | 关键校验 |
 | --- | --- | --- |
-| 网络构造 | `train_gentle.py` 构造三层 MLP encoder/actor，encoder output_activation=tanh | 必须按实际 run 配置和对应版本构造，不能从本地默认配置猜正式网络 |
-| 字段 | `Agent.update_context_dict` 拼接 obs/action/reward，按 use_next_obs_in_context 加 next_obs | 接收同一 raw bank，状态转换一次，保留原生字段，reward 不乘 Bellman scale |
-| 确定性 latent | `Agent.infer_posterior` 无 IB 时对 transition 编码均值，sample_z 取 z_means | 用原生均值作为表示；z_vars 在此分支记录的是 std，不能误认为高斯 posterior variance |
-| 概率 latent | IB 时 softplus 方差 + product of Gaussians，infer_posterior 内会 sample_z | 表征读 z_means；控制保留原生采样。隔离采样 RNG，不能通过强制均值动作一并取消 posterior 随机性 |
-| 状态清理 | `Agent.clear_z` 清空 context 并重置 prior，也会 sample_z | 每 context/rollout 清理；prior 和 posterior RNG 不得影响环境 reset RNG |
-| 动作 | `Agent.get_action(..., deterministic=True)`，policy.forward 的确定性分支返回 tanh(mean) | 采集器必须显式确定性，不能直接照搬 `ContextPolicyWrapper.get_action`，后者默认随机 actor |
-| 保存 | `GENTLE.get_epoch_snapshot` 返回 policy/context_encoder 等 state_dict；logger 分别保存 | encoder/policy 同一 run、同一 iteration，分别哈希并 strict load；不从名称推断配对真实性 |
-| 归一化 | `rl_algorithm.py` 从训练离线观测更新 RunningMeanStd，并调用 env.update_obs_mean_var | 该训练流程会拟合统计，本轮不能重跑它替代加载共享统计 |
-| 归一化公式 | `RunningMeanStd.forward` 与 wrapper 均使用 `(obs-mean)/sqrt(var+1e-8)` | 最终以实际训练源码为准；保存文件字段/公式/精度未核验前不能套用通用 std 公式 |
-| 环境包装 | `NormalizedBoxEnv` 将 [-1,1] 映射到物理动作；启用统计后 reset/step 返回归一化观测 | bank 必须保存 raw obs/next_obs。采集时控制观测归一化层；不能将 wrapper 输出误记为 raw 后再次归一化 |
-| 环境注册 | `rlkit/envs/__init__.py` 按 MUJOCO_PY_MJPRO_PATH 选择真实后端；未设置时导入 non_mujoco | 必须核验真实环境模块、XML、后端与 reset/step；不能让无 MuJoCo 替身通过 smoke |
-| 任务构造 | 环境构造函数调用 sample_tasks | 需核实服务器 shared runtime 的任务恢复实现，确保最终使用精确 manifest 参数及顺序，不把重新采样结果用作正式任务 |
+| GENTLE/Ours | autoencoder.MlpEncoder + Agent；原生确定性 actor | 同 run/iteration 分离权重 strict load。Cheetah latent5、s/a/r；Walker latent10、s/a/r/s'；原生训练 RMS |
+| FOCAL | [200,200,200] encoder + PEARLAgent | iteration499；binding、训练/优化器计数、LF 源码哈希；raw obs |
+| CORRO | normalize_z 的 MLPEncoder + 训练好的 SelfAttnEncoder | generative 完整版本、iteration999、config/artifact/source、policy_updates；raw obs |
+| CSRO | 原生 MlpEncoder/PEARLAgent，保留 layer_norm 配置 | iteration499、非 test_only、seed/scientific_config/source/artifacts；shared RMS |
+| UNICORN-SS | Gaussian transition latent→tanh→mean | SS、checkpoint iteration1000、seed/config/source/artifacts/main_updates；raw obs，原生 episode-end 输入 |
+| ER-TRL | 原生 encoder_dims + rlkit.torch.agents.PEARLAgent | iteration99、完整训练预算、非 smoke、LF 源码哈希和共享文件绑定；raw obs |
 
-当前 `train_gentle.experiment` 会额外加载 dynamics、创建训练算法并调用 train，不能直接用于只加载 encoder/policy 的诊断。
+只构建推理网络，不构建训练算法；eval、requires_grad=False、no_grad。每方法单独进程，避免同名 rlkit/models/torchkit 污染。前后校验模型参数和归一化统计哈希。
 
-本地配置：Cheetah-Vel latent_size 继承默认 5，context 为 s/a/r；Walker 覆盖 latent_size=10，并启用 next_obs。两者默认无 information bottleneck。这些仅是本地配置事实，**不能填成服务器模型已确认属性**。
+UNICORN 表征计算 E[tanh(Z)]，使用 128/256 点 Gauss-Hermite 积分交叉检查误差≤1e-4；不使用 tanh(E[Z]) 替代。控制 latent 仍调用原生随机 context_encoding，隔离 posterior RNG；用两个不同 RNG 验证表征稳定。
 
-## 其余方法与版本
+## 数据和环境
 
-本地相邻目录发现 FOCAL、CORRO、CSRO、ER-TRL、UNICORN 及多个 GENTLE 版本，部分有 `run_shared_native_v2.py` 等入口；`FOCAL/focal_shared` 当前不存在。目录名称、入口名称、历史缓存都不能证明正式主实验版本。
+- 每环境唯一 GENTLE seed0/499、z=0、确定性 actor 生成 smoke raw bank，其他方法只读。数组内容、dtype、shape 都参与哈希。
+- raw obs/s' 在模型适配器内做一次原生变换；环境不另包观测 RMS。normalized action 到物理 action 映射一次，reward 不乘训练 Bellman scale。
+- 配对 reset seed 排除 method/training seed；posterior RNG 单独隔离。rollout 固定 context，不吸收反馈。
+- Gym0.17.2；Cheetah MuJoCo1.50、Walker1.31，独立进程，启动前设置 LD_LIBRARY_PATH；核实实际动态库及 XML。
+- manifest 直接向环境构造提供任务参数/顺序，不重新抽样；核验 reference source。
+- 四列离线数据无真实 absorbing-terminal 信息；原生末行 boundary 语义单独记录，UNICORN 保留其原生输入语义。
 
-接下来依据服务器报告定位各方法的 loader、配置和任务/normalizer 契约；尤其确认 UNICORN 为 SS 版本、GENTLE 为原版完整基线、Ours 为完整方法。没有实际证据的适配器保持 `not_verified`，不先写统一 MLP loader 假定七种方法结构相同。
+## GENTLE/Ours 历史证据限制
+
+所选训练流程未保存独立 RMS。只使用 hash-verified 原始 seen 训练轨迹，按 rl_algorithm.init_buffer 的 trajectory-major glob 顺序、原始 dtype 做一次 RunningMeanStd 更新；记录文件顺序、RMS 哈希、与 published RMS 的差异。不在 context/unseen 上拟合。
+
+历史 glob 枚举顺序未存档，不能证明重建值逐 bit 等于训练时 RMS。历史 state_dict 没有内嵌 seed/source 签名；用户指定同 run 配对和外部证据不能被描述成 checkpoint 自带身份认证。
+
+本地测试包含六套实现×两个环境配置的接口检查，使用随机 fixture 权重。真实 checkpoint 与 MuJoCo 尚待服务器执行 run_stage_a.py 验收，A 仍未完成。

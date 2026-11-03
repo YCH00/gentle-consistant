@@ -1,103 +1,71 @@
-# shift-diagnostics-v2 执行入口
+# shift-diagnostics-v3：阶段 A 入口
 
-## 当前下一步：轻量导出证据
+v1 审计、v2 证据导出已回传校验。按用户确认，八个完整方法保留主实验原生预处理/最终模型，严格共享同一 raw context，不做消融。进度见根 `STATUS.md`，接口说明见 `ADAPTER_NOTES.md`。
 
-服务器 v1 审计已回传且 7 个文件哈希通过，不需要重跑全盘审计。用户已指定完整方法目录：GENTLE=`0_gentle_base`，Ours-local=`23_local_decay`，Ours-global=`28_global_decay`。两个 Ours 分别报告；本轮共 8 个完整方法条目，不做消融，所有方法共用同一份 context bank。ER-TRL Cheetah 正在训练。
+## 现在运行
 
-同步更新后的 `shift_diagnostics/`、根 STATUS.md，并补齐 `docs/SHIFT_ROBUSTNESS_EXPERIMENT_HANDOFF.md`，然后执行：
+上传整个 `shift_diagnostics/` 和根 `STATUS.md` 到 `/root/tievnas2/YinCH/GENTLE-consistant` 对应位置，包含已生成的 `stage_a_plan.json`。无需上传 `diagnostics_audits/`、旧结果，也无需再次 audit/export。
 
 ```bash
 cd /root/tievnas2/YinCH/GENTLE-consistant
-/root/miniconda3/envs/gentle/bin/python shift_diagnostics/export_evidence.py \
-  --audit-dir /root/tievnas2/YinCH/shift-diagnostics-v1/audits/A-20261102T110236Z-3639
+/root/miniconda3/envs/gentle/bin/python shift_diagnostics/run_stage_a.py --device cpu
 ```
 
-下载终端打印的 `/root/tievnas2/YinCH/shift-diagnostics-v2/evidence/A-evidence-.../` 整个目录到本地即可，无需解压。工具只导出源码、选定 run 的配置、任务清单和小型 normalizer，不复制/加载/重算权重，不训练。哈希变化、缺文件及大小预算超限都会记录；不自动认为阶段 A 通过。
+下载终端打印的整个 `/root/tievnas2/YinCH/shift-diagnostics-v3/smoke/A-<UTC>-<PID>/`。每次创建新目录，CPU 单线程、方法/环境串行子进程，检查全部四种子。FOCAL checkpoint 含 replay，哈希/加载耗时与内存占用取决于原文件大小。
 
-v2 的方法条目变更已记录在 protocol.json 的 deviations 中；原交接文档是 v1 基础规范，方法集合以用户指定的 v2 覆盖，其余实验约束继续适用。正式数据使用新的 v2 输出目录，原 v1 审计只读保留。
+需要时指定已有后端：`--mujoco150 /实际目录/mjpro150 --mujoco131 /实际目录/mjpro131`。若使用 GPU，`CUDA_VISIBLE_DEVICES=1` 对应进程内 `--device cuda:0`。
 
-当前交付的是阶段 A 的**资源发现工具和协议配置**。还没有完整的模型适配器、bank 采集器、固定 context 评估器或 B/C/D 执行程序，不能把审计成功当作实验验收通过。
+## 验证流程
 
-完整规范见 `docs/SHIFT_ROBUSTNESS_EXPERIMENT_HANDOFF.md`；进度入口是仓库根目录 `STATUS.md`。
+1. 校验从证据包固定的源码、所选 GENTLE/Ours 配置和 shared artifacts。
+2. 在 rollout 前选择并哈希最终模型；多个 baseline 组使用完成标记最新的完整四种子组，不按回报选择。
+3. 核验全量原始离线池，恢复原生训练 RMS；每环境由 GENTLE seed0/499、z=0、确定性 actor 生成一份两个 context 的 raw smoke bank。
+4. 各模型在独立进程严格加载原生 encoder/actor/attention，检查配置、种子、训练计数、源码绑定；共享同一 raw bank。
+5. 从 manifest 恢复任务，运行真实旧版 MuJoCo reset/step；检查动作、奖励、表征确定性、冻结参数/统计和配对 reset seeds。
+6. 64 个评估模型和两个 iteration200 采集器全部通过才完成 A。ER-TRL Cheetah 未齐时明确记录，不以 smoke 权重替代。
 
-## 资源核验工具用法（首次审计已完成，以下供之后有需要时参考）
+| 方法 | 目录/版本 | 最终 iteration（0-based） | 观测预处理 |
+| --- | --- | --- | --- |
+| FOCAL | FOCAL-v2 / run01 | 499 | identity |
+| CORRO | CORRO-native-v2 / shared-native-v2-3windows，generative | 999 | identity |
+| CSRO | backup/CSRO / runs/CSRO | 499 | shared RMS |
+| GENTLE | 0_gentle_base | 499 | native training RMS |
+| UNICORN-SS | UNICORN-ss-v2 / 完整 SS run | 999（checkpoint iteration=1000） | identity |
+| ER-TRL | ER-TRL-v2 / 完整正式 run | 99 | identity |
+| Ours-local | 23_local_decay | 499 | native training RMS |
+| Ours-global | 28_global_decay | 499 | native training RMS |
 
-1. 同步整个 `shift_diagnostics/`、根目录 `STATUS.md` 和交接文档。只同步这些新增材料，保留服务器实际训练源码；服务器和本地可能不同。
-2. 激活成功运行主实验时的 Python 环境。审计使用 Python 3.7+ 标准库，不导入 torch/Gym/MuJoCo、不加载 pickle、不启动训练。
-3. 在服务器项目目录执行：
+原始四列离线数据缺少 absorbing-terminal 标签；保留未知状态，以及原生 loader 的轨迹末行 boundary 语义。所有 bank 保持 raw obs/s'、normalized action、raw reward，各模型内部只做一次原生变换。
+
+## 输出与通过条件
+
+- `completion.json`：A 完成状态、通过数量、未完成资源与失败任务。
+- `models.json`：路径、哈希、配置、选择依据和验证状态。
+- `jobs.json`、`commands.sh`、`logs/`：实际命令、退出码、耗时、错误。
+- `banks/<env>/`：唯一 smoke context、原始池核验、训练统计重建与来源。
+- `evaluation/<env>/<method>/seedN/`：逐 episode、latent、验证回执；`collector200/` 保存额外采集器检查。
+- `STATUS.md`：阶段状态和下一步；项目根 STATUS 也追加运行摘要。
+
+退出码 0=A 全部通过，2=仍有资源/检查未完成，1=输入或协调器失败。失败也下载完整目录。脚本不自动启动 B/C/D。
+
+历史 GENTLE/Ours 没有内嵌 seed/source/RMS 签名；按用户指定同 run 配对。RMS 从 hash-verified seen 训练文件按原生单次更新重建。历史 glob 顺序未存档，记录当前顺序及与 shared RMS 差异，不宣称逐 bit 已证明相同。
+
+## 后续顺序
+
+| 阶段 | 工作与验收 |
+| --- | --- |
+| B | 正式共享 bank 每环境 2,000 contexts，每 context H=200；全部模型共 384,000 episodes；保存回报/latent，seen/unseen 分别汇总 |
+| C | 复用 B 的 policy499_sigma000 回报；独立 probe train/val context/query，轨迹无交叉，seen-only 训练/调参；H0 为诊断预测参照 |
+| D | 复用 B latent；固定 4 seen+4 unseen、两条件、每模型 320 点；输出可重画图和可重算表格 |
+
+B/C/D 程序待 A 实际接口验收后补齐；本轮 smoke 数据不用于正式结果。
+
+## 开发检查
 
 ```bash
-bash shift_diagnostics/server_audit.bash
+python -m unittest discover -s shift_diagnostics -p 'test_*.py' -v
 ```
 
-默认只尝试文档中的历史路径，并核验目录是否存在。实际路径不同时显式传入：
+需要 NumPy/PyTorch；原生接口测试仅在本地下载证据存在时执行，使用随机测试权重，不构成真实模型 smoke。服务器无需运行开发测试。
 
-```bash
-bash shift_diagnostics/server_audit.bash \
-  /实际的/YinCH \
-  /实际的/YinCH/GENTLE-consistant \
-  /实际的/YinCH/shift-diagnostics-v2
-```
-
-其他模型在这个父目录之外时，直接使用 Python 入口追加多个 `--search-root`：
-
-```bash
-python shift_diagnostics/audit.py \
-  --repo-root /实际项目目录 \
-  --search-root /实际共享文件及各项目父目录 \
-  --search-root /另一模型存储目录 \
-  --hash-checkpoints \
-  --out /新的诊断审计目录
-```
-
-这些 `/实际...` 是待替换的路径占位符。`--out` 必须不存在；重复核验生成新目录。默认搜索深度 9，可通过 `--max-depth` 增大。目录符号链接不自动跟随，外部链接的真实目标应显式加为 search root。排除旧测试产物、虚拟环境、缓存、凭据目录；候选模型只做文件哈希，不反序列化。其他 iteration 的显式文件名会被过滤；无 iteration 标记的 checkpoint 仅列为候选。
-
-每次输出 `resource_audit.json`、`candidates.json`、`models.json`、`protocol.json`、`source_snapshots.json`、`STATUS.md`、实际命令 `commands.sh` 和 `audit_completion.json`。审计退出码 0 仅表示报告生成成功，`stage_A_complete` 仍为 false。
-
-把这次审计目录中的报告同步回本地，尤其是前三个 JSON、源码快照与 STATUS。若服务器有本地缺失的 `evaluate_fixed_context*.py`、`shared_protocol/*.py` 或 baseline 适配源码，也同步其源码；不能仅凭候选列表推断实现可用。不要把模型大文件、许可证或私密凭据内容粘贴到聊天里。
-
-## A 后半段：确认模型与共享契约，再做 smoke
-
-- 64 个 evaluation 位置：8 方法 × 2 环境 × seeds 0–3 × iteration 499。GENTLE seed0/499 同时充当采集器；另外两个位置是各环境的 GENTLE seed0/200，共 66 个独立模型位置。
-- 每个位置填实际路径、SHA256、训练配置、源码版本/工作区摘要、原生 context 字段、posterior、latent 维度、actor 接口、任务清单与 normalizer 哈希。分离 encoder/policy 要有同一 run/iteration 证据。
-- `models.json` 当前是未确认清单，不自动按文件名选模型。相邻名为 GENTLE 的目录不能直接证明它是原版完整方法；同样不能将本仓库自动认作正式 Ours。
-- 对共享任务清单、原始完整离线池及归一化验证格式和 provenance；任务参数按 manifest 恢复，不重新采样。比较训练使用的归一化和任务内容，而非只比较文件名。
-- 根据确认后的源码逐方法实现适配器，严格加载权重，冻结参数与统计，保留原生 posterior。所有方法读取同一 raw smoke bank。每环境/方法做 1 task × 2 contexts × 1 rollout；物理环境 reset/step、有限奖励、动作范围、单次归一化、重复确定性表征、无参数变更均要有证据。
-- 两个 MuJoCo 后端分别启动进程。`CUDA_VISIBLE_DEVICES=1` 时进程内部用 `cuda:0`。审计不能证明 MuJoCo 可运行。
-
-只有上述验收通过才更新 A=COMPLETE 并进入 B。当前不提供尚未实现的 smoke 命令。
-
-## 后续顺序与输出
-
-| 阶段 | 工作 | 验收与产物 |
-| --- | --- | --- |
-| B | 唯一发布者采集并冻结共享 bank；所有完整方法读取同一 bank 做固定 context 评估 | 每环境 2,000 contexts，每 context 200 行；每方法/seed/环境 6,000 episodes；合计 384,000 episodes。输出 bank 哈希、逐 episode 回报、确定性 latent、seen/unseen 分表和行为变化图表 |
-| C | 复用 B 的 policy499_sigma000 回报；独立采集 probe train/val context 与 query；冻结 encoder 训练诊断预测器 | 只用 seen 训练/验证；query 与 context 轨迹不交叉；相同 query 跨方法共享。H0 是无 z 的诊断参考，并非 RL 消融。输出逐任务 MSE/NMSE、训练日志与选择证据 |
-| D | 复用 B latent，对固定 4 seen + 4 unseen 任务、2 条件、20 contexts 作图 | 每模型 320 点；按方法/seed 分别投影；输出 PDF/SVG/PNG、坐标、配置、Markdown/LaTeX 表格与解释边界 |
-
-正式采集/评估命令将在 A 的实际接口确认后补齐，不能照抄不存在的旧入口。四种子统计使用 sample std（ddof=1）；先在同一 seed 内算配对差；不混合 seen/unseen 或不同环境 raw return。缺种子必须标记 incomplete。
-
-## 每次运行和阶段结束都记录
-
-在根 STATUS 和对应诊断输出目录 STATUS 中追加：时间、阶段、实际执行命令、退出码、输入/输出路径与哈希、验证结果、未完成项、下一步入口。实际命令存入 `commands.sh`，计划命令不能记为已执行。
-
-```text
-时间：
-阶段 / 状态：IN_PROGRESS 或 COMPLETE（附验收证据）
-实际命令 / 退出码：
-输入版本与哈希：
-输出目录：
-验证结果：
-未完成项：
-下一步：
-```
-
-阶段 B/C/D 的输出组织遵循交接文档第 9 节。正式条件改变时使用新协议版本或新输出目录，并记录 protocol.deviations；恢复前核对协议、模型、数据和源码哈希。
-
-本地检查审计工具：
-
-```bash
-python -m unittest discover -s shift_diagnostics -p test_audit.py -v
-```
-
-这些测试只验证审计工具，任何测试 fixture 都不能用于正式 smoke 或实验。
+`build_stage_a_plan.py --evidence-dir <证据目录> --out <新计划路径>` 可从 ZIP 重建计划并验证全部成员。本次已提供计划，服务器不用重复构建。
