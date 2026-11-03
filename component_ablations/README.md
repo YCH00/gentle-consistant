@@ -59,7 +59,7 @@ python -m component_ablations plan \
 
 `--evidence` 只读取历史 resolved config、任务/数据哈希与训练 normalizer 的来源记录；其中的 smoke context bank 不作为正式评估 bank。已准备好的项目运行时无需这个旧证据目录。
 
-项目内的 `planning_evidence/` 保存配置测试需要的 8 个审计输入文件；它不包含评估 context bank。默认旧证据目录不存在时，程序自动读取 `component-ablations-v1/planning_evidence/`。
+项目内的 `planning_evidence/` 保存配置测试需要的 10 个审计输入文件，包含两个环境的 `banks/<env>/manifest.json` 后端记录；它不包含评估 context bank。默认旧证据目录不存在时，程序自动读取 `component-ablations-v1/planning_evidence/`。测试直接使用这份随项目携带的资料，并检查新计划仍携带完整资料。
 
 ## 按阶段执行
 

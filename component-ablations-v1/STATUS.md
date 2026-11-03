@@ -1,6 +1,6 @@
 # component-ablations-v1 — STATUS
 
-Updated (UTC): 2026-11-03T09:12:11.361521+00:00
+Updated (UTC): 2026-11-03T12:08:19.116077+00:00
 
 ## A
 
@@ -9,9 +9,10 @@ RESOURCE_BLOCKED; independent implementation/testing continues
 ## B
 
 {
-  "status": "22_UNIT_TESTS_PASSED; real MuJoCo smoke pending",
+  "status": "23_UNIT_TESTS_PASSED; real MuJoCo smoke pending",
   "checks": "smoke/unit_checks.json",
-  "source_digest": "40709ed1a2381ce3241bdcea81eeaead854fc926d7989772e6dd0b50af3f4222"
+  "source_digest": "a5cc6f64d70c566998c9eb3f8821a3224a1173dd6eb0c17c54f53436fbdcd871",
+  "portable_evidence_test": "Uses only bundled planning_evidence and successfully recreates another complete plan"
 }
 
 ## C
@@ -140,10 +141,10 @@ RESOURCE_BLOCKED; independent implementation/testing continues
 
 {
   "passed": true,
-  "unit_tests": 22,
-  "source_digest": "40709ed1a2381ce3241bdcea81eeaead854fc926d7989772e6dd0b50af3f4222",
+  "unit_tests": 23,
+  "source_digest": "a5cc6f64d70c566998c9eb3f8821a3224a1173dd6eb0c17c54f53436fbdcd871",
   "test_log": "smoke/unit-checks.log",
-  "warning": "Local torch/NumPy bridge warning persists; real training runtime unvalidated"
+  "limitation": "Local training data/MuJoCo unavailable; real smoke not run locally"
 }
 
 ## blockers
@@ -186,7 +187,7 @@ RESOURCE_BLOCKED; independent implementation/testing continues
 
 ## next_steps
 
-On server, run the supplied verified newline restoration command, then bash component-ablations-v1/commands.sh component-ablations-v1 0,1,2 1. Expected audit count after successful repair: 2100/2100 if no other resources changed.
+On server: reconstruct the two missing backend-only planning manifests using the supplied command; rerun bash component-ablations-v1/commands.sh component-ablations-v1 0,1,2 1.
 
 ## summaries
 
@@ -207,4 +208,15 @@ Three-component R/V/P ablations. User-approved virtual critic + actor-Q + actor-
   "recovery_verified": "Simulated Linux checkout for 20 pinned task/reference/arm JSON files; restored original bytes using expected SHA256, with no hash-record edits",
   "server_recovery": "Command supplied to user; actual rerun pending",
   "local_training_resources": "Still unavailable; server audit observations are not local resource verification"
+}
+
+## deployment_evidence_fix
+
+{
+  "reported_server_result": "2100/2100 resources and all dependencies verified; 16 tests passed, 6 setup errors",
+  "root_cause": "Portable planning_evidence omitted banks/<environment>/manifest.json for both environments",
+  "backend_provenance_verified": "Existing resources.json backend_reference equals the original audited backend for both environments",
+  "fix": "Added backend_reference_only manifests; planner bundles all 10 required evidence files and checks missing files before copying",
+  "test_result": "23 passed with bundled evidence, including nested plan recreation without a historical directory",
+  "server_action": "Run supplied metadata reconstruction command, then rerun commands.sh with GPUs 0,1,2; server rerun pending"
 }

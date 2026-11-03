@@ -9,8 +9,8 @@ import pytest
 
 from component_ablations import ARMS
 from component_ablations.__main__ import config_differences
-from component_ablations.common import read_json, write_json
-from component_ablations.planning import EVIDENCE, create_plan, audit
+from component_ablations.common import REPO, read_json, write_json
+from component_ablations.planning import create_plan, audit
 from component_ablations.reporting import complete_statistics, aggregate_main, summarize
 from component_ablations.scheduler import select_jobs, process_environment, make_command
 
@@ -31,11 +31,26 @@ def test_json_write_keeps_pinned_bytes_after_linux_checkout(tmp_path):
 
 @pytest.fixture
 def project(tmp_path):
-    args = SimpleNamespace(root=str(tmp_path / "component-project"), evidence=EVIDENCE, start_id=40,
+    # Test the same portable evidence bundle used on the server.
+    args = SimpleNamespace(root=str(tmp_path / "component-project"), evidence=REPO / "component-ablations-v1/planning_evidence", start_id=40,
                            name="exp44", suite="all", gpus=["2", "5"], jobs_per_gpu=1,
                            data_root=None, weights_root=None, dynamics_root=None)
     create_plan(args)
     return Path(args.root)
+
+
+def test_bundled_evidence_can_recreate_plan_without_historical_directory(project, tmp_path):
+    evidence = project / "planning_evidence"
+    assert len([path for path in evidence.rglob("*") if path.is_file()]) == 10
+    args = SimpleNamespace(root=str(tmp_path / "portable-copy"), evidence=evidence, start_id=40,
+                           name="exp44", suite="all", gpus=["0", "1", "2"], jobs_per_gpu=1,
+                           data_root=None, weights_root=None, dynamics_root=None)
+    create_plan(args)
+    original = read_json(project / "resources.json")
+    copied = read_json(Path(args.root) / "resources.json")
+    assert copied == original
+    for env in original:
+        assert read_json(evidence / "banks" / env / "manifest.json")["backend"] == original[env]["backend_reference"]
 
 
 def test_plan_64_unique_slots_masks_and_frozen_source_config(project):

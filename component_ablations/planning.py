@@ -10,8 +10,6 @@ ENVIRONMENTS = ("cheetah-vel", "walker-rand-params")
 EVIDENCE = REPO / "shift-diagnostics-v3/smoke/A-20261103T011150Z-15243"
 if not EVIDENCE.exists():
     EVIDENCE = REPO / "component-ablations-v1/planning_evidence"
-if not EVIDENCE.exists():
-    EVIDENCE = REPO / "component-ablations-v1/planning_evidence"
 
 
 def create_plan(args):
@@ -19,18 +17,14 @@ def create_plan(args):
     root.mkdir(parents=True, exist_ok=True)
     if (root / "protocol.json").exists():
         raise FileExistsError("Plan already exists; use a new --root to change an immutable plan")
+    evidence_files = ["models.json", "stage_a_plan.json"]
+    evidence_files += ["banks/%s/%s" % (env, name) for env in ENVIRONMENTS
+                       for name in ("legacy_training_normalizer.npz", "normalizer_provenance.json", "offline_pool_verification.json", "manifest.json")]
+    absent = [relative for relative in evidence_files if not (args.evidence / relative).is_file()]
+    if absent:
+        raise FileNotFoundError("Incomplete planning evidence in %s: %s" % (args.evidence, ", ".join(absent)))
     models = read_json(args.evidence / "models.json")
     stage_a = read_json(args.evidence / "stage_a_plan.json")
-    evidence_files = ["models.json", "stage_a_plan.json"]
-    evidence_files += ["banks/%s/%s" % (env, name) for env in ENVIRONMENTS
-                       for name in ("legacy_training_normalizer.npz", "normalizer_provenance.json", "offline_pool_verification.json")]
-    for relative in evidence_files:
-        destination = root / "planning_evidence" / relative
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(args.evidence / relative, destination)
-    evidence_files = ["models.json", "stage_a_plan.json"]
-    evidence_files += ["banks/%s/%s" % (env, name) for env in ENVIRONMENTS
-                       for name in ("legacy_training_normalizer.npz", "normalizer_provenance.json", "offline_pool_verification.json")]
     for relative in evidence_files:
         destination = root / "planning_evidence" / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
