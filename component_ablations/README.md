@@ -40,6 +40,14 @@ bash component-ablations-v1/commands.sh component-ablations-v1 0,1,2,3 1
 
 参数依次为项目目录、物理 GPU 列表、每卡进程数。默认每卡一个训练进程，自动先完成 48 个核心槽位，再执行补充训练。某个任务失败会保留日志并继续其他可执行任务；阶段命令返回非零，整条脚本停止在相应阶段。
 
+同一环境、同一实验设定的 4 个种子放在同一张 GPU 上同时运行，使用第四个参数 `group-seeds`：
+
+```bash
+bash component-ablations-v1/commands.sh component-ablations-v1 0,1,2 4 group-seeds
+```
+
+每卡占用一组，三个 GPU 最多同时运行 12 个进程。某个种子提前结束后，该卡等待这一组其余种子完成，再接下一组，不混入其他环境或设定。初始化同样按四种子分组；smoke 仍只运行 seed0，使用普通队列。单独启动训练时用 `launch --phase train --gpus 0,1,2 --jobs-per-gpu 4 --max-parallel 12 --group-seeds`；选择部分种子时按实际选择的种子成组。修改调度代码需同步服务器的 `scheduler.py`、`__main__.py` 和启动脚本。
+
 父进程在导入 torch 之前给每个子进程设置 `CUDA_VISIBLE_DEVICES`。Cheetah 使用 MuJoCo 150，Walker 使用 131；两种后端可以在不同子进程同时运行。默认引擎目录 `~/.mujoco/mjpro150` 和 `~/.mujoco/mjpro131`，原有 license/driver 路径沿用当前环境。
 
 ## 创建自己的实验名称与编号
@@ -89,6 +97,15 @@ python -m component_ablations launch --root component-ablations-v1 --phase train
 审计发现缺失文件或哈希不符时，先修正 `resources.json` 中的实际路径，再运行 audit。`--seal-pretrained` 只为尚未登记的预训练文件设置哈希，不会接受已登记文件的哈希变化。开始训练后应冻结资源和源码；变更损失契约需创建新项目。缺失 encoder/decoder/dynamics 不允许回退到随机初始化。
 
 ## 失败与完整恢复
+
+若决定清除这次所有运行结果并重新开始，在旧调度器和 worker 已停止后执行：
+
+```bash
+python -m component_ablations reset-runs --root component-ablations-v1
+bash component-ablations-v1/commands.sh component-ablations-v1 0,1,2 4 group-seeds
+```
+
+`reset-runs` 删除该实验目录下的 runs、initial_states、smoke、job_logs、failures、summaries、figures 和运行状态，重置全部槽位；保留冻结配置、编号、资源路径、预训练文件哈希以及 planning_evidence。实验目录外的数据和预训练文件不在清理范围内。可先加 `--dry-run` 查看清理列表。仍有本实验的调度器或 worker 运行时会拒绝清理。源码更新后从头重跑使用这条命令，可消除旧初始化/检查点绑定旧源码哈希的问题。
 
 ```bash
 python -m component_ablations launch --root component-ablations-v1 \

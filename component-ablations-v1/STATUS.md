@@ -1,6 +1,6 @@
 # component-ablations-v1 — STATUS
 
-Updated (UTC): 2026-11-03T12:08:19.116077+00:00
+Updated (UTC): 2026-11-04T06:37:21.967827+00:00
 
 ## A
 
@@ -9,10 +9,9 @@ RESOURCE_BLOCKED; independent implementation/testing continues
 ## B
 
 {
-  "status": "23_UNIT_TESTS_PASSED; real MuJoCo smoke pending",
+  "status": "28_UNIT_TESTS_PASSED; real MuJoCo smoke pending",
   "checks": "smoke/unit_checks.json",
-  "source_digest": "a5cc6f64d70c566998c9eb3f8821a3224a1173dd6eb0c17c54f53436fbdcd871",
-  "portable_evidence_test": "Uses only bundled planning_evidence and successfully recreates another complete plan"
+  "source_digest": "4adaa737be265c4260e1672664d195f311616f754c0e9a3f894e54e3b9f0ca55"
 }
 
 ## C
@@ -141,10 +140,10 @@ RESOURCE_BLOCKED; independent implementation/testing continues
 
 {
   "passed": true,
-  "unit_tests": 23,
-  "source_digest": "a5cc6f64d70c566998c9eb3f8821a3224a1173dd6eb0c17c54f53436fbdcd871",
+  "unit_tests": 28,
+  "source_digest": "4adaa737be265c4260e1672664d195f311616f754c0e9a3f894e54e3b9f0ca55",
   "test_log": "smoke/unit-checks.log",
-  "limitation": "Local training data/MuJoCo unavailable; real smoke not run locally"
+  "real_training": "Not run locally; server must rerun"
 }
 
 ## blockers
@@ -187,7 +186,7 @@ RESOURCE_BLOCKED; independent implementation/testing continues
 
 ## next_steps
 
-On server: reconstruct the two missing backend-only planning manifests using the supplied command; rerun bash component-ablations-v1/commands.sh component-ablations-v1 0,1,2 1.
+On restored server in gentle environment, upload/unzip component-io-recovery.zip. Preview with python recover_component_runs.py --root component-ablations-v1 --gpus 0,1,2 --jobs-per-gpu 4 --max-parallel 12 --group-seeds --dry-run. Remove --dry-run to resume eligible tasks. Read BLOCKED reasons and recovery plan for any unrecoverable attempts.
 
 ## summaries
 
@@ -219,4 +218,64 @@ Three-component R/V/P ablations. User-approved virtual critic + actor-Q + actor-
   "fix": "Added backend_reference_only manifests; planner bundles all 10 required evidence files and checks missing files before copying",
   "test_result": "23 passed with bundled evidence, including nested plan recreation without a historical directory",
   "server_action": "Run supplied metadata reconstruction command, then rerun commands.sh with GPUs 0,1,2; server rerun pending"
+}
+
+## scheduling
+
+{
+  "mode": "group-seeds",
+  "group_key": [
+    "environment",
+    "arm"
+  ],
+  "seeds_per_group": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "gpus": [
+    "0",
+    "1",
+    "2"
+  ],
+  "jobs_per_gpu": 4,
+  "max_parallel": 12,
+  "rule": "One group per GPU. Wait for every seed to finish before taking another group; do not split a group across GPUs.",
+  "script": "bash component-ablations-v1/commands.sh component-ablations-v1 0,1,2 4 group-seeds",
+  "preview": "smoke/grouped_launch_preview.json",
+  "verified": "Real subprocess queue tests for group affinity, per-GPU/global caps, and uneven seed completion",
+  "deployment_archive": "../.temp/grouped-seeds-update.zip",
+  "compatibility": "Source fingerprints include scheduler/planner/tests. Existing initialized or trained runs require compatibility handling before code replacement; active processes do not adopt new scheduling."
+}
+
+## restart_decision
+
+{
+  "authority": "User explicitly requested deleting existing server run records and restarting; supersedes checkpoint-resume request",
+  "operation": "reset-runs",
+  "server_root": "/root/tievnas2/YinCH/GENTLE-consistant/component-ablations-v1",
+  "protected": "Frozen configs, experiment names/IDs, resource references and pretrained hashes, task/normalizer resources, planning evidence",
+  "deleted_on_server_when_invoked": "Runs, initialization, smoke, logs, failures, summaries, figures and run/audit state",
+  "tests": "Fresh-state cleanup preserves all frozen bytes, resets all 64 slots, rejects active workers and paths outside the experiment",
+  "local_action": "Dry-run only on real workspace; destructive tests used pytest temporary directories",
+  "server_action": "Pending user invocation; no remote deletion performed",
+  "package": "../.temp/grouped-seeds-fresh-start.zip",
+  "new_schedule": "GPUs 0,1,2; four seeds per environment/arm grouped on one GPU; max 12 processes"
+}
+
+## io_recovery
+
+{
+  "user_report": "2026-11-04: training scheduler and several workers failed with OSError Errno 5; exact storage path not present in supplied scheduler output",
+  "decision": "Resume the existing experiment after storage recovery; supersedes earlier fresh-start reset instruction for this incident",
+  "entry": "recover_component_runs.py",
+  "archive": "../.temp/component-io-recovery.zip",
+  "training_source_fingerprint_preserved": true,
+  "source_digest": "4adaa737be265c4260e1672664d195f311616f754c0e9a3f894e54e3b9f0ca55",
+  "behavior": "Verify completed results, select committed complete state or validated older slot, resume only tasks with checkpoints, start untouched tasks, block damaged/uncheckpointed attempts while preserving their files",
+  "fallback_checks": "Pinned SHA256 where available, ZIP CRC integrity, complete-state format, source/config/initial identity, replay buffers, optimizer/network states, finite parameters, iteration counters, schedule and RNG",
+  "records": "recovery/<timestamp>/plan.json and backed-up replaced pointers/obsolete lock",
+  "tests": "10 recovery regression tests passed; includes bitwise matching next update after real tiny-model state restoration",
+  "validation_limit": "Actual server checkpoint files and repaired storage have not been inspected locally"
 }

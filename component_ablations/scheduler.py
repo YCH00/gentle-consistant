@@ -62,6 +62,28 @@ def completion_path(root, row, phase):
     return Path(root) / row["run_directory"] / name
 
 
+def seed_group(row):
+    return row["environment"], row["arm"]
+
+
+def pending_index(pending, running, gpu, grouped, free_slots):
+    """Reserve a GPU for one environment/arm until its last seed finishes."""
+    if not pending:
+        return None
+    if not grouped:
+        return 0
+    active_here = {seed_group(item["row"]) for item in running if item["gpu"] == gpu}
+    if active_here:
+        return next((i for i, row in enumerate(pending) if seed_group(row) in active_here), None)
+    active_elsewhere = {seed_group(item["row"]) for item in running}
+    for i, row in enumerate(pending):
+        group = seed_group(row)
+        size = sum(seed_group(other) == group for other in pending)
+        if group not in active_elsewhere and size <= free_slots:
+            return i
+    return None
+
+
 def check_gates(root, phase):
     from .artifacts import verify_plan, verify_completion
     root = Path(root)
@@ -94,12 +116,23 @@ def launch(args):
     jobs = select_jobs(root, args.phase, args.envs, args.arms, args.seeds)
     if not jobs:
         raise ValueError("Selection contains no jobs")
+    grouped = getattr(args, "group_seeds", False)
+    max_parallel = args.max_parallel or len(args.gpus) * args.jobs_per_gpu
+    groups = list(dict.fromkeys(seed_group(row) for row in jobs))
+    largest_group = max(sum(seed_group(row) == group for row in jobs) for group in groups)
+    if grouped and min(args.jobs_per_gpu, max_parallel) < largest_group:
+        raise ValueError("--group-seeds needs --jobs-per-gpu and --max-parallel >= selected seeds per group (%d)" % largest_group)
     if args.dry_run:
-        preview = [{"slot_id": row["slot_id"], "physical_gpu": args.gpus[i % len(args.gpus)],
-                    "command": make_command(args, row, args.gpus[i % len(args.gpus)]),
-                    "engine": "131" if row["environment"] == "walker-rand-params" else "150"} for i, row in enumerate(jobs)]
+        preview = []
+        for i, row in enumerate(jobs):
+            gpu = args.gpus[(groups.index(seed_group(row)) if grouped else i) % len(args.gpus)]
+            preview.append({"slot_id": row["slot_id"], "physical_gpu": gpu,
+                            "seed_group": list(seed_group(row)), "command": make_command(args, row, gpu),
+                            "engine": "131" if row["environment"] == "walker-rand-params" else "150"})
         print(json.dumps({"dry_run": True, "phase": args.phase, "jobs": len(preview), "jobs_per_gpu": args.jobs_per_gpu,
-                          "max_parallel": args.max_parallel or len(args.gpus) * args.jobs_per_gpu, "queue": preview}, indent=2))
+                          "group_seeds": grouped, "max_parallel": max_parallel,
+                          "binding_note": "Preview assumes groups finish in order; actual GPU is the first free GPU, with each group kept together",
+                          "queue": preview}, indent=2))
         return 0
     check_gates(root, args.phase)
     lock = root / ".scheduler.lock"
@@ -108,7 +141,6 @@ def launch(args):
     running, history, failures = [], [], []
     matrix = read_json(root / "run_matrix.json")
     slot_map = {row["slot_id"]: row for row in matrix["slots"]}
-    max_parallel = args.max_parallel or len(args.gpus) * args.jobs_per_gpu
     pending = jobs.copy()
     logs = root / "job_logs" / args.phase
     logs.mkdir(parents=True, exist_ok=True)
@@ -117,12 +149,15 @@ def launch(args):
             for gpu in args.gpus:
                 used = sum(item["gpu"] == gpu for item in running)
                 while pending and used < args.jobs_per_gpu and len(running) < max_parallel:
-                    row = pending.pop(0)
+                    index = pending_index(pending, running, gpu, grouped, max_parallel - len(running))
+                    if index is None:
+                        break
+                    row = pending.pop(index)
                     if args.phase == "train" and row["arm"] not in ARMS:
                         core_ready = all(slot["status"] == "completed" for slot in matrix["slots"] if slot["arm"] in ARMS)
                         if not core_ready:
                             if running:
-                                pending.insert(0, row)
+                                pending.insert(index, row)
                                 break
                             event = {"slot_id": row["slot_id"], "phase": args.phase, "status": "blocked",
                                      "reason": "All 48 core slots must complete before supplementary training"}

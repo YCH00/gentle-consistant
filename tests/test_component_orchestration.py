@@ -196,9 +196,123 @@ def test_frozen_plan_hashes_reject_silent_loss_or_config_edits(project):
         verify_plan(project)
 
 
+def test_grouped_preview_keeps_four_seeds_together_and_checks_capacity(project, capsys):
+    from component_ablations.scheduler import launch
+    args = SimpleNamespace(root=str(project), phase="train", envs=None, arms=None, seeds=None,
+                           gpus=["0", "1", "2"], jobs_per_gpu=4, max_parallel=12, group_seeds=True,
+                           dry_run=True, resume=False, python=sys.executable, cpu=False)
+    capsys.readouterr()
+    assert launch(args) == 0
+    preview = json.loads(capsys.readouterr().out)
+    assignments = {}
+    for row in preview["queue"]:
+        assignments.setdefault(tuple(row["seed_group"]), set()).add(row["physical_gpu"])
+    assert len(assignments) == 16 and all(len(gpus) == 1 for gpus in assignments.values())
+    assert preview["jobs"] == 64 and preview["max_parallel"] == 12
+    args.jobs_per_gpu = 3
+    with pytest.raises(ValueError, match="selected seeds per group"):
+        launch(args)
+
+
+def test_grouped_subprocess_queue_reserves_each_gpu_until_all_seeds_finish(project, monkeypatch):
+    from component_ablations import scheduler, artifacts
+    monkeypatch.setattr(scheduler, "check_gates", lambda root, phase: None)
+    monkeypatch.setattr(artifacts, "verify_completion", lambda root, row, phase: read_json(scheduler.completion_path(root, row, phase)))
+    events = project / "grouped_events.jsonl"
+    program = """
+import json, os, pathlib, sys, time
+marker, events, group, seed = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3], int(sys.argv[4])
+def emit(kind):
+    with events.open('a', encoding='utf-8') as stream:
+        stream.write(json.dumps({'kind':kind, 'time':time.time(), 'gpu':os.environ['CUDA_VISIBLE_DEVICES'], 'group':group, 'seed':seed}) + '\\n')
+emit('start')
+time.sleep(0.25 if seed == 0 else 0.8)
+emit('end')
+marker.parent.mkdir(parents=True, exist_ok=True)
+marker.write_text(json.dumps({'complete':True}), encoding='utf-8')
+"""
+    monkeypatch.setattr(scheduler, "make_command", lambda args, row, gpu: [sys.executable, "-c", program,
+                        str(scheduler.completion_path(project, row, args.phase)), str(events),
+                        row["environment"] + "/" + row["arm"], str(row["seed"])])
+    args = SimpleNamespace(root=str(project), phase="smoke", envs=None, arms=["backbone", "real_only"], seeds=[0, 1, 2, 3],
+                           gpus=["0", "1", "2"], jobs_per_gpu=4, max_parallel=12, group_seeds=True, dry_run=False,
+                           resume=False, python=sys.executable, cpu=False, mujoco_root="/engines")
+    assert scheduler.launch(args) == 0
+    active, assignments, members, peak = {}, {}, {}, 0
+    for event in sorted([json.loads(line) for line in events.read_text().splitlines()], key=lambda row: row["time"]):
+        gpu, group = event["gpu"], event["group"]
+        if event["kind"] == "start":
+            assignments.setdefault(group, set()).add(gpu)
+            members.setdefault(group, set()).add(event["seed"])
+            active.setdefault(gpu, []).append(group)
+        else:
+            active[gpu].remove(group)
+        assert all(len(groups) <= 4 and len(set(groups)) <= 1 for groups in active.values())
+        assert sum(len(groups) for groups in active.values()) <= 12
+        peak = max(peak, sum(len(groups) for groups in active.values()))
+    assert len(assignments) == 4 and all(len(gpus) == 1 for gpus in assignments.values())
+    assert all(seeds == {0, 1, 2, 3} for seeds in members.values())
+    assert peak >= 4
+    assert not any(active.values())
+
+
 def test_resume_prunes_only_uncommitted_history_and_partial_tail(tmp_path):
     from component_ablations.worker import prune_history
     path = tmp_path / "history.jsonl"
     path.write_text('{"iteration":0,"value":4}\n{"iteration":1,"value":5}\n{"iteration":2,', encoding="utf-8")
     prune_history(path, 1)
     assert [json.loads(line) for line in path.read_text().splitlines()] == [{"iteration": 0, "value": 4}]
+
+
+def test_reset_runs_removes_outputs_and_preserves_frozen_inputs(project):
+    from component_ablations.reset import OUTPUT_DIRECTORIES, reset_runs
+    from component_ablations.artifacts import verify_plan
+    preserved = {str(path.relative_to(project)): path.read_bytes() for path in project.rglob("*")
+                 if path.is_file() and path.name not in ("STATUS.md", "stage_status.json", "run_matrix.json")}
+    for directory in OUTPUT_DIRECTORIES:
+        path = project / directory / "old-state.bin"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"discarded interrupted run")
+    write_json(project / "jobs_train.json", {"jobs": ["old"]})
+    write_json(project / "resource_audit.json", {"old": True})
+    matrix = read_json(project / "run_matrix.json")
+    matrix["slots"][0].update(status="running", physical_gpu="2", initial_sha256="old", model_sha256="old")
+    write_json(project / "run_matrix.json", matrix)
+    args = SimpleNamespace(root=str(project), dry_run=True)
+    assert reset_runs(args) == 0
+    assert (project / "runs/old-state.bin").exists()
+    assert read_json(project / "run_matrix.json")["slots"][0]["status"] == "running"
+    args.dry_run = False
+    assert reset_runs(args) == 0
+    assert not any((project / name).exists() for name in OUTPUT_DIRECTORIES)
+    assert not (project / "jobs_train.json").exists()
+    assert not (project / "resource_audit.json").exists()
+    for relative, data in preserved.items():
+        assert (project / relative).read_bytes() == data
+    assert all(row["status"] == "planned" and row["model_sha256"] is None and row["initial_sha256"] is None
+               and "physical_gpu" not in row for row in read_json(project / "run_matrix.json")["slots"])
+    verify_plan(project)
+
+
+def test_reset_runs_refuses_active_process_before_deleting(project, monkeypatch):
+    from component_ablations import reset
+    output = project / "runs/state.bin"
+    output.parent.mkdir()
+    output.write_bytes(b"keep")
+    def active(root):
+        raise ValueError("worker is alive")
+    monkeypatch.setattr(reset, "ensure_stopped", active)
+    with pytest.raises(ValueError, match="alive"):
+        reset.reset_runs(SimpleNamespace(root=str(project), dry_run=False))
+    assert output.read_bytes() == b"keep"
+
+
+def test_reset_runs_rejects_output_paths_outside_project(project, monkeypatch):
+    from component_ablations import reset
+    external = project.parent / "outside"
+    external.mkdir()
+    (external / "keep.bin").write_bytes(b"keep")
+    monkeypatch.setattr(reset, "OUTPUT_DIRECTORIES", reset.OUTPUT_DIRECTORIES + ("../outside",))
+    with pytest.raises(ValueError, match="external"):
+        reset.reset_runs(SimpleNamespace(root=str(project), dry_run=False))
+    assert (external / "keep.bin").read_bytes() == b"keep"

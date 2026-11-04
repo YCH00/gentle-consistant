@@ -1,6 +1,6 @@
 {
   "protocol_id": "component-ablations-v1",
-  "created_at": "2026-11-03T12:07:21.709034+00:00",
+  "created_at": "2026-11-03T12:36:04.396146+00:00",
   "resource_count": 2100,
   "verified_count": 4,
   "missing_or_mismatch_count": 2096,
@@ -16,22 +16,23 @@
     "tensorboard": true
   },
   "source": {
-    "git_head": "60a07da7a537a471b7f383c46a7780b1f7e921e9",
-    "worktree_status": "M component_ablations/README.md\n M component_ablations/planning.py\n M tests/test_component_orchestration.py\n?? component-ablations-v1/planning_evidence/banks/cheetah-vel/manifest.json\n?? component-ablations-v1/planning_evidence/banks/walker-rand-params/manifest.json",
+    "git_head": "c2e9c4a61a13f46187c32b6137817ad50c5f6ecb",
+    "worktree_status": "M component-ablations-v1/STATUS.md\n M component-ablations-v1/commands.sh\n M component-ablations-v1/resource_audit.json\n M component-ablations-v1/smoke/unit-tests.xml\n M component-ablations-v1/smoke/unit_checks.json\n M component-ablations-v1/stage_status.json\n M component_ablations/README.md\n M component_ablations/__main__.py\n M component_ablations/planning.py\n M component_ablations/scheduler.py\n M tests/test_component_orchestration.py\n?? component-ablations-v1/smoke/grouped_launch_preview.json\n?? component_ablations/reset.py",
     "source_files": {
       "component_ablations/__init__.py": "7ab97b88c69bc163074ce3fc8fc4b8e19ef91bd1da94c1632942ce243b6a4a0b",
-      "component_ablations/__main__.py": "70406ee51b05fb31b44a8cfd84fc1eab80fe3d588729eadbad4ba49fe173c3e8",
+      "component_ablations/__main__.py": "d86cef6ec5e0e8bd22a1fca6c757dc3b54646058c4f3e2aa76198af780868f53",
       "component_ablations/artifacts.py": "edbc2eae7f73406c75c03cb56ee79b3f3ab918e280c2473cb865eea09ad9b585",
       "component_ablations/common.py": "4640c66ed7cb066ec6246cdc7d3cbd6a094ca00f396af2befb119b742ef8ff97",
       "component_ablations/evaluation.py": "4322f48fe3ec14a4a7d4849866862b7bc94e5429c53d3396c1e6643098b71e6a",
       "component_ablations/losses.py": "f240a97b70b1b065d3d0a394c2f744975527db4108438ea799604614ddb49a33",
-      "component_ablations/planning.py": "b3fa8cbf923d1c7499e94ccd1f39f171b2f6ef2f8af4643a78ff849e6fa7b3b2",
+      "component_ablations/planning.py": "e0c46a761efea627c1458abbedfc0ae621cc68731833e03273627e383a5a4cee",
       "component_ablations/plotting.py": "e2a017c85af390c9c3d07d76298a05fea3aefa869cdabe19b58a60aedd196d34",
       "component_ablations/probe.py": "6b15fbebef1b87dcd209905661cba4201c9e47e12b0f107bb697cf92dc8761b8",
       "component_ablations/randomness.py": "0a3a70470a138c8e06f440e5c0cc06ee970b848f9787acfa0857aaccbeb86265",
       "component_ablations/reporting.py": "8c26437d03c684be29aea0c51c167489b5a00cfce1bac80c6fa5aac60e213508",
+      "component_ablations/reset.py": "550259002f31f44388ef86a2379ddefbf3f84916d4f35915c42863abc29dc778",
       "component_ablations/runtime.py": "26d57a2c0ee1cdecf5614408297ff8c01c4f7decbc5f87f6aacfd89a5b885187",
-      "component_ablations/scheduler.py": "5af6f658db73576a4311d979cc8b0560ef4608df228fd001fd1011ea4c40ef57",
+      "component_ablations/scheduler.py": "e8975a8c3ba2413fd24b35dae5f279d2592b6ee45fe029133ebbe57b9c7bfef5",
       "component_ablations/state.py": "b9fa39b2e8022ea080e8675da071807ba48dd1a1c89efa21ae921248b06939ba",
       "component_ablations/step.py": "1b9ef83cb2a70587f71b91f73143164fd158457974999fc5b5fbe035020b54db",
       "component_ablations/worker.py": "6737fdf71daba922111356555c32b14adeeaf4b4c538d1985950c0a3f5a322c5",
@@ -260,10 +261,10 @@
       "rlkit/torch/sac/pytorch_sac/video.py": "acd8f06e452bfc9b4d3bb8abbfa15a1fb83a82c7dfd553d4eff94a7ef95ba619",
       "run_component_ablations.py": "3f396fa29fff863c248f872205e32adecea50d1de44154ec7a092f61194d082b",
       "tests/test_component_ablations.py": "54d8922f4e1689c53f58fe29675f9849066cf9f843fd6ff7b90e1907c4615576",
-      "tests/test_component_orchestration.py": "3fcb81ee188bb5cbc2e79acf98ea4aff405992bc7e74775058fda6de5a3551cf",
+      "tests/test_component_orchestration.py": "59c602c667332e812bcce63af3ba8fe91814a211c53015e2624ae736a0af7578",
       "train_gentle.py": "13f87697b9cff57d2a4d2aa9ec8b4531b62b0112170b2b22fc54a652e74584c7"
     },
-    "source_digest": "a5cc6f64d70c566998c9eb3f8821a3224a1173dd6eb0c17c54f53436fbdcd871"
+    "source_digest": "4adaa737be265c4260e1672664d195f311616f754c0e9a3f894e54e3b9f0ca55"
   },
   "resources_sha256": "96a82158a3e17f06ce1a1673673646b6079c2c85969043375abf7e411e5db36a",
   "records": [

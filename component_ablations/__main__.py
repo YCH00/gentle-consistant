@@ -125,6 +125,7 @@ def parser():
     launch.add_argument("--gpus", type=gpus, default=None)
     launch.add_argument("--jobs-per-gpu", type=positive, default=None)
     launch.add_argument("--max-parallel", type=positive)
+    launch.add_argument("--group-seeds", action="store_true", help="Keep all selected seeds of one environment/arm on one GPU; reserve it until the whole group finishes")
     launch.add_argument("--envs", nargs="+", choices=("cheetah-vel", "walker-rand-params"))
     launch.add_argument("--arms", nargs="+", choices=(*ARMS, "full_global", "full_constant"))
     launch.add_argument("--seeds", nargs="+", type=int, choices=(0, 1, 2, 3))
@@ -143,6 +144,8 @@ def parser():
     worker.add_argument("--cpu", action="store_true")
     command("summarize", "Stages D/E: actual four-seed results, paired differences and missing-resource status")
     command("plot", "Stage E: verified four-seed return bars/curves as PDF/SVG/PNG")
+    reset = command("reset-runs", "Delete generated outputs/checkpoints and reset all slots for a fresh run; preserve frozen configs and resources")
+    reset.add_argument("--dry-run", action="store_true", help="List output paths without deleting anything")
     binding = command("bind-diagnostics", "Bind formal frozen bank/probe manifests; reject smoke and task mismatches")
     binding.add_argument("--env", choices=("cheetah-vel", "walker-rand-params"), required=True)
     binding.add_argument("--bank", type=Path)
@@ -181,6 +184,9 @@ def main():
         elif args.command == "plot":
             from .plotting import plot
             result = plot(args)
+        elif args.command == "reset-runs":
+            from .reset import reset_runs
+            result = reset_runs(args)
         else:
             from .reporting import summarize
             result = summarize(args)
