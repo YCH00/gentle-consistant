@@ -108,7 +108,7 @@ def collect(args):
             return rows, bool(done), sum(row[2] for row in rows)
 
         def load_actor(step):
-            actor.load_state_dict(torch.load(checkpoints[step], map_location='cpu'))
+            actor.load_state_dict(torch.load(checkpoints[step], map_location='cpu', weights_only=True))
             return actor
 
         calibration_seeds = [seed_for('calibration', i) for i in range(args.calibration_episodes)]
