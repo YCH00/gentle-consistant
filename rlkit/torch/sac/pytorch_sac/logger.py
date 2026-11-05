@@ -55,6 +55,9 @@ class MetersGroup(object):
         self._csv_file = open(self._csv_file_name, 'w')
         self._csv_writer = None
 
+    def close(self):
+        self._csv_file.close()
+
     def _prepare_file(self, prefix, suffix):
         file_name = f'{prefix}.{suffix}'
         if os.path.exists(file_name):
@@ -143,6 +146,12 @@ class Logger(object):
                                     formating=COMMON_EVAL_FORMAT)
         self._eval_sample_mg = MetersGroup(os.path.join(log_dir, f'eval_sample{goal_idx}'),
                                     formating=COMMON_EVAL_FORMAT)
+
+    def close(self):
+        for group in (self._train_mg, self._eval_mg, self._eval_sample_mg):
+            group.close()
+        if self._sw is not None:
+            self._sw.close()
 
     def _should_log(self, step, log_frequency):
         log_frequency = log_frequency or self._log_frequency

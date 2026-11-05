@@ -85,7 +85,10 @@ def recover(args):
             env.action_space.seed(args.seed)
             raw_env.reset_task(args.task)
             workspace = Workspace(cfg, args.env, env=env, goal_idx=args.task)
-            workspace.run()
+            try:
+                workspace.run()
+            finally:
+                workspace.logger.close()
         finally:
             raw_env.close()
 
