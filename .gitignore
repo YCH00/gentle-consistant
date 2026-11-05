@@ -32,3 +32,21 @@ output/
 diagnostics_audits/
 docs/
 shift-diagnostics-v*/
+
+# BEGIN component experiment runtime
+/component-ablations-*/runs/
+/component-ablations-*/initial_states/
+/component-ablations-*/smoke/
+/component-ablations-*/job_logs/
+/component-ablations-*/failures/
+/component-ablations-*/summaries/
+/component-ablations-*/figures/
+/component-ablations-*/recovery/
+/component-ablations-*/resources.json
+/component-ablations-*/run_matrix.json
+/component-ablations-*/resource_audit.json
+/component-ablations-*/stage_status.json
+/component-ablations-*/STATUS.md
+/component-ablations-*/jobs_*.json
+/component-ablations-*/.scheduler.lock
+# END component experiment runtime

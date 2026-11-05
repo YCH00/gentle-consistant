@@ -8,6 +8,11 @@ MODE="${4:-jobs}"
 GROUP_ARGS=()
 case "$MODE" in group-seeds) GROUP_ARGS=(--group-seeds);; jobs) ;; *) echo "Mode must be jobs or group-seeds" >&2; exit 2;; esac
 ABLATION_PYTHON="${ABLATION_PYTHON:-python}"
+for ABLATION_STATE in resources run_matrix; do
+  if [ ! -f "$ROOT/$ABLATION_STATE.json" ]; then
+    cp -- "$ROOT/$ABLATION_STATE.template.json" "$ROOT/$ABLATION_STATE.json"
+  fi
+done
 "$ABLATION_PYTHON" -m component_ablations audit --root "$ROOT" --seal-pretrained
 "$ABLATION_PYTHON" -m component_ablations check --root "$ROOT"
 "$ABLATION_PYTHON" -m component_ablations launch --root "$ROOT" --phase init --gpus "$GPUS" --jobs-per-gpu "$PER_GPU" "${GROUP_ARGS[@]}"
