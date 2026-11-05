@@ -16,6 +16,7 @@
 *.pyc
 *.DS_Store
 __pycache__
+*.egg-info/
 
 # bkdevops prebuild
 .bk_pb/
