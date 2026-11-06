@@ -17,11 +17,18 @@ def parse_args():
     parser.add_argument('--output-root', type=Path, required=True)
     parser.add_argument('--env', default='point-robot')
     parser.add_argument('--task', type=int, required=True)
-    parser.add_argument('--steps', type=int, default=10000)
-    parser.add_argument('--save-every', type=int, default=100)
+    parser.add_argument('--steps', type=int,
+                        help='Recovery horizon (default: 10000 for Point-Robot, 100000 for MuJoCo)')
+    parser.add_argument('--save-every', type=int,
+                        help='Actor checkpoint interval (default: 100 for Point-Robot, 1000 for MuJoCo)')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--device', default='cuda:0')
     args = parser.parse_args()
+    point_robot = args.env == 'point-robot'
+    if args.steps is None:
+        args.steps = 10000 if point_robot else 100000
+    if args.save_every is None:
+        args.save_every = 100 if point_robot else 1000
     if args.steps <= 0 or args.save_every <= 0:
         parser.error('--steps and --save-every must be positive')
     return args
