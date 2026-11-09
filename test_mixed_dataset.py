@@ -148,8 +148,10 @@ class MixedDataTests(unittest.TestCase):
         self.assertEqual(saved['algo_params']['num_iterations'], 2)
         self.assertNotIn('--exp_name', run.call_args.args[0])
         args = ['runner', 'train', '--env', 'cheetah-dir', '--config', str(config), '--exp_name', '1_ours']
-        with patch.object(runner, 'ROOT', repo), patch('sys.argv', args), patch.object(runner.subprocess, 'run') as run:
+        with patch.object(runner, 'ROOT', repo), patch('sys.argv', args), patch.object(runner.subprocess, 'run') as run, patch.object(runner.mp, 'Pool') as pool:
+            pool.return_value.__enter__.return_value.starmap.side_effect = lambda fn, jobs: [fn(*job) for job in jobs]
             runner.main()
+            pool.assert_called_once_with(processes=4)
         self.assertEqual(run.call_count, 12)
         for call in run.call_args_list:
             command = call.args[0]
@@ -201,6 +203,50 @@ class MixedDataTests(unittest.TestCase):
         ds.prepare_environment(env, variant)
         env.tasks = [{'direction': 0}, {'direction': 1}]
         with self.assertRaisesRegex(ValueError, 'task parameters'): ds.prepare_environment(env, variant)
+
+
+
+class ParallelPipelineTests(unittest.TestCase):
+    def test_real_process_pool_runs_four_seeds_with_ordered_stages(self):
+        from unittest.mock import patch
+        import run_mixed_gentle as runner
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            script = r"""import json, sys, time
+from pathlib import Path
+root = Path(__file__).parent
+seed = sys.argv[sys.argv.index('--seed_list') + 1]
+stage = Path(__file__).name
+if stage == 'pretrain_dynamics.py':
+    (root / ('started_' + seed)).write_text('started')
+    deadline = time.monotonic() + 30
+    while len(list(root.glob('started_*'))) < 4:
+        if time.monotonic() > deadline:
+            raise RuntimeError('Four seed pipelines did not start concurrently')
+        time.sleep(0.05)
+with (root / ('seed' + seed + '.jsonl')).open('a') as stream:
+    stream.write(json.dumps(dict(stage=stage, args=sys.argv[1:])) + '\n')
+"""
+            stages = ['pretrain_dynamics.py', 'pretrain_encoder_decoder.py', 'train_gentle.py']
+            for stage in stages:
+                (root / stage).write_text(script, encoding='utf-8')
+            with patch.object(runner, 'ROOT', root):
+                runner.run_seed_pipelines([0, 1, 2, 3], stages, root / 'config.json', 0,
+                                          'mixed_rme_v3', '1_ours', 4)
+            for seed in range(4):
+                records = [json.loads(line) for line in (root / ('seed%d.jsonl' % seed)).read_text().splitlines()]
+                self.assertEqual([record['stage'] for record in records], stages)
+                self.assertEqual(records[-1]['args'][-2:], ['--exp_name', '1_ours'])
+
+    def test_failed_stage_stops_seed(self):
+        import subprocess
+        from unittest.mock import patch
+        import run_mixed_gentle as runner
+        with patch.object(runner.subprocess, 'run', side_effect=subprocess.CalledProcessError(1, 'pretrain')) as run:
+            with self.assertRaises(subprocess.CalledProcessError):
+                runner.run_seed_pipelines([0], ['pretrain_dynamics.py', 'train_gentle.py'],
+                                          Path('config.json'), 0, 'mixed_rme_v3', '1_ours', 1)
+        self.assertEqual(run.call_count, 1)
 
 
 if __name__ == '__main__': unittest.main()

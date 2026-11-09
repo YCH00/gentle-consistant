@@ -4,6 +4,7 @@ Uses the repository's existing algorithm and native evaluation settings.
 """
 import argparse
 import copy
+import multiprocessing as mp
 import json
 from pathlib import Path
 import subprocess
@@ -26,6 +27,33 @@ def merge(base, updates):
     return base
 
 
+def run_seed_pipeline(seed, stages, resolved, gpu, dataset_tag, exp_name, root):
+    """One worker owns all stages of one seed, in dependency order."""
+    for stage in stages:
+        command = [sys.executable, str(root / stage), str(resolved), '--gpu', str(gpu), '--seed_list', str(seed)]
+        if stage == 'train_gentle.py':
+            command += ['--output_prefix', dataset_tag + '_']
+            if exp_name is not None:
+                command += ['--exp_name', exp_name]
+        print('[seed %s] Running: %s' % (seed, ' '.join(command)), flush=True)
+        subprocess.run(command, cwd=str(root), check=True)
+    print('[seed %s] All stages completed' % seed, flush=True)
+
+def run_seed_pipelines(seeds, stages, resolved, gpu, dataset_tag, exp_name, parallel_seeds):
+    workers = min(parallel_seeds, len(seeds))
+    print('Running seeds %s with %d concurrent pipelines on GPU %s' % (seeds, workers, gpu), flush=True)
+    jobs = [(seed, stages, resolved, gpu, dataset_tag, exp_name, ROOT) for seed in seeds]
+    if workers > 1:
+        # Match train_gentle.py: one pool worker per seed, with bounded concurrency.
+        with mp.Pool(processes=workers) as pool:
+            pool.starmap(run_seed_pipeline, jobs)
+            pool.close()
+            pool.join()
+    else:
+        for job in jobs:
+            run_seed_pipeline(*job)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('stage', choices=('validate', 'smoke', 'train'))
@@ -36,8 +64,14 @@ def main():
     parser.add_argument('--exp_name', '--exp-name', dest='exp_name', default=None,
                         help='Experiment directory name under each seed; defaults to a timestamp')
     parser.add_argument('--seed', type=int, action='append', help='Repeat for multiple seeds; train defaults to 0,1,2,3')
+    parser.add_argument('--parallel-seeds', type=int, default=4,
+                        help='Maximum concurrent seed pipelines (default: 4; use 1 for sequential execution)')
     parser.add_argument('--context-pretraining', choices=('required', 'disabled'), default='required')
     args = parser.parse_args()
+    if args.parallel_seeds < 1:
+        parser.error('--parallel-seeds must be positive')
+    if args.seed and len(set(args.seed)) != len(args.seed):
+        parser.error('Duplicate --seed values would write to the same weight/log directories')
     config_path = args.config or ROOT / 'configs' / (args.env + '-mixed-rme-v3.json')
     variant = merge(copy.deepcopy(default_config), json.loads(config_path.read_text(encoding='utf-8')))
     if variant['env_name'] != args.env:
@@ -72,15 +106,8 @@ def main():
     if args.context_pretraining == 'required':
         stages.append('pretrain_encoder_decoder.py')
     stages.append('train_gentle.py')
-    for seed in seeds:
-        for stage in stages:
-            command = [sys.executable, str(ROOT / stage), str(resolved), '--gpu', str(args.gpu), '--seed_list', str(seed)]
-            if stage == 'train_gentle.py':
-                command += ['--output_prefix', params['dataset_tag'] + '_']
-                if args.exp_name is not None:
-                    command += ['--exp_name', args.exp_name]
-            print('Running: ' + ' '.join(command), flush=True)
-            subprocess.run(command, cwd=str(ROOT), check=True)
+    run_seed_pipelines(seeds, stages, resolved, args.gpu, params['dataset_tag'],
+                       args.exp_name, args.parallel_seeds)
     print('Completed %s for %s, seeds=%s' % (args.stage, args.env, seeds), flush=True)
 
 

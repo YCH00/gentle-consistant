@@ -89,7 +89,19 @@ python policy_eval.py --config ./configs/ant-dir.json
 
 Data will be saved in `self.work_dir/gentle_data/$env_name/$goal_idx{i}`
 
-Mixed Random/Medium/Expert data: see [the complete training workflow](MIXED_RME_V3_TRAINING.md).
+Mixed Random/Medium/Expert training (seeds 0, 1, 2, 3 run in parallel):
+
+```bash
+python run_mixed_gentle.py train --env ant-dir --gpu 0 --exp_name 1_ours
+```
+
+The launcher uses `multiprocessing.Pool`, like `train_gentle.py`. Each seed runs
+its dynamics pretraining, optional encoder/decoder pretraining, then main training
+in order. All four pipelines use the selected GPU, with separate seed directories.
+Use `--parallel-seeds 2` to limit concurrency or `--parallel-seeds 1` to run sequentially.
+Smoke defaults to seed 0 only. A failed stage stops subsequent stages for that seed
+and causes the launcher to exit with an error.
+
 
 ## Training GENTLE 
 
