@@ -33,6 +33,8 @@ def main():
     parser.add_argument('--project-root', type=Path, default=ROOT.parent)
     parser.add_argument('--config', type=Path, help='Optional base configuration; algorithm hyperparameters are preserved')
     parser.add_argument('--gpu', type=int, default=0)
+    parser.add_argument('--exp_name', '--exp-name', dest='exp_name', default=None,
+                        help='Experiment directory name under each seed; defaults to a timestamp')
     parser.add_argument('--seed', type=int, action='append', help='Repeat for multiple seeds; train defaults to 0,1,2,3')
     parser.add_argument('--context-pretraining', choices=('required', 'disabled'), default='required')
     args = parser.parse_args()
@@ -48,6 +50,7 @@ def main():
                   eval_data_dir=str(ROOT / 'data' / args.env),
                   eval_artifacts_dir=str(project / 'shared_protocol/shared-main-v1' / args.env))
     variant['context_pretraining'] = args.context_pretraining
+    variant['exp_name'] = args.exp_name
     if not params.get('load_eval_buffer'):
         parser.error('Mixed experiment requires load_eval_buffer=true')
     tasks = list(range(variant['env_params']['n_tasks']))
@@ -74,6 +77,8 @@ def main():
             command = [sys.executable, str(ROOT / stage), str(resolved), '--gpu', str(args.gpu), '--seed_list', str(seed)]
             if stage == 'train_gentle.py':
                 command += ['--output_prefix', params['dataset_tag'] + '_']
+                if args.exp_name is not None:
+                    command += ['--exp_name', args.exp_name]
             print('Running: ' + ' '.join(command), flush=True)
             subprocess.run(command, cwd=str(ROOT), check=True)
     print('Completed %s for %s, seeds=%s' % (args.stage, args.env, seeds), flush=True)

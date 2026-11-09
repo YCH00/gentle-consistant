@@ -147,6 +147,19 @@ class MixedDataTests(unittest.TestCase):
         self.assertEqual(saved['dynamics_max_epochs'], 1)
         self.assertEqual(saved['algo_params']['num_iterations'], 2)
         self.assertNotIn('--exp_name', run.call_args.args[0])
+        args = ['runner', 'train', '--env', 'cheetah-dir', '--config', str(config), '--exp_name', '1_ours']
+        with patch.object(runner, 'ROOT', repo), patch('sys.argv', args), patch.object(runner.subprocess, 'run') as run:
+            runner.main()
+        self.assertEqual(run.call_count, 12)
+        for call in run.call_args_list:
+            command = call.args[0]
+            if Path(command[1]).name == 'train_gentle.py':
+                self.assertEqual(command[command.index('--exp_name') + 1], '1_ours')
+            else:
+                self.assertNotIn('--exp_name', command)
+        saved = ds.read_json(repo / 'output/mixed_rme_v3/cheetah-dir/config.json')
+        self.assertEqual(saved['exp_name'], '1_ours')
+
 
     def test_corruption(self):
         with (self.raw / self.manifest['files'][0]['path']).open('ab') as stream: stream.write(b'corrupt')

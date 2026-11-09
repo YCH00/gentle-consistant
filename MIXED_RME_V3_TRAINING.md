@@ -1,4 +1,4 @@
-﻿# 混合 R/M/E 数据训练 GENTLE
+# 混合 R/M/E 数据训练 GENTLE
 
 本改动只接入新的训练数据源，并保留当前仓库的算法配置和原生评测流程。
 当前仓库含虚拟任务、consistency loss 等扩展，新增配置复制自各环境原配置；
@@ -98,7 +98,7 @@ smoke 使用 `mixed_rme_v3_smoke` 权重和日志目录，不会覆盖正式权�
 
 ```bash
 use_mujoco 150
-python run_mixed_gentle.py train --env ant-dir --gpu 0
+python run_mixed_gentle.py train --env ant-dir --gpu 0 --exp_name 1_ours
 ```
 
 或者依次跑完六个环境：
@@ -107,19 +107,19 @@ python run_mixed_gentle.py train --env ant-dir --gpu 0
 set -e
 use_mujoco 150
 for env in point-robot ant-dir cheetah-vel cheetah-dir; do
-  python run_mixed_gentle.py train --env "$env" --gpu 0
+  python run_mixed_gentle.py train --env "$env" --gpu 0 --exp_name 1_ours
 done
 
 use_mujoco 131
 for env in hopper-rand-params walker-rand-params; do
-  python run_mixed_gentle.py train --env "$env" --gpu 0
+  python run_mixed_gentle.py train --env "$env" --gpu 0 --exp_name 1_ours
 done
 ```
 
 单独执行指定种子：
 
 ```bash
-python run_mixed_gentle.py train --env ant-dir --gpu 0 --seed 2
+python run_mixed_gentle.py train --env ant-dir --gpu 0 --exp_name 1_ours --seed 2
 # 多个指定种子：--seed 2 --seed 3
 ```
 
@@ -148,7 +148,7 @@ python run_mixed_gentle.py train --env ant-dir --gpu 0 --seed 2
 use_mujoco 150
 python pretrain_dynamics.py configs/ant-dir-mixed-rme-v3.json --gpu 0 --seed_list 0
 python pretrain_encoder_decoder.py configs/ant-dir-mixed-rme-v3.json --gpu 0 --seed_list 0
-python train_gentle.py configs/ant-dir-mixed-rme-v3.json --gpu 0 --seed_list 0 --output_prefix mixed_rme_v3_
+python train_gentle.py configs/ant-dir-mixed-rme-v3.json --gpu 0 --seed_list 0 --output_prefix mixed_rme_v3_ --exp_name 1_ours
 ```
 
 每条命令都显式给出一个 `--seed_list`，否则旧入口会默认并发运行四个 seed。
@@ -160,7 +160,7 @@ python train_gentle.py configs/ant-dir-mixed-rme-v3.json --gpu 0 --seed_list 0 -
 ```text
 dynamics/<env>/mixed_rme_v3_seed<seed>/
 encoder_decoder/<env>/mixed_rme_v3_seed<seed>/
-logs/<env>/mixed_rme_v3_gentle/seed<seed>/<timestamp>/
+logs/<env>/mixed_rme_v3_gentle/seed<seed>/1_ours/
 output/mixed_rme_v3/<env>/config.json
 ```
 
