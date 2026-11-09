@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Sequence, Tuple
 
 import click
+from rlkit.data_management.offline_dataset import (training_paths, experiment_dir,
+    write_identity, check_identity, check_normalizer, prepare_environment)
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -75,12 +77,7 @@ def build_train_buffer(
     )
     obs_normalizer = ptu.RunningMeanStd(shape=obs_dim)
 
-    train_paths = load_train_paths(
-        data_dir=variant["algo_params"]["data_dir"],
-        train_epoch=variant["algo_params"]["train_epoch"],
-        n_trj=variant["algo_params"]["n_trj"],
-        train_tasks=train_tasks,
-    )
+    train_paths = training_paths(variant['algo_params'], train_tasks)
 
     obs_train_lst = []
     action_train_lst = []
@@ -190,7 +187,8 @@ def build_task_dynamics(variant, obs_dim: int, action_dim: int) -> MultiTaskDyna
 
 
 def load_task_dynamics(task_dynamics: MultiTaskDynamics, variant, seed) -> Path:
-    dynamics_dir = Path(__file__).parent.absolute() / "dynamics" / variant["env_name"] / f"expert_seed{seed}"
+    dynamics_dir = experiment_dir(variant, 'dynamics', seed)
+    check_identity(dynamics_dir, variant)
     try:
         task_dynamics.load(str(dynamics_dir))
     except (FileNotFoundError, RuntimeError) as error:
@@ -416,6 +414,7 @@ def experiment(variant, seed=None):
         global_seed(seed)
         env.seed(seed)
 
+    prepare_environment(env, variant)
     tasks = env.get_all_task_idx()
     train_tasks = list(tasks[:variant["n_train_tasks"]])
     obs_dim = int(np.prod(env.observation_space.shape))
@@ -447,6 +446,7 @@ def experiment(variant, seed=None):
     if relabel_enabled:
         task_dynamics = build_task_dynamics(variant, obs_dim, action_dim)
         dynamics_dir = load_task_dynamics(task_dynamics, variant, seed)
+        check_normalizer(dynamics_dir, variant, obs_normalizer)
         relabel_buffer = MultiTaskContextBuffer(
             hparams["relabel_buffer_size"],
             env,
@@ -531,11 +531,13 @@ def experiment(variant, seed=None):
     context_encoder.train(False)
     context_decoder.train(False)
 
-    save_dir = Path(__file__).parent.absolute() / "encoder_decoder" / variant["env_name"] / f"expert_seed{seed}"
+    save_dir = experiment_dir(variant, 'encoder_decoder', seed)
     save_dir.mkdir(parents=True, exist_ok=True)
     context_encoder.save(save_dir / "context_encoder.pth")
     context_decoder.save(save_dir / "context_decoder.pth")
     np.savez(save_dir / "obs_normalizer.npz", mean=obs_normalizer.mean, var=obs_normalizer.var)
+
+    write_identity(save_dir, variant, obs_normalizer)
 
     save_metadata = {
         "seed": seed,

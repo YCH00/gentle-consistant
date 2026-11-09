@@ -1,4 +1,6 @@
 import os
+from rlkit.data_management.offline_dataset import (experiment_dir,
+    write_identity, check_identity, check_normalizer, prepare_environment)
 import numpy as np
 import click
 import json
@@ -41,7 +43,7 @@ def _resolve_weights_dir(variant, seed):
         if not weights_dir.is_absolute():
             weights_dir = Path(__file__).parent.absolute() / weights_dir
         return weights_dir
-    return Path(__file__).parent.absolute() / 'encoder_decoder' / variant['env_name'] / f'expert_seed{seed}'
+    return experiment_dir(variant, 'encoder_decoder', seed)
 
 
 def _find_weight_file(weights_dir, candidate_filenames):
@@ -53,11 +55,14 @@ def _find_weight_file(weights_dir, candidate_filenames):
 
 
 def _load_pretrained_context_models(context_encoder, context_decoder, variant, seed):
+    if variant.get('context_pretraining', 'auto') == 'disabled':
+        print('Context pretraining disabled explicitly; using random initialization.')
+        return
     weights_dir = _resolve_weights_dir(variant, seed)
     encoder_path = _find_weight_file(weights_dir, ['context_encoder.pth', 'encoder.pth'])
     decoder_path = _find_weight_file(weights_dir, ['context_decoder.pth', 'decoder.pth'])
 
-    if encoder_path is None and decoder_path is None and variant.get('path_to_weights') is None:
+    if encoder_path is None and decoder_path is None and variant.get('path_to_weights') is None and variant.get('context_pretraining', 'auto') != 'required':
         print(f'No pretrained context weights found at {weights_dir}, continue with random initialization.')
         return
 
@@ -67,6 +72,7 @@ def _load_pretrained_context_models(context_encoder, context_decoder, variant, s
             f'Found encoder={encoder_path is not None}, decoder={decoder_path is not None}.'
         )
 
+    check_identity(weights_dir, variant)
     try:
         context_encoder.load(encoder_path)
         context_decoder.load(decoder_path)
@@ -86,6 +92,7 @@ def experiment(variant, seed=None):
         global_seed(seed)
         env.seed(seed)
 
+    prepare_environment(env, variant)
     tasks = env.get_all_task_idx()
     obs_dim = int(np.prod(env.observation_space.shape))
     action_dim = int(np.prod(env.action_space.shape))
@@ -150,7 +157,8 @@ def experiment(variant, seed=None):
                                      use_next_obs_in_context=use_next_obs_in_context,
                                      ensemble_size=variant['algo_params']['ensemble_size'],
                                      dynamics_weight_decay=[2.5e-5, 5e-5, 7.5e-5])
-    dynamics_dir_path = Path(__file__).parent.absolute()/'dynamics'/variant['env_name']/f'expert_seed{seed}'
+    dynamics_dir_path = experiment_dir(variant, 'dynamics', seed)
+    check_identity(dynamics_dir_path, variant)
     try:
         task_dynamics.load(str(dynamics_dir_path))
     except RuntimeError as error:
@@ -186,6 +194,11 @@ def experiment(variant, seed=None):
                     obs_normalizer=obs_normalizer,
                     **variant['algo_params']
     )
+    check_normalizer(dynamics_dir_path, variant, obs_normalizer)
+    if variant.get('context_pretraining', 'auto') != 'disabled':
+        context_weights = _resolve_weights_dir(variant, seed)
+        if context_weights.exists():
+            check_normalizer(context_weights, variant, obs_normalizer)
     # optional GPU mode
     if ptu.gpu_enabled():
         algorithm.to()
@@ -209,6 +222,7 @@ def experiment(variant, seed=None):
         algo_name=variant['output_prefix']+variant['algo_type']
     )
 
+    write_identity(experiment_log_dir, variant, obs_normalizer)
     tb_writer = SummaryWriter(experiment_log_dir)
     algorithm.train(tb_writer)
 

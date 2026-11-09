@@ -89,6 +89,8 @@ python policy_eval.py --config ./configs/ant-dir.json
 
 Data will be saved in `self.work_dir/gentle_data/$env_name/$goal_idx{i}`
 
+Mixed Random/Medium/Expert data: see [the complete training workflow](MIXED_RME_V3_TRAINING.md).
+
 ## Training GENTLE 
 
 The configration files to run GENTLE is in `./configs`. For example, to train GENTLE on Ant-Dir, first you need to pretrain the dynamics model:

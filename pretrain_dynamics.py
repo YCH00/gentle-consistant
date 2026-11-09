@@ -1,4 +1,6 @@
 import os
+from rlkit.data_management.offline_dataset import (training_paths, task_id, experiment_dir,
+    write_identity, prepare_environment)
 import numpy as np
 import click
 import json, time
@@ -34,6 +36,7 @@ def experiment(variant, seed=None):
         global_seed(seed)
         env.seed(seed)
 
+    prepare_environment(env, variant)
     tasks = env.get_all_task_idx()
     obs_dim = int(np.prod(env.observation_space.shape))
     action_dim = int(np.prod(env.action_space.shape))
@@ -71,14 +74,8 @@ def experiment(variant, seed=None):
     train_tasks = list(tasks[:variant['n_train_tasks']])
     train_buffer = MultiTaskReplayBuffer(variant['algo_params']['replay_buffer_size'], env, train_tasks, 1)
 
-    train_trj_paths = []
-    for n in range(variant['algo_params']['n_trj']):
-        train_trj_paths += glob.glob(os.path.join(variant['algo_params']['data_dir'], "goal_idx*", "trj_evalsample%d_step%d.npy" %(n, variant['algo_params']['train_epoch'])))
-            
-    train_paths = [train_trj_path for train_trj_path in train_trj_paths if
-                   int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) in train_tasks]
-    train_task_idxs = [int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) for train_trj_path in train_trj_paths if
-                   int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) in train_tasks]
+    train_paths = training_paths(variant['algo_params'], train_tasks)
+    train_task_idxs = [task_id(path) for path in train_paths]
 
     obs_train_lst = []
     action_train_lst = []
@@ -120,11 +117,12 @@ def experiment(variant, seed=None):
     for task_idx in train_tasks:
         data = train_buffer.get_all_data(task_idx)
         task_dynamics.set_task_idx(task_idx)
-        task_dynamics.train(data)
+        task_dynamics.train(data, max_epochs=variant.get('dynamics_max_epochs'))
         print(f"Task {task_idx} finished training")
-    save_dir_path = Path(__file__).parent.absolute()/'dynamics'/variant['env_name']/f'expert_seed{seed}'    
+    save_dir_path = experiment_dir(variant, 'dynamics', seed)
     save_dir_path.mkdir(parents=True, exist_ok=True)
     task_dynamics.save(str(save_dir_path))
+    write_identity(save_dir_path, variant, obs_normalizer)
 
 
 def deep_update_dict(fr, to):
