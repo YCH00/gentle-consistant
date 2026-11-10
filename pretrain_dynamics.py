@@ -17,6 +17,7 @@ from configs.default import default_config
 from numpy.random import default_rng
 from rlkit.data_management.env_replay_buffer import MultiTaskReplayBuffer
 from pathlib import Path
+from rlkit.data_management.offline_sources import trajectory_paths, load_trajectory, dynamics_path, bind_tasks, sha256
 
 rng = default_rng()
 
@@ -28,7 +29,9 @@ def global_seed(seed=0):
     torch.backends.cudnn.deterministic = True
 
 def experiment(variant, seed=None):
-    env = NormalizedBoxEnv(ENVS[variant['env_name']](**variant['env_params']))
+    raw_env = ENVS[variant['env_name']](**variant['env_params'])
+    bind_tasks(raw_env, variant)
+    env = NormalizedBoxEnv(raw_env)
     
     if seed is not None:
         global_seed(seed)
@@ -71,14 +74,7 @@ def experiment(variant, seed=None):
     train_tasks = list(tasks[:variant['n_train_tasks']])
     train_buffer = MultiTaskReplayBuffer(variant['algo_params']['replay_buffer_size'], env, train_tasks, 1)
 
-    train_trj_paths = []
-    for n in range(variant['algo_params']['n_trj']):
-        train_trj_paths += glob.glob(os.path.join(variant['algo_params']['data_dir'], "goal_idx*", "trj_evalsample%d_step%d.npy" %(n, variant['algo_params']['train_epoch'])))
-            
-    train_paths = [train_trj_path for train_trj_path in train_trj_paths if
-                   int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) in train_tasks]
-    train_task_idxs = [int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) for train_trj_path in train_trj_paths if
-                   int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) in train_tasks]
+    train_paths, train_task_idxs = trajectory_paths(variant['algo_params'], train_tasks)
 
     obs_train_lst = []
     action_train_lst = []
@@ -88,7 +84,7 @@ def experiment(variant, seed=None):
     task_train_lst = []
 
     for train_path, train_task_idx in zip(train_paths, train_task_idxs):
-        trj_npy = np.load(train_path, allow_pickle=True)
+        trj_npy = load_trajectory(train_path, variant['algo_params'])
         obs_train_lst += list(trj_npy[:, 0])
         action_train_lst += list(trj_npy[:, 1])
         reward_train_lst += list(trj_npy[:, 2])
@@ -120,11 +116,14 @@ def experiment(variant, seed=None):
     for task_idx in train_tasks:
         data = train_buffer.get_all_data(task_idx)
         task_dynamics.set_task_idx(task_idx)
-        task_dynamics.train(data)
+        task_dynamics.train(data, max_epochs=variant.get('dynamics_max_epochs'))
         print(f"Task {task_idx} finished training")
-    save_dir_path = Path(__file__).parent.absolute()/'dynamics'/variant['env_name']/f'expert_seed{seed}'    
+    save_dir_path = dynamics_path(variant, seed)
     save_dir_path.mkdir(parents=True, exist_ok=True)
     task_dynamics.save(str(save_dir_path))
+    if variant['algo_params'].get('mixed_artifacts_dir'):
+        receipt = {'dataset_sha256': sha256(Path(variant['algo_params']['mixed_artifacts_dir']) / 'dataset_manifest.json')}
+        (save_dir_path / 'data_receipt.json').write_text(json.dumps(receipt), encoding='utf-8')
 
 
 def deep_update_dict(fr, to):

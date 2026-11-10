@@ -1,4 +1,5 @@
 import abc
+from rlkit.data_management.offline_sources import trajectory_paths, load_trajectory
 from collections import OrderedDict
 import time
 import os
@@ -118,29 +119,9 @@ class OfflineMetaRLAlgorithm(metaclass=abc.ABCMeta):
         self.enc_obs_normalizer = ptu.RunningMeanStd(shape=self.obs_dim)
 
     def init_buffer(self, kwargs):
-        train_trj_paths = []
-        eval_trj_paths = []
-        # trj entry format: [obs, action, reward, new_obs]
-        for n in range(self.n_trj):
-            if self.train_epoch is None:
-                train_trj_paths += glob.glob(os.path.join(self.data_dir, "goal_idx*", "trj_evalsample%d_step*.npy" %(n)))
-            else:
-                train_trj_paths += glob.glob(os.path.join(self.data_dir, "goal_idx*", "trj_evalsample%d_step%d.npy" %(n, self.train_epoch)))
-            if self.load_eval_buffer:
-                if self.eval_epoch is None:
-                    eval_trj_paths += glob.glob(os.path.join(self.data_dir, "goal_idx*", "trj_evalsample%d_step*.npy" %(n)))
-                else:
-                    eval_trj_paths += glob.glob(os.path.join(self.data_dir, "goal_idx*", "trj_evalsample%d_step%d.npy" %(n, self.eval_epoch)))
-        
-        train_paths = [train_trj_path for train_trj_path in train_trj_paths if
-                       int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) in self.train_tasks]
-        train_task_idxs = [int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) for train_trj_path in train_trj_paths if
-                       int(train_trj_path.split('/')[-2].split('goal_idx')[-1]) in self.train_tasks]
+        train_paths, train_task_idxs = trajectory_paths(kwargs, self.train_tasks)
         if self.load_eval_buffer:
-            eval_paths = [eval_trj_path for eval_trj_path in eval_trj_paths if
-                          int(eval_trj_path.split('/')[-2].split('goal_idx')[-1]) in self.eval_tasks]
-            eval_task_idxs = [int(eval_trj_path.split('/')[-2].split('goal_idx')[-1]) for eval_trj_path in eval_trj_paths if
-                              int(eval_trj_path.split('/')[-2].split('goal_idx')[-1]) in self.eval_tasks]
+            eval_paths, eval_task_idxs = trajectory_paths(kwargs, self.eval_tasks, 'eval')
 
         obs_train_lst = []
         action_train_lst = []
@@ -156,7 +137,7 @@ class OfflineMetaRLAlgorithm(metaclass=abc.ABCMeta):
         task_eval_lst = []
 
         for train_path, train_task_idx in zip(train_paths, train_task_idxs):
-            trj_npy = np.load(train_path, allow_pickle=True)
+            trj_npy = load_trajectory(train_path, kwargs)
             obs_train_lst += list(trj_npy[:, 0])
             action_train_lst += list(trj_npy[:, 1])
             reward_train_lst += list(trj_npy[:, 2])
@@ -168,7 +149,7 @@ class OfflineMetaRLAlgorithm(metaclass=abc.ABCMeta):
             task_train_lst += task_train
         if self.load_eval_buffer:
             for eval_path, eval_task_idx in zip(eval_paths, eval_task_idxs):
-                trj_npy = np.load(eval_path, allow_pickle=True)
+                trj_npy = load_trajectory(eval_path, kwargs, 'eval')
                 obs_eval_lst += list(trj_npy[:, 0])
                 action_eval_lst += list(trj_npy[:, 1])
                 reward_eval_lst += list(trj_npy[:, 2])

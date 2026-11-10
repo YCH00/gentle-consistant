@@ -7,6 +7,7 @@ import random
 import multiprocessing as mp
 
 from pathlib import Path
+from rlkit.data_management.offline_sources import dynamics_path, bind_tasks, read_json, sha256, require
 from itertools import product
 from torch.utils.tensorboard import SummaryWriter
 
@@ -34,7 +35,9 @@ def global_seed(seed=0):
     torch.backends.cudnn.deterministic = True
 
 def experiment(variant, seed=None):
-    env = NormalizedBoxEnv(ENVS[variant['env_name']](**variant['env_params']))
+    raw_env = ENVS[variant['env_name']](**variant['env_params'])
+    bind_tasks(raw_env, variant)
+    env = NormalizedBoxEnv(raw_env)
     
     if seed is not None:
         global_seed(seed)
@@ -103,7 +106,10 @@ def experiment(variant, seed=None):
                                      use_next_obs_in_context=use_next_obs_in_context,
                                      ensemble_size=variant['algo_params']['ensemble_size'],
                                      dynamics_weight_decay=[2.5e-5, 5e-5, 7.5e-5])
-    dynamics_dir_path = Path(__file__).parent.absolute()/'dynamics'/variant['env_name']/f'expert_seed{seed}'
+    dynamics_dir_path = dynamics_path(variant, seed)
+    if variant['algo_params'].get('mixed_artifacts_dir'):
+        receipt = read_json(dynamics_dir_path / 'data_receipt.json')
+        require(receipt['dataset_sha256'] == sha256(Path(variant['algo_params']['mixed_artifacts_dir']) / 'dataset_manifest.json'), 'Dynamics trained on a different dataset')
     task_dynamics.load(str(dynamics_dir_path))
 
     policy = TanhGaussianPolicy(
@@ -142,7 +148,7 @@ def experiment(variant, seed=None):
 
     # create logging directory
     # TODO support Docker
-    exp_id = 'debug' if DEBUG else None
+    exp_id = variant.get('experiment_name', 'debug' if DEBUG else None)
     experiment_log_dir = setup_logger(
         variant['env_name'],
         variant=variant,
@@ -150,11 +156,14 @@ def experiment(variant, seed=None):
         base_log_dir=variant['util_params']['base_log_dir'],
         seed=seed,
         snapshot_mode="all",
-        algo_name=variant['output_prefix']+variant['algo_type']
+        algo_name=variant.get('log_group', variant.get('output_prefix', '')+variant['algo_type'])
     )
 
     tb_writer = SummaryWriter(experiment_log_dir)
-    algorithm.train(tb_writer)
+    try:
+        algorithm.train(tb_writer)
+    finally:
+        tb_writer.close()
 
 def deep_update_dict(fr, to):
     ''' update dict of dicts with new values '''
