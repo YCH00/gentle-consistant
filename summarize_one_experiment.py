@@ -131,19 +131,26 @@ def main():
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--epoch", type=int, default=499)
     parser.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2, 3])
+    parser.add_argument("--log-group", default="gentle",
+                        help="Log folder below each environment; mixed runs use mixed_rme_v3_gentle")
+    parser.add_argument("--envs", nargs="+", choices=ENVS, default=list(ENVS))
     args = parser.parse_args()
     if len(set(args.seeds)) != len(args.seeds):
         parser.error("--seeds must not contain duplicates")
     if Path(args.experiment).name != args.experiment or args.experiment in (".", ".."):
         parser.error("experiment must be a single folder name")
+    if Path(args.log_group).name != args.log_group or args.log_group in (".", ".."):
+        parser.error("--log-group must be a single folder name")
+    if len(set(args.envs)) != len(args.envs):
+        parser.error("--envs must not contain duplicates")
     root = args.root.resolve()
     out = root / "result" / (args.experiment + "_summary")
     details, summary = [], []
     print("Experiment: %s | Epoch: %d" % (args.experiment, args.epoch))
 
-    for env in ENVS:
+    for env in args.envs:
         for seed in args.seeds:
-            run = root / "logs" / env / "gentle" / ("seed%d" % seed) / args.experiment
+            run = root / "logs" / env / args.log_group / ("seed%d" % seed) / args.experiment
             error, pair = "", {}
             try:
                 pair = read_pair(run, args.epoch)
@@ -169,7 +176,7 @@ def main():
                     note=value.get("note", "")))
 
     print("\nEnvironment               Evaluation       n       Mean +/- sample SD")
-    for env in ENVS:
+    for env in args.envs:
         for mode in METRICS:
             values = [r["return_value"] for r in details if r["environment"] == env
                       and r["evaluation"] == mode and r["status"] == "ok"]
@@ -193,7 +200,8 @@ def main():
             writer.writeheader()
             writer.writerows(rows)
     with (out / "summary.json").open("w", encoding="utf-8") as f:
-        json.dump(dict(experiment=args.experiment, root=str(root), epoch=args.epoch,
+        json.dump(dict(experiment=args.experiment, root=str(root), log_group=args.log_group,
+                       environments=args.envs, epoch=args.epoch,
                        seeds=args.seeds, summary=summary, per_seed=details),
                   f, indent=2, allow_nan=False)
     print("Saved: " + str(out))
