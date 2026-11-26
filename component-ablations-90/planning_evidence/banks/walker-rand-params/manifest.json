@@ -1,0 +1,19 @@
+{
+  "kind": "backend_reference_only",
+  "environment": "walker-rand-params",
+  "backend": {
+    "engine_version": 131,
+    "engine_directory": "/root/.mujoco/mjpro131",
+    "binding": "rand_param_envs.mujoco_py",
+    "python_distribution_version": null,
+    "engine_library": "/root/.mujoco/mjpro131/bin/libmujoco131.so",
+    "engine_library_sha256": "f8496f50026e56f6ae47a64aa1b8de0ca708fac22e85e4d1fbfe523536deb8f1",
+    "binding_source": "/root/tievnas2/YinCH/GENTLE-consistant/rand_param_envs/mujoco_py/mjlib.py",
+    "engine_version_verified": true,
+    "reference_sources_sha256": "ab523e5d1cf821880d8207fb67b8583a4d587b536e64cf815977a1b04d65b903",
+    "xml_path": "/root/tievnas2/YinCH/GENTLE-consistant/rand_param_envs/gym/envs/mujoco/assets/walker2d.xml",
+    "xml_sha256": "01eecf4b82ea48caefe31369971ca9759496b274a3163e27c0c414a96bfcc4f7",
+    "task_manifest_sha256": "98a7658de3873f68021f21424a18f21a5ecf2f6d2ee94b3e784fb51e574629af",
+    "task_source": "manifest supplied directly to constructor; no task sampling"
+  }
+}

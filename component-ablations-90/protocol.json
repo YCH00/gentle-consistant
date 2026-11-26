@@ -1,0 +1,160 @@
+{
+  "protocol_id": "component-ablations-v1",
+  "created_at": "2026-11-26T01:53:55.626639+00:00",
+  "experiment_name": "exp44",
+  "start_id": 90,
+  "suite": "all",
+  "arms": [
+    {
+      "arm": "backbone",
+      "name": "90_exp44_backbone",
+      "id": 90,
+      "masks": {
+        "R": 0,
+        "V": 0,
+        "P": 0
+      }
+    },
+    {
+      "arm": "real_only",
+      "name": "91_exp44_real_only",
+      "id": 91,
+      "masks": {
+        "R": 1,
+        "V": 0,
+        "P": 0
+      }
+    },
+    {
+      "arm": "no_real",
+      "name": "92_exp44_no_real",
+      "id": 92,
+      "masks": {
+        "R": 0,
+        "V": 1,
+        "P": 1
+      }
+    },
+    {
+      "arm": "no_virtual_recovery",
+      "name": "93_exp44_no_virtual_recovery",
+      "id": 93,
+      "masks": {
+        "R": 1,
+        "V": 0,
+        "P": 1
+      }
+    },
+    {
+      "arm": "no_virtual_rl",
+      "name": "94_exp44_no_virtual_rl",
+      "id": 94,
+      "masks": {
+        "R": 1,
+        "V": 1,
+        "P": 0
+      }
+    },
+    {
+      "arm": "full",
+      "name": "95_exp44_full",
+      "id": 95,
+      "masks": {
+        "R": 1,
+        "V": 1,
+        "P": 1
+      }
+    },
+    {
+      "arm": "full_global",
+      "name": "96_exp44_full_global",
+      "id": 96,
+      "masks": {
+        "R": 1,
+        "V": 1,
+        "P": 1
+      }
+    },
+    {
+      "arm": "full_constant",
+      "name": "97_exp44_full_constant",
+      "id": 97,
+      "masks": {
+        "R": 1,
+        "V": 1,
+        "P": 1
+      }
+    }
+  ],
+  "environments": [
+    "cheetah-vel",
+    "walker-rand-params"
+  ],
+  "training_seeds": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "core_training_slots": 48,
+  "total_training_slots": 64,
+  "baseline_generation": "local; locked before results",
+  "loss_contract_sha256": "e3bdbc96507eb97032ec238172f8c8de8063afb80ebbd1b64c93ad82a287e32d",
+  "reference_config_sha256": {
+    "cheetah-vel": "df77b3e2477047735977a7a3f8fd0e28c60be40bdb49375d201453e704bd28b9",
+    "walker-rand-params": "2258facbda86f78942c922b896d3cda91de74dedfd51884bb8d7fda3a09f26d9"
+  },
+  "default_gpus": [
+    "0",
+    "1"
+  ],
+  "jobs_per_gpu": 4,
+  "checkpoints": [
+    0,
+    200,
+    400,
+    499
+  ],
+  "evaluation_iteration": 499,
+  "paired_comparisons": [
+    [
+      "full",
+      "backbone"
+    ],
+    [
+      "real_only",
+      "backbone"
+    ],
+    [
+      "full",
+      "no_real"
+    ],
+    [
+      "full",
+      "no_virtual_recovery"
+    ],
+    [
+      "full",
+      "no_virtual_rl"
+    ]
+  ],
+  "statistics": {
+    "unit": "training_seed",
+    "ddof": 1,
+    "missing_seed": "incomplete; mean/std null"
+  },
+  "main_evaluation": "shared-main-v1, given-context and own-policy 200-transition self-collected pool; 600+ steps",
+  "diagnostic_evaluation": {
+    "conditions": [
+      "offline",
+      "policy499_sigma000",
+      "policy499_sigma020"
+    ],
+    "tasks": "all 10 seen + 10 unseen",
+    "contexts_per_task": 20,
+    "context_length": 200,
+    "rollouts_per_context": 3,
+    "collector": "original GENTLE; formal bank required; smoke rejected"
+  },
+  "separate_from": "shift-diagnostics complete-method experiments; no files there are modified"
+}

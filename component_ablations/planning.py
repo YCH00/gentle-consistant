@@ -183,7 +183,7 @@ def create_plan(args):
                 'ROOT="${1:-' + str(root).replace("\\", "/") + '}"',
                 'GPUS="${2:-' + ",".join(args.gpus) + '}"',
                 'PER_GPU="${3:-' + str(args.jobs_per_gpu) + '}"',
-                'MODE="${4:-jobs}"',
+                'MODE="${4:-' + ('group-seeds' if args.jobs_per_gpu >= 4 else 'jobs') + '}"',
                 'GROUP_ARGS=()',
                 'case "$MODE" in group-seeds) GROUP_ARGS=(--group-seeds);; jobs) ;; *) echo "Mode must be jobs or group-seeds" >&2; exit 2;; esac',
                 'ABLATION_PYTHON="${ABLATION_PYTHON:-python}"',
@@ -191,13 +191,18 @@ def create_plan(args):
                 '"$ABLATION_PYTHON" -m component_ablations check --root "$ROOT"',
                 '"$ABLATION_PYTHON" -m component_ablations launch --root "$ROOT" --phase init --gpus "$GPUS" --jobs-per-gpu "$PER_GPU" "${GROUP_ARGS[@]}"',
                 '"$ABLATION_PYTHON" -m component_ablations launch --root "$ROOT" --phase smoke --gpus "$GPUS" --jobs-per-gpu "$PER_GPU"',
-                '"$ABLATION_PYTHON" -m component_ablations launch --root "$ROOT" --phase train --gpus "$GPUS" --jobs-per-gpu "$PER_GPU" "${GROUP_ARGS[@]}"',
+                'CORE=(' + ' '.join(ARMS) + ')',
+                'launch_group() { "$ABLATION_PYTHON" -m component_ablations launch --root "$ROOT" --gpus "$GPUS" --jobs-per-gpu "$PER_GPU" "${GROUP_ARGS[@]}" "$@"; }',
+                'launch_group --phase train --arms "${CORE[@]}"',
                 '# Set ABLATION_DIAGNOSTICS=1 after binding both formal bank/probe manifests.',
                 'if [ "${ABLATION_DIAGNOSTICS:-0}" = "1" ]; then',
-                '  "$ABLATION_PYTHON" -m component_ablations launch --root "$ROOT" --phase fixed --gpus "$GPUS" --jobs-per-gpu "$PER_GPU" "${GROUP_ARGS[@]}"',
-                '  "$ABLATION_PYTHON" -m component_ablations launch --root "$ROOT" --phase probe --gpus "$GPUS" --jobs-per-gpu "$PER_GPU" "${GROUP_ARGS[@]}"',
+                '  launch_group --phase fixed --arms "${CORE[@]}"',
+                '  launch_group --phase probe --arms "${CORE[@]}"',
                 'fi',
-                '"$ABLATION_PYTHON" -m component_ablations plot --root "$ROOT"']
+                ]
+    if args.suite == "all":
+        commands.append('launch_group --phase train --arms full_global full_constant')
+    commands.append('"$ABLATION_PYTHON" -m component_ablations plot --root "$ROOT"')
     with (root / "commands.sh").open("w", encoding="utf-8", newline="\n") as stream:
         stream.write("\n".join(commands) + "\n")
     status(root, A="IN_PROGRESS: historical resolved Local configs and loss paths audited; resources pending actual verification",

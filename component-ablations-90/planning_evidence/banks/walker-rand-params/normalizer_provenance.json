@@ -1,0 +1,2520 @@
+{
+  "kind": "reconstruction_of_original_training_update",
+  "test_data_used": false,
+  "evaluation_data_used": false,
+  "native_loader_order": [
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample0_step1000000.npy",
+      "sha256": "df9dac8e9e4faf38df2cd3b148ddba73f2bee31715ad81b15c8067118ffd050e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample0_step1000000.npy",
+      "sha256": "c49eea9e39d9c29ec966342726d14c6ca618c788f3a554f5ba3d1d404eadc439",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample0_step1000000.npy",
+      "sha256": "a02da1d4f1bf041eac17e10eb48a35b7677c70c6f299605dcaefd1acc9d7772d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample0_step1000000.npy",
+      "sha256": "58072c05c817bd58692accd5b5978cea52a86e5275c4b5c0417c93393f17b238",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample0_step1000000.npy",
+      "sha256": "206741a8417e7e92cdff5ae503be4288ab4f6d8f02370038df7e0271908c0308",
+      "rows": 94
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample0_step1000000.npy",
+      "sha256": "79ea08a2f0e29f454dda67614cf2efd7c39f0738c1a1a4909f7cf0ff3b653478",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample0_step1000000.npy",
+      "sha256": "749da1044b4294b980d80d579bd4b3edcedce15bcb1cfbfa359cc8cc40d103ed",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample0_step1000000.npy",
+      "sha256": "ad6c89e7373453225fe9ff5497d43864e24c5547b90d94efd2a2e5eae0c60f76",
+      "rows": 71
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample0_step1000000.npy",
+      "sha256": "e60ac8802108ba6fa338df8a621c44797adbe303b351b895a8de3bb09e566055",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample0_step1000000.npy",
+      "sha256": "9d69c5f583389131d7ab8331f0abfa079d305b205b464625c892c189549155e4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample1_step1000000.npy",
+      "sha256": "d9aae2fcbfe31abe53b918a9eb7341dce145782ce41c9ba28df17b720ac960e9",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample1_step1000000.npy",
+      "sha256": "1ba8ea555715a9f8cc3b1d3769eea88dae8d8c284a652bd7e6f903fb90ef55c6",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample1_step1000000.npy",
+      "sha256": "0d203232e05ac1f1689a79422f2400c329776d727ee3128575c180b5517685ad",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample1_step1000000.npy",
+      "sha256": "a0adbdda385e5f9521c1a1dd646591b271339364b533ff33da1ce0052c5f2932",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample1_step1000000.npy",
+      "sha256": "4e2d0074484b08b5061ed4f691703e44aeec41c3aeb34ef0f3a70f6f9856e020",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample1_step1000000.npy",
+      "sha256": "32edc671374c360291ae145d3dd3abe79fde416cb3e4c053b8347f2e09e95b99",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample1_step1000000.npy",
+      "sha256": "ab2856a55d8f56f316e93f3b8ac15f0f12ea91b7127a4a2150ea8db605f8198d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample1_step1000000.npy",
+      "sha256": "0f96fbadc232bd68fd3c638736cfe3ba38a8e413b56f57bae60a91b648ea0ece",
+      "rows": 146
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample1_step1000000.npy",
+      "sha256": "79ea16b723784c825e68ee7774e3400cfb8083b16d5df2c62084ddaa69af4a47",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample1_step1000000.npy",
+      "sha256": "e424d7cfc40ce5990b025438ee8110bc3c436ca51231853d21118dcd82d84108",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample2_step1000000.npy",
+      "sha256": "476bd1a9055a5755c2e752eca610c337b30a8a569383210bceedbc265711dbf2",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample2_step1000000.npy",
+      "sha256": "ff5be5e57ce8c1a7959e02f72830d5a8636f68d0443b29d7e548f3015dbc67bb",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample2_step1000000.npy",
+      "sha256": "dc08929d4e8ef3defeb70ad802112c98930f49412d338573f07dd950dd29cabf",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample2_step1000000.npy",
+      "sha256": "9c3bed2236763b5603866781b16796919c05190dc5c480d2f49271ca84c10cf1",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample2_step1000000.npy",
+      "sha256": "4010758f3ba947a6f62a91776937dfcd4b08f0d94577def072fb251cff8aca5f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample2_step1000000.npy",
+      "sha256": "65e2b423ecb0eccaed262f6ca1d3fa7168996da46593538529bc242b304d701b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample2_step1000000.npy",
+      "sha256": "c21cdd2c22b99243eca84fe18073265dabc90cc7be6ee64c93eb01feb1498a3d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample2_step1000000.npy",
+      "sha256": "569ee8bc518a42ea724a9132363cfdbe870b48b67a4525f078c7e72352d0d797",
+      "rows": 160
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample2_step1000000.npy",
+      "sha256": "be207454199288721aabf9128f6f8a37cf13f8d40f4116e3862bd575fcd56c82",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample2_step1000000.npy",
+      "sha256": "ebacf89d1ad33a3c38c8f53955b0a3360dcfc4b2a996a121c57a637929732185",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample3_step1000000.npy",
+      "sha256": "8d5816a947065b4ebdb01caca30fab627ca8b99fc1230fc6832f045e6af9f71f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample3_step1000000.npy",
+      "sha256": "a450340c9c51f1ca3b2c18839dfdc384cc3450b75b09bcd73c8b3ec44febc86b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample3_step1000000.npy",
+      "sha256": "37ec568f42cba4bafa2fac8b0ad1f565f5acfe80fd41803d7f5f634d6e5e6bbe",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample3_step1000000.npy",
+      "sha256": "06f571a6fd6c98c5e4c67cc526cf56b97341c8713caa8397cae07f2ce2e31438",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample3_step1000000.npy",
+      "sha256": "21c1eb85cb09a789c1fd9355c282e553e7fac9e4258a9963b7e095ab5f765edf",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample3_step1000000.npy",
+      "sha256": "8212e94b41d80319677811fb1e65861398f7baa51d29e470b63f572c196457fe",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample3_step1000000.npy",
+      "sha256": "e67659daecbe1e99f7366dd11c469881fe0d172ad6a788a5be479002c290b000",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample3_step1000000.npy",
+      "sha256": "38a1c3581c0573a092504747dad79df49152536b42a635123d196bab7296ace5",
+      "rows": 51
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample3_step1000000.npy",
+      "sha256": "e7ee835407c632def5543c75daa4f8f513cd9267d19d37c85255e2cf9c3b6fa0",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample3_step1000000.npy",
+      "sha256": "5654586e889d589559237b00f9a9a79d5322798a6a7990eee5f33241c398948f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample4_step1000000.npy",
+      "sha256": "a1b119c8e8ed3ad82e4479e7bb378a26fe5a9595b5d98de7b9b14b2308b784b0",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample4_step1000000.npy",
+      "sha256": "bc8be9597c79b7450a579db15f95f820f9e6049133a887d9925488f3cafd8f43",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample4_step1000000.npy",
+      "sha256": "07973f8bdc3917488e538897f68c6b26fc45931923cddd2b9a2f2c7e06654a15",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample4_step1000000.npy",
+      "sha256": "db013926c6f3f820456b0634047d7b4ea2665d7717212cfb2d3ee2624e763de6",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample4_step1000000.npy",
+      "sha256": "97bde91b032d3676d5d20474595c6deda4bb2aeaaf26d134c4352f318614a792",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample4_step1000000.npy",
+      "sha256": "f2247d74c3001b383012c84d3aa6f7506c2703d6f6171856ec9fab6c1a3ee5e3",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample4_step1000000.npy",
+      "sha256": "e10bf61e8016dae7f2b19d13f765742f36c26e33761362934e2510e2325b50b0",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample4_step1000000.npy",
+      "sha256": "d836c8bef6020b3de1f12e0192395786bcc8a4cf7177ae2fe5f39e150dfee7e5",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample4_step1000000.npy",
+      "sha256": "c66a70f66b753138d77aeb770623eec8002df03b6b0889ec8532e3331c6c56bd",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample4_step1000000.npy",
+      "sha256": "fe98a76af005a72c3a3bd045d0a6f2b46df4463d549bbca90c3a23623beb5531",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample5_step1000000.npy",
+      "sha256": "1b985defc91116de30d440badd4c8fdccec4d8aeb0b0fe3fec7f3f7b92111471",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample5_step1000000.npy",
+      "sha256": "58112dbfed5b70aec62a3038906fe376517ebfb30bc94787ad45ae7945d95029",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample5_step1000000.npy",
+      "sha256": "8c325491591e1886ab0cc67373af775a32d143835c0a5498c65e246f6af4997e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample5_step1000000.npy",
+      "sha256": "1e2400587836651766c26c8ea8750487a0fc3508492c28398da13819092dea9a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample5_step1000000.npy",
+      "sha256": "3545bbbe3b91d45c79d7a09efa700d26030b7b4e8f878e92088d4dd5bf1e66ff",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample5_step1000000.npy",
+      "sha256": "1589065322bf462354d434cc504853ab458e12bd92fb285e8c43d02a10896aef",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample5_step1000000.npy",
+      "sha256": "2e3c41018b8447f493dcf865569ab60f0051565e93c9a683279b494db4a9b699",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample5_step1000000.npy",
+      "sha256": "5cbde76d3b72feae426f6ce6713cf2c4169c18e54771c9ddc155f06c7a8faf41",
+      "rows": 194
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample5_step1000000.npy",
+      "sha256": "e0dfaa42465c30a5491d6eb55493d79a1fca9dfa88eb00be9f157034ce394315",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample5_step1000000.npy",
+      "sha256": "f9582c9ef8d400d526530424905ecde49cd3d0fee1c926bb8ff2698f2824ff0a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample6_step1000000.npy",
+      "sha256": "eb496c8b98d1fd64bcfe7ea96a786ded7fa0a3cf575184f4f9af8592e104fa0a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample6_step1000000.npy",
+      "sha256": "64fff67b8dfbb671b86e630ac868b42e9d64ae3bf1f864a0fa814948ce3b5e02",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample6_step1000000.npy",
+      "sha256": "649f10cdb6d6afed88a69fd5e69a0a3ee63f66989f32ad7f26bf9c2f0fd5765a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample6_step1000000.npy",
+      "sha256": "9fddad4f2c0e033357b5c1d6fa3340ad5f763bbe55cc09874fc402e17ab11696",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample6_step1000000.npy",
+      "sha256": "4ecff6521e35361b49e16a76215ca412691fe4b4ad76cb12852f40e2913b6daf",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample6_step1000000.npy",
+      "sha256": "58a1acf5ecbf7d17769b09c05499cbc0d84f5ea02156fa4d64d70f1d67ddc855",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample6_step1000000.npy",
+      "sha256": "6058df33462215b7611a972ce6c7bd7b00e5d86c2e629f3faaa9d4dd868206c1",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample6_step1000000.npy",
+      "sha256": "a5d178b25a1d3bb7bcf08dd1b2586a166e5e5a3940f54cf151375fb3ef30c506",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample6_step1000000.npy",
+      "sha256": "007645c8d01b1532c808a69527159ecbe41e188b131c4bef14a9e3a3e906ec31",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample6_step1000000.npy",
+      "sha256": "0b0a90ef169ef4bbf3a3cc8bafe9d6f336ede46c65fe32dbc5f896926e5c078a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample7_step1000000.npy",
+      "sha256": "8536442bc741ff5bf453069c8662f37aea5b303f42be03e73fa94a8168690868",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample7_step1000000.npy",
+      "sha256": "c9c38a52cb07dd76d4a4b6d86603ed448d3036d5c14f2e5bb92a83b7f40be807",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample7_step1000000.npy",
+      "sha256": "7de8ec5318f70812e433159c242af0f1e8b2551b7799586f35d7273b1f7f61ca",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample7_step1000000.npy",
+      "sha256": "d309c82481876796ed8831003b1407f917ddc71a9a5287217fa7269d6e69daee",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample7_step1000000.npy",
+      "sha256": "001d69f60d4c652df972fa269fce5848c72eb5d8781517746e9a884c5fdafdbe",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample7_step1000000.npy",
+      "sha256": "67857cf7bf4af6565475e2b9cc4c948b9bd61b8833a4a8c13b798fe5d636375d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample7_step1000000.npy",
+      "sha256": "95ef7f0ad536b5896bfca9d37a07accc083f28be967378657fae1ba7488194c7",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample7_step1000000.npy",
+      "sha256": "749ff267e7e328ba32867d2f71f20e67b3a6032fd4b6c38a1f706e88ff87e99b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample7_step1000000.npy",
+      "sha256": "864d522dc676f77a7dea7eaa2b0d99cad47fad639773892fe1ce7c568795a16b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample7_step1000000.npy",
+      "sha256": "803a906d276e6b1371325e93151aefddd098999b24971c813f9a3ce0bfef0954",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample8_step1000000.npy",
+      "sha256": "a50a69d649b01eea114604d227726cc132d26a7eb7305e912410d51dc6f02ab6",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample8_step1000000.npy",
+      "sha256": "ee970b1908431e7c169e60bc5bf4387fc81c650cb3a2cb8edc32758ae65279d4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample8_step1000000.npy",
+      "sha256": "6c0f1785b5bf7c19aa25f9cd840ac5dedb38f15d290173abb528ea5a2ff1eb66",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample8_step1000000.npy",
+      "sha256": "19f0fbaea3f4027446dcada245ed7f51a175cf3f08045dde91b7acce69f1e129",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample8_step1000000.npy",
+      "sha256": "74978970cba0c19621f4492f09ccf0b24730f89cb62a4b2d12b40236d1111819",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample8_step1000000.npy",
+      "sha256": "3d06d19db47eb72ba1ed6356e502d28444704ca5df242653c14f59fce8116552",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample8_step1000000.npy",
+      "sha256": "e51f3cb92cd1f7efb0c89e9412ee5b312966c582a10082fab1575b7f4bbf9647",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample8_step1000000.npy",
+      "sha256": "170004af533fcacb1cf1e228c2518ff6afbc896d40c9a2ac1b15666036577832",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample8_step1000000.npy",
+      "sha256": "8654b7c0c7e1eb20c9ae4434cd71783995df145ccf7482b9ee845ea1d5a590de",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample8_step1000000.npy",
+      "sha256": "9b86905ea480cb18ba9606223b0f86db1224a03aa89a2d23f34f288b4d295524",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample9_step1000000.npy",
+      "sha256": "e7a4351639262881f0a56de4e14e053d04aaaa31deb489c3b7be0030fb749ef4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample9_step1000000.npy",
+      "sha256": "f09703a20b635551a8bd93d07b89c8d753b0ce239d659c7fb37f0169c6fdaddc",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample9_step1000000.npy",
+      "sha256": "15936cf11523a93eb1880442fc1f7847d3dbe3e550d5dfe361998a6f93a870f2",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample9_step1000000.npy",
+      "sha256": "90c77dd5b79a1d489987b3bd49d8cd349ac0d37a79cddb1978b23b61eb6b3953",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample9_step1000000.npy",
+      "sha256": "4ecaf51aa043364813f0c556c7201ab7f0ab73408af47c75890562aed98a72f5",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample9_step1000000.npy",
+      "sha256": "be4221f780ea6718ca9dd2fab2ea3b2a03da9a07faf1b1a47d405a04a96d6b1c",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample9_step1000000.npy",
+      "sha256": "ca9e9a00e8532cb4f6e79e2ec277d06997c3248756a9520b8b3d006688ec7ccc",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample9_step1000000.npy",
+      "sha256": "9a9b363c6c03a34c4f00e7c04c813f111a39c032179a9e0ea92fa1fd1435b834",
+      "rows": 145
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample9_step1000000.npy",
+      "sha256": "804321062b5d4030af14e3745a97a666f19e3c9e2030b7d65df882220d91c09e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample9_step1000000.npy",
+      "sha256": "6281a67a198a14d6beb7d5c3a373b20a07700dd29c173148d37622e92396245f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample10_step1000000.npy",
+      "sha256": "0cbccea2aca52d948756b3fd8302af1ba0d03c5568cb8ac212a24986f5633c0f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample10_step1000000.npy",
+      "sha256": "e49e367b5c3a6c8cb9b5748b133ae2517f5eb3af6d9edf761bc1cf30fc0360a4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample10_step1000000.npy",
+      "sha256": "8c704a6db4a6a991968f18832aff639f342a6607a70a6c02dfe06d931edf2001",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample10_step1000000.npy",
+      "sha256": "ef5e984aab0a1dddc597949fa85216a09e4332c396fd28fb65cb85cbdc5bc001",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample10_step1000000.npy",
+      "sha256": "e52711689e56c50e5819821551838f95a83da52186d7bcd1b362b2c2f47c1314",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample10_step1000000.npy",
+      "sha256": "04d5f6c583a0025ffe87ea27796128c348830e08d0154cfd1979e62d4ecf3a36",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample10_step1000000.npy",
+      "sha256": "9d0119fcab769dbb3c0d8dcaee9db2cadd3ab26b6c4749715ef86788773d3786",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample10_step1000000.npy",
+      "sha256": "88c81d8a3e3a7f754a4aa3cd05caa15ba4ee24cf3a227cf986e2c2750cca3280",
+      "rows": 196
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample10_step1000000.npy",
+      "sha256": "7583f53e432b59de3c7009abde7a35554e8930a5fbb7e5a63ee2b79b5f968379",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample10_step1000000.npy",
+      "sha256": "20bb07be3701a723168cc9055691538db425f9b84215f7063154c1c85aabd184",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample11_step1000000.npy",
+      "sha256": "7a50c57be0ede7b9cd20cfb327d9b43b8212ec92d28c2336bad5f484de9afd13",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample11_step1000000.npy",
+      "sha256": "a4093e620d4b0ff652d82a8ef0d3b36a692812b2487793b50f0eb4754833036e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample11_step1000000.npy",
+      "sha256": "003208485e820b2fa18be17c86ea2399d58da79a13218d13ca40d0d0380ea8f7",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample11_step1000000.npy",
+      "sha256": "f770ba7ae717e2dda7c8d531c8f70ad36167b77a1266b90f6d30fb0345c91527",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample11_step1000000.npy",
+      "sha256": "e7316ad9bfb2e13aa110d97e5aacefbebb5d063bbc1b5915a8e43641f068147c",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample11_step1000000.npy",
+      "sha256": "0db65746792a2027972e667aa3eda09aff8260a7c6e7be4bbba862870c6d48b2",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample11_step1000000.npy",
+      "sha256": "a8ef46cff68d5718eaab17d2f2605886a00d9b12bbe863060fc866b69d644042",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample11_step1000000.npy",
+      "sha256": "2ab58389c33852443e433e8b2db8b1c18f644648b64cd357569ed9691e89d40f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample11_step1000000.npy",
+      "sha256": "df1b07d9b5bea2303b75082e7fd9bb4cd68f0293a92b32ae27f0b234917858be",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample11_step1000000.npy",
+      "sha256": "995ee45e862e318b8839bf893245105c3ae4db4d1b8d1f473c4e13177fe1df3d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample12_step1000000.npy",
+      "sha256": "b0d5d9844d884325cbbe06b9bcd505f55294529ae7fe7411c9470c8d33684cd5",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample12_step1000000.npy",
+      "sha256": "83d37494aa6f48006a01bfdf052985d11ebf7032cbbf625a150e26acb55c393e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample12_step1000000.npy",
+      "sha256": "d1f70bcbbeb3f9e615e2ce80061616d3619f2a1920bb787a33d3912b4f8c84aa",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample12_step1000000.npy",
+      "sha256": "9fd8fd4ed9c1be615cf979d988e327c5a91cdf3f133535e67b8b71bcf47f9c71",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample12_step1000000.npy",
+      "sha256": "6822504a1c7e2f360993b52108df546de3e2c7d7cf7d0e2526154a839f64b85b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample12_step1000000.npy",
+      "sha256": "63b9088b89ac2564a0ec8b6a6f9b027340f1b22a0994fd72d6c9f21b09f1e937",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample12_step1000000.npy",
+      "sha256": "67d61812404b9d0077cb598d147b9188a78560541d7a64941b22f26a8973eb3d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample12_step1000000.npy",
+      "sha256": "43c31c3d936451c64c5f07f938023d8f29b23ea283bdf6419eeb21d5d5770d40",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample12_step1000000.npy",
+      "sha256": "706ecfa84e45a74a6c0c290ec9666cdf3849e9a56787601c4b481314f6acc2b7",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample12_step1000000.npy",
+      "sha256": "4bad48e99ac1a49772820e98f3ec41249420e0512faf2b85f004a8c4ca50cdf3",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample13_step1000000.npy",
+      "sha256": "0b51407d599cb3d9e48702aae71b35ee4fb2a09bd16d8ac772abe58c066c9110",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample13_step1000000.npy",
+      "sha256": "3f8d1a3d900aeeaab8de5f32e07284e1b331bd8ba3cd32e32d79ef9cc60d8cfc",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample13_step1000000.npy",
+      "sha256": "9207371291953556a04360b26a50321866c267bbd5937b6ff4ae3a0ed516fddb",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample13_step1000000.npy",
+      "sha256": "708a82f7b6348ee33beae644b483366615413ecde3ec80ad1ece5e27a2b26bd7",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample13_step1000000.npy",
+      "sha256": "3f7c0ce39b5ec649dadc18762275104f476bf85cb65c25f6535ce88499638752",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample13_step1000000.npy",
+      "sha256": "8d783e0c668cfcf11237c01d1bd4dbd266c6f02c9e8850642af5ff91fbf728cd",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample13_step1000000.npy",
+      "sha256": "eff1dfa446f5492b32c72bc13b3e0d831b2c453159b1031b44316a8ca4455ff7",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample13_step1000000.npy",
+      "sha256": "6352580d8f69910e1082a01a8b673dd1b5cd563391f28ea476b9f7f764cbd48d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample13_step1000000.npy",
+      "sha256": "ade88b33a4920f0abc24ebc81a83522681066d5a188f4cedcf43a44038498efd",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample13_step1000000.npy",
+      "sha256": "4fafc5f1244307d091e817bc99f3c630e8b8f3bcc04d2d5b95e1b33a4ba14638",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample14_step1000000.npy",
+      "sha256": "99cc4f8e44576fbe1a5e3037441fe1ae6c6db7b0c48eb13e61bcb37653db2f81",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample14_step1000000.npy",
+      "sha256": "0483faa09adb910428ff98ac3463b6c8c02bfe88f2fe5c831d466dfafe70e607",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample14_step1000000.npy",
+      "sha256": "9b123facba7abe8c8cad0c852b0d9c8acadb6abe7f7e02dbc0dc7cf820d309ee",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample14_step1000000.npy",
+      "sha256": "c1afaceda19a0eda95d409e509e2cf22de576080499b1389e93556aa77accb07",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample14_step1000000.npy",
+      "sha256": "8c30e8e6d4f5fe8f3711e1489890bc2fe2d004ec5c09780bef5e61640a2c9f1a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample14_step1000000.npy",
+      "sha256": "4b291f3801d2a3fd0edc6fbe38d0831bf7bf0c5be58e89d53a6669448771195a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample14_step1000000.npy",
+      "sha256": "cb0fda8e181b0f9fd16ad7d1c569a9787c26ccd29c12b37080ea49532e94d49b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample14_step1000000.npy",
+      "sha256": "153020f739bd70f2b2732571802983c476a1afdc8720b3dc9b4a3e523538b17e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample14_step1000000.npy",
+      "sha256": "d92022895036513097ba025f51c2b6fb2d1128c6b4007a07414b6d06189ac234",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample14_step1000000.npy",
+      "sha256": "f78939ca2f3eeaa74dfb674019cfc72bc2c11bd6f2a6a3e58d77999c2ab4b9f4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample15_step1000000.npy",
+      "sha256": "be9ef36bfe2d524d3825f911a2d1c0b96aea915c96f5b5b338221cc49b4d53df",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample15_step1000000.npy",
+      "sha256": "60c13146d9b1f691885c2d90e42c72dd3854cea3941f237b1988d165cad36337",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample15_step1000000.npy",
+      "sha256": "6bdd50b071cadd7b1d02dceaae47cffe8a7d5a1d070c526d6a7b7e2786abc226",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample15_step1000000.npy",
+      "sha256": "1d6ddd131f4dadcf0680c85f9c65d57d0922f13fdde4f6dc103f5d89befdab75",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample15_step1000000.npy",
+      "sha256": "442ff0bc5cc20f5e7590ab0ea79f4acc16477944baaf1898c3b8e7f09d0e3245",
+      "rows": 49
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample15_step1000000.npy",
+      "sha256": "ec321332bdd9175e4d850bc9f15dae81e6bae528f0f3d53f2ed1aa8746a943cc",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample15_step1000000.npy",
+      "sha256": "be665f146d81fba8375e3a640ce23a12bff26795b8e068c6f34463ec597fb427",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample15_step1000000.npy",
+      "sha256": "0106edc4d2c377ecec1382b317a28a5b1a584728976b2ad262de78057608b8bd",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample15_step1000000.npy",
+      "sha256": "dba6f437fce4ebbcb4e8dc4cb3123cf0a81ddfc9cc9a240a161b8492ca5c2b86",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample15_step1000000.npy",
+      "sha256": "93d7f322514829ef331de655c36c7b6d2c1ce4f6da67efa8b125a96699cc98dc",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample16_step1000000.npy",
+      "sha256": "535151b8140355d2dd07b26549496b6f2816ca279058624cf37024a882b4a711",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample16_step1000000.npy",
+      "sha256": "672904f1dff63a3aa0d83d94f1710e0f9e0f96a6e078303f3c7a21ad99cfa6d4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample16_step1000000.npy",
+      "sha256": "6b89bbe86f8b96021062af93c4a09b836403f588dc3dd95efaa6934d9e4ed4ee",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample16_step1000000.npy",
+      "sha256": "a14f9aa24565a88df86a05b7cd39f7532d0a8e3523ebec807ca57889069325e3",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample16_step1000000.npy",
+      "sha256": "9017647a464cee9c1bace2a30c76910fcc8733e3d3da052cd118a02cc0babfad",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample16_step1000000.npy",
+      "sha256": "ee7707ce2e714ce1db49438f25fd38c0bf0bb9af1b09baa1975bdb8ca1876550",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample16_step1000000.npy",
+      "sha256": "c7359d003de470031ac27bcc5a2314346f960340859eff4496abce1e92639945",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample16_step1000000.npy",
+      "sha256": "20acedfac3406bd6b595c84abad2ded924e2adcd2c03db904817341bc7cdeb0a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample16_step1000000.npy",
+      "sha256": "7b945d4b762520a56ad7792901e3ec19f576cf13e0ace3972bff84daa47b6183",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample16_step1000000.npy",
+      "sha256": "777e855a9beefb3b1884cce21be7d1045d16b80add5e2fd86307a52c85e452cc",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample17_step1000000.npy",
+      "sha256": "cee897af76d4b4d8f2f562f5672bbdb4bd4fe4c06441f5ac9ee72bf23fadbcd5",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample17_step1000000.npy",
+      "sha256": "f6ce23862adf31ee9dc1a341ba7085daeadf311c3ff35d07ca39a72bdff2e6bd",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample17_step1000000.npy",
+      "sha256": "75cc6b1d92c56d8e42e6cc5d46849a95e641b7e4e69d0191ae41ca3a465d5ab4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample17_step1000000.npy",
+      "sha256": "373aa6dad6b3ef784e7b28ab7bf8aca8596f41fccbdcc6e10e822fbb402541fb",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample17_step1000000.npy",
+      "sha256": "c8bbe8f8b0cc8fb2d23e59fe5f0b25c01889311643bd85143ef27fea91e449c4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample17_step1000000.npy",
+      "sha256": "ff82d73f27924eb68b09806b87b2997fbd1f1b3138b480310ac48c0e0b9ba031",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample17_step1000000.npy",
+      "sha256": "2bc3008a5048204804604b7f896ebd8a800a336cc349ca85d16658a0bf142593",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample17_step1000000.npy",
+      "sha256": "597009dd2a7470ddd01b17d23434458011bfa8fab7755df3a17a1a6053fad4b4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample17_step1000000.npy",
+      "sha256": "46ff28898981a79b4aa54898e8f21c80075b80a495a213ab5cd2809aa1042436",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample17_step1000000.npy",
+      "sha256": "8ec8747b9c98b1e1756d4825c0cfbfa74ff56eb48d33512d90d7b2ad8112bae5",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample18_step1000000.npy",
+      "sha256": "de3c480753a18eeb676b988249ae9f3248de1fbbd60ae246de028d5353a92f35",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample18_step1000000.npy",
+      "sha256": "fe6532a13c65b7816b4a22b2a74e71ca33e9e8747e07ff1e12795906fe3219ea",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample18_step1000000.npy",
+      "sha256": "17b6aa17a1562a5672d85b527d79bc2cf2289960fbcc1633df9671698b774d10",
+      "rows": 186
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample18_step1000000.npy",
+      "sha256": "805bc1efcd408dd129395ab14acd394b2ac7b209bd10aacb39458ab4ec39516e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample18_step1000000.npy",
+      "sha256": "291f9d2b09b3a9f90fca89b2a8a317a7344c29a0b585addc6354e01e27974403",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample18_step1000000.npy",
+      "sha256": "71ab5daa533c7606606f819e897213751e44955c637635255764cce9c05013a9",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample18_step1000000.npy",
+      "sha256": "4337a9a4bccec81339498f784194d61f8294970147719fe8f513b98ac7fa5539",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample18_step1000000.npy",
+      "sha256": "ff8bbb4838c0a9149fdec48582878b5509560d75681a67ad016d456e275d471d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample18_step1000000.npy",
+      "sha256": "b41eeea40e7935d66b6e2fced90b4d7c9d1b43222177b1dadaaacd4437d799b3",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample18_step1000000.npy",
+      "sha256": "b0462477f64f9f1771871c89ca06185dc22d89d1df45ab184c762430f25d702d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample19_step1000000.npy",
+      "sha256": "956b343f23931663b7f4bf7b1fd82dcf2982e26456205d8905fe18aa3ad3b345",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample19_step1000000.npy",
+      "sha256": "c1f04ae903286c0832213b9642319f523bc89a68574b883eedb24a864c55bded",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample19_step1000000.npy",
+      "sha256": "96263592deabd5ce5295c79c7f44dc6243b01dae0e8d70052c56e4310464760f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample19_step1000000.npy",
+      "sha256": "b54f3d6094f56fb16fd73b4ff528e6752dad21650ab6fba1f9b183dc761e500b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample19_step1000000.npy",
+      "sha256": "cbeff51c8a31bb02c054abb593186f6ac23d4368ec10b385e649928ae1b9a2b2",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample19_step1000000.npy",
+      "sha256": "9cabb2e1ea43013c30eb9d886fc6fa26ab8079b4ff5e4ed0926ad85e5c4ea723",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample19_step1000000.npy",
+      "sha256": "b1f0fb9f703031b79ec8366278d8068cea3bb8e6808271b12294a1be55694d6e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample19_step1000000.npy",
+      "sha256": "bb4844ee22a366513b3f9fd616d612f812c06e6b5cac833b3f44374c69c7bbbc",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample19_step1000000.npy",
+      "sha256": "91122e7728cf6b84a2ca067d32bc1dc68dc86a0b3554a3283efff55858657323",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample19_step1000000.npy",
+      "sha256": "5541f6db3d52f0307fc87233d6564436effb722818318a09e1152d0db81f9e10",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample20_step1000000.npy",
+      "sha256": "065f767110467029394dbcb93b8d8d95a8d2d7308cea03c368fec4f9738a72fb",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample20_step1000000.npy",
+      "sha256": "7b26f85d510d03bf4728459796daeab5b410ce56e54ce678f13f3b398170065a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample20_step1000000.npy",
+      "sha256": "b9fc550f1daf32b71152b9be3172e5c820d562193487eccc89d025546608e159",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample20_step1000000.npy",
+      "sha256": "4a25fdf236a441e0df2eddcb0ed9e97de49e937bfcf429589d28512d0c7b8e7b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample20_step1000000.npy",
+      "sha256": "2aeb9555387698c1227f5352bd54a06e2af8ad6f2595b50e3c5163510f7b952e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample20_step1000000.npy",
+      "sha256": "e67f008b53156d2cb80d7e57d6d7455bcbadd12b6b32e5e7a96552ab1c27c73e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample20_step1000000.npy",
+      "sha256": "e18d235487b0ad90389310d1e469319e36639f06500fef09d41d9a607ff1194a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample20_step1000000.npy",
+      "sha256": "d39444ed93f950f6e4baf83545b4f0232c9f13355d80bd2367b2a5705740e458",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample20_step1000000.npy",
+      "sha256": "a5627ca5f99d01b6a3d61dc807287cf444b6808bffcb28393e138da5fed2a483",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample20_step1000000.npy",
+      "sha256": "a39be2289fa25598057598bbacbb461188c96f424fdb7ab4545d65948ccc25f2",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample21_step1000000.npy",
+      "sha256": "3b790be3afb064daec485e9acd7320a8f1fb7b84fa5afc77d3ada63c43f3054b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample21_step1000000.npy",
+      "sha256": "21a3f999c3f4b79397e34cfdf7a80a6125fc357c496c4b51b64d094e668d6b08",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample21_step1000000.npy",
+      "sha256": "0f8340cbb27798a263a211f22f527b55b3bb347f804c60138883d26291027a8b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample21_step1000000.npy",
+      "sha256": "755f5f2b6507b344153453cf969ef0cbea22b64036c66919ff3d1e5ea1486b3f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample21_step1000000.npy",
+      "sha256": "d28a05deba25a804ca03cf934d803cf3d5ff45c9df9254a9f872a8324a14347f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample21_step1000000.npy",
+      "sha256": "d1127d6aba1397498b517689974ebc43957414fd5d24b0e2a5ca9aca9119c2d0",
+      "rows": 73
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample21_step1000000.npy",
+      "sha256": "fd76963f2ec7f462e6a6024000ed11635e92f759bd931c29149f9362b49fad2c",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample21_step1000000.npy",
+      "sha256": "eec8add2cead18fffe1bd7612029fddb21c2ee32d2dc454781834a36e923e3dc",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample21_step1000000.npy",
+      "sha256": "6b586dcb3ecf8bfa0a0f3a75a6590d22db079d11ae3d342c2650cb3881ee4ae9",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample21_step1000000.npy",
+      "sha256": "277871de33e7c44b4f5a30b3ddb5fa1a3229d0390e44c604d6e0693aa0b88df1",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample22_step1000000.npy",
+      "sha256": "e1339dc19e25bc705b69969ddc448039e040d48a323f268e59e4ba09e36b476d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample22_step1000000.npy",
+      "sha256": "ac66b18ae32cb560752d91223ed4c410afefca914bd9bbde5ce492975be3491d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample22_step1000000.npy",
+      "sha256": "753302c2bd018e54cc4b08e471200c6f7c35bf991f5ce1d923e0ff3b60601292",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample22_step1000000.npy",
+      "sha256": "93cd78dfcba9f8533b0c3bbc88d6d6d83c5c8e10af023a770b9477eb64ec862e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample22_step1000000.npy",
+      "sha256": "c18fc141dcc2b72f49636c388ca5148d4a91db1a76c86176af6fe6bdfc5996a6",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample22_step1000000.npy",
+      "sha256": "4ebcabbf192f75724948a4a0985968b52db569fb5f76697357bf9993d67e704e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample22_step1000000.npy",
+      "sha256": "c111c66f3f65387c634f9a09c83c426d577fd9d874e1d366a3b91a523e90d9fc",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample22_step1000000.npy",
+      "sha256": "4085b09a9007ab60c8d2ba5609294e5d1f158e8a026793d3d58de235818df68e",
+      "rows": 57
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample22_step1000000.npy",
+      "sha256": "da28f3228ca6ad0715da7203391119e1e3d604be38e1259705f552f28dd9a26a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample22_step1000000.npy",
+      "sha256": "2a2e63728651b39585a74d919b032ca639494d928852653dea897cb80cea0b68",
+      "rows": 153
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample23_step1000000.npy",
+      "sha256": "f9b65ba40c21cccc4248732b92c8bff137d9cadfdb30f3a36c7d649fa2d32dff",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample23_step1000000.npy",
+      "sha256": "4dfb31e51c9136eb660af30c8d3a3b5c72be96b99c60fb7fa733af47a4eb1b3c",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample23_step1000000.npy",
+      "sha256": "6ed794f5d17771f80c0cf3b2f20e1206a452636e67f66fd2fd061cb795f0f2df",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample23_step1000000.npy",
+      "sha256": "bbe9ea306396f5816e69635fa25e37a2bb301e8871e79d17b6e6d2bb4c18a958",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample23_step1000000.npy",
+      "sha256": "2918115be50c7bbde0be3a72411cf43ac1cacbda7caa0d4054ac15dea8ec76f9",
+      "rows": 53
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample23_step1000000.npy",
+      "sha256": "d83eac689d82b453e17a3e42c5d8f9d56e485901d4ce1e56e4f90bfe688d53f0",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample23_step1000000.npy",
+      "sha256": "77816af8aea3b5abc72901fef6dabe9a7575e981e9b18b451c222607b6976763",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample23_step1000000.npy",
+      "sha256": "68db71493101756be5f392f0f02798ef49fa73412b6fa9271f3e98b4f19c1201",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample23_step1000000.npy",
+      "sha256": "036c475a4326512f331f2f9fefb204ae4b7f0506501be0c223ba5a11d5571799",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample23_step1000000.npy",
+      "sha256": "92f95da5ab954a1ac2e450c69f408c28c312858819c25013883e0b660042b5ef",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample24_step1000000.npy",
+      "sha256": "333242c208e6ac463e8ad9b21182b46f056fefacac7b8b937af3fa81ce3ceca9",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample24_step1000000.npy",
+      "sha256": "931424a6d330a8d843b94f4b736f1855921bd948378ff8e6a458cba60d1d4c47",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample24_step1000000.npy",
+      "sha256": "3d0e81013c3cee68d75c661858bcdad0497ce11e267f60296f2d2f66a3df68fd",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample24_step1000000.npy",
+      "sha256": "bb74e792044b27268343335a12e11527d2031ce49b8e5119df114215c0b71593",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample24_step1000000.npy",
+      "sha256": "8c23605e393135b7c2efd7e189c28e22b7447dfb85ff3a8d45ac867a4a9acde4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample24_step1000000.npy",
+      "sha256": "1cb757ebfadb8091fda041ce89cb5458f12be325d42d21facc976f9224986fc9",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample24_step1000000.npy",
+      "sha256": "797918adfd8c85095af024b74fcf1e84dcf0ad3bb4ea83bb076e57c6bf698715",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample24_step1000000.npy",
+      "sha256": "83b78877e04f8805fe760f7f64011f8bf272b3f264b0fdf13aceba47c7f242a2",
+      "rows": 93
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample24_step1000000.npy",
+      "sha256": "d0b3e404344abb9db1ab74c55dc4f85cd90f393fb40bd0fb2226b4b57a978531",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample24_step1000000.npy",
+      "sha256": "01309b2e0673d66e26297d93f96ad4aa894ac18ef0a7601280b9d558421d4146",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample25_step1000000.npy",
+      "sha256": "6afbf3aad4407eed874bed318dd359bef5faa708baeceff298be76d5decfee66",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample25_step1000000.npy",
+      "sha256": "153f5f2d1571325ce9d5b60eb1f373e0cf46325e748f0662fbdbbc2c1d6d394a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample25_step1000000.npy",
+      "sha256": "3d2e2971f0630ad2b1531cfee024985c167a111cd4f1f4e038acc726d9cc5669",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample25_step1000000.npy",
+      "sha256": "4277cfd9c4d2a48537cb19118993850726f0ac0bfb453ef9792ab9efbab67c6d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample25_step1000000.npy",
+      "sha256": "8f255b0c4cd4fa950543f5796875e6ad6dc71db0755d61b771c5439df7d10eda",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample25_step1000000.npy",
+      "sha256": "d938b442d3990094c9f36769d843587c6ff950178ecd542b3b80476a67bd63f7",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample25_step1000000.npy",
+      "sha256": "cd6a42ebbf9037bf81249847d5b6cd6bf955c45733f260585d6fb265516f068f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample25_step1000000.npy",
+      "sha256": "f59fae23a1bb6f6c99ad23350cb0347231e509d45be653be29d6f7478994f52e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample25_step1000000.npy",
+      "sha256": "187512acb243cf1c28a5f3cfde697f5c18b569b103c59a2c6c574662be7871a0",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample25_step1000000.npy",
+      "sha256": "c96713198ae046ddddb0190ca6a9910b7674b755f8bde90ffbd792f2d280769e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample26_step1000000.npy",
+      "sha256": "e369d853b979d3f29eb0a8d9e4d22a802e8da9d1faef5264a95f9c2c874bc97f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample26_step1000000.npy",
+      "sha256": "c6f77fbed220e3475b2fbdbbf8cefc898f12cbdd676e0be63d4caa6c86ab514c",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample26_step1000000.npy",
+      "sha256": "53336cefa35de5d5b4941910d24a85a40209d3fa538a92c2045d89f5ae77defa",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample26_step1000000.npy",
+      "sha256": "0da0e97603f658a07b27828d3f1458a869357a3c50df6730d604168f39e9167a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample26_step1000000.npy",
+      "sha256": "e15571fbdadfea04d167b08e82ef208f7891285e60d413284b2264a21ecae83d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample26_step1000000.npy",
+      "sha256": "599b3b0c290802980af074fc67b7a200f2c0dde7908c6a8b08e39fafba05bebb",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample26_step1000000.npy",
+      "sha256": "f8cd10de868ad5b792b0b03f4e9e25f8ab1aff6ee3ada9d9da75220948d70f2d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample26_step1000000.npy",
+      "sha256": "b54ce242809e587c82ed3acd8f81173c9211cd24450e693b2d6ea6b22c9cfa2b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample26_step1000000.npy",
+      "sha256": "abf90510a83df23096e6511ce4e8021d8f86063918f6938906b03921061a3525",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample26_step1000000.npy",
+      "sha256": "cfb1ea54086c52aa5fab9a7768bf3ece812488b38fd155c077dcb3829cbef5a5",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample27_step1000000.npy",
+      "sha256": "4450cf4243abc4247e1ed7ac142d61d11c701c976d07975a8fcad69dada85ab0",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample27_step1000000.npy",
+      "sha256": "4b4b9e70e027b63200ed16a761f6af5bf0b2c2fe2ead63460b913f6dfaeed987",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample27_step1000000.npy",
+      "sha256": "a0bb513fb1a6d88acbb98d83bc8c892216e317de6861b92784d49908803f8d33",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample27_step1000000.npy",
+      "sha256": "8140ab93abb7b2dcb04a2756d5470a6ec69d4fc152bb44152f724062daaa427d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample27_step1000000.npy",
+      "sha256": "0e6d99273ebdcadd073148f42023f726236cd655f4fcbbf40919ce3d90279c2d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample27_step1000000.npy",
+      "sha256": "3305c22817a3a74195448d48354158bc43e698135d8706b8e96bbb55b6746d36",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample27_step1000000.npy",
+      "sha256": "2048aed76e3b4556670e22b2f060d9fe42079861013d28907a0fbe050aff8545",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample27_step1000000.npy",
+      "sha256": "41865bed352bee3b18445129618b4ccfdd22202e496d07688da0056a63f4656e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample27_step1000000.npy",
+      "sha256": "748f4519053f6dd2b8db16471a03682d050c3a9d264da18b9f1679911ef0a18f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample27_step1000000.npy",
+      "sha256": "7ce5e8c16cd3f9ef8b1277b3b992d5e82b341c4d4ddc3f729ff8132893dd6ecd",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample28_step1000000.npy",
+      "sha256": "0cf87666414fa1b70120debd87ea8a1d67df22202adef18c6027edb8b6abc512",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample28_step1000000.npy",
+      "sha256": "572cfa1cf28632a3ad89db444dde2c3b80462e6ed5b5ea84d12d4ca097722d0c",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample28_step1000000.npy",
+      "sha256": "5aa5bd39f32b6995b63903db8c9b716839650cf12818abd0e31996b61b77d191",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample28_step1000000.npy",
+      "sha256": "1f51352ab4a852ca42c26f317218b6f3cbfa1cd53379fe12418d00b64acd411c",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample28_step1000000.npy",
+      "sha256": "d0f33a843d0db8f330b5fcccf76ba6211a7b1d95c792d10501be7484aaf6a979",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample28_step1000000.npy",
+      "sha256": "02ede562de91c1cb96dc661d623841e902d67c7442470fe2690fba291318a3aa",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample28_step1000000.npy",
+      "sha256": "c3cba56be5f2add6f90b5ba2e2e2b03ad07872947546064e6e0ffa558ed3a620",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample28_step1000000.npy",
+      "sha256": "9091b676ec101ecf01707a98e7f3c5ce1ea1a33368ae915e29f9bcf30e0d87c2",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample28_step1000000.npy",
+      "sha256": "886ebd2e6ea9392fa5c1f10d4149c4dd5ce3a5470d78b12ef1b42eab708b7b5b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample28_step1000000.npy",
+      "sha256": "fae3e9351b9da793d6576b963b9c45dd4fdc800f3cb0acf1393505cefef09290",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample29_step1000000.npy",
+      "sha256": "b435501ee8ba241b952ca604cc8e8ffce831ded8cb77e7d452c17e4dca2367e3",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample29_step1000000.npy",
+      "sha256": "7f87e8b30035cb1278732509c3ee0b4cb3a7e833157e3e62221a78416c0f193b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample29_step1000000.npy",
+      "sha256": "8b420cadd000d32fac90cfa79957d18f881227492e795c98939797d722528da5",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample29_step1000000.npy",
+      "sha256": "c25f47ad1689b2fc372b9395d84647d89a42299b7612a05c1c73a6a3abdfacae",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample29_step1000000.npy",
+      "sha256": "4e33212a57a00ddefc81b43993687f7ead5f2b78f6891dbd10c440cc6faeefe4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample29_step1000000.npy",
+      "sha256": "24e55974e135eb909dc3fbea7caa4ad9151242917fb5d52cfae94c75a0f80e76",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample29_step1000000.npy",
+      "sha256": "fd87615652b5ca19b736ae652963800b1eb8c92d3647a2d2601ee01cb5150738",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample29_step1000000.npy",
+      "sha256": "8e5dedbc61a868b5d561918e5eda3cb76a5b9b8cfeb1eabcabe2a9441ef0c49d",
+      "rows": 85
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample29_step1000000.npy",
+      "sha256": "0a6da1137509825ae765d5bbad9fe90c16ba3e562183b250d3418dacac66cf37",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample29_step1000000.npy",
+      "sha256": "598eb9c60b30d316d800682b2b0a8050b14c6f4c1ee8e9ae6ca0edbaa230e670",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample30_step1000000.npy",
+      "sha256": "5773298886a46ee68bd39a8059e248dd684341fb3afc55a6dce2e0407b71ddb3",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample30_step1000000.npy",
+      "sha256": "89902d938b6da1e13ee6e4416e6a7f98e08b6357c6981d7f20a53c7abbca1125",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample30_step1000000.npy",
+      "sha256": "43683114ae9300bb319144d7a45663d1e7283bfa7e19d9fdb96109936cdf24f1",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample30_step1000000.npy",
+      "sha256": "6deb0a43f05c73727b3ded97a0629b8d51bf12dcfd833da76d9bc519533ccadf",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample30_step1000000.npy",
+      "sha256": "5d6350f402ae91cabf7212814623a2b66147c551b72439a6ac1898632f1e0b24",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample30_step1000000.npy",
+      "sha256": "9e68bfb06471eff89cb99632567f722920732cad299cee1d64b5649ecaa98642",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample30_step1000000.npy",
+      "sha256": "20a4ceb02a25b5c6749c8a39cb8c56e36ac84464b4e29952edacc3045ecaf8c3",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample30_step1000000.npy",
+      "sha256": "19b60790482b76a0b702409203edd27860b7e69501d76b2e952baa923ad9b38e",
+      "rows": 103
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample30_step1000000.npy",
+      "sha256": "99a2a639cb622d05b187ee53270753c7fd2901152ccef077aa05c4cb18315342",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample30_step1000000.npy",
+      "sha256": "91258dd531e54a27ee3d76747db97dec10b0d564bb452b49254092f98d12084d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample31_step1000000.npy",
+      "sha256": "d9295cc6ca7822b19c811baa42d028d72b99e9563199275bf471b63b6bed13a7",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample31_step1000000.npy",
+      "sha256": "d4ccfe21e13ed9a10eab1aacf626d11814eb7b1aa05bbe4057a0c406b4366282",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample31_step1000000.npy",
+      "sha256": "07fa8a9f96d69eba0d96dfca02feda0a771511cee7017c985c53aeaab8e870af",
+      "rows": 98
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample31_step1000000.npy",
+      "sha256": "a75ef8bb97010762093db15985070dd97b4a484f18ad0bfca3f4b3d992998370",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample31_step1000000.npy",
+      "sha256": "c6586eb9994ab7eb0a13aab901f7116814226f7ad99180ac8197319d294554d8",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample31_step1000000.npy",
+      "sha256": "4676236f17555fd3280ad5a607a6b84b07141ff436e09996e241bf2a743f192d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample31_step1000000.npy",
+      "sha256": "6e7d26b35969c6aab0aecf7a4c228129deb954256fc6bdce3f4b964223172b4b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample31_step1000000.npy",
+      "sha256": "38d45223b9f50dc4b9f8160f76a07dd88eab9de32fc8c47905f7506ecfb5fe29",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample31_step1000000.npy",
+      "sha256": "3766afd916b432d13ca67a795712c241c72bac609e42356976594b0378dc4c52",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample31_step1000000.npy",
+      "sha256": "af05a36cf32a3312640ec813017ca863bc8ea97026339aed8a33c140830a7fd2",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample32_step1000000.npy",
+      "sha256": "1d24e27766ad59bb178cf5516fe1feaba40e31c4eb57b69fa719e35fef2853e2",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample32_step1000000.npy",
+      "sha256": "019c6e2fe1267970782dbefe43b8ddbb0ed954270828d8dbb1d56e52acee19d3",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample32_step1000000.npy",
+      "sha256": "376bdc4c0250813843f9655bad6223af13cab56e68ebefb442350bd5edd11c12",
+      "rows": 66
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample32_step1000000.npy",
+      "sha256": "6d208bdd3f0018308e0d5f819107bfdbeba6c2e2036c9e2fbd28802c3cb11b3e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample32_step1000000.npy",
+      "sha256": "1182e46ef1f30f720b8b65061d9e30849fb2066441ad1bbe6fffb1081b2bbd4b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample32_step1000000.npy",
+      "sha256": "0a3042ac5536b17d9c5f3b19a394d068e196846a90146047297471681a58510e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample32_step1000000.npy",
+      "sha256": "8b070bad592ce9dc3bcf0c652932e9e9dec9532bf9d119fb58097ec0c7e8af83",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample32_step1000000.npy",
+      "sha256": "c74b9260ca622cab8c88da86be2625760f94c10ed2823d9b59dd2632678a146c",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample32_step1000000.npy",
+      "sha256": "d5328c91ecf44795bbd654a413e1a4800d00bb2291e60799195495f4276c668c",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample32_step1000000.npy",
+      "sha256": "8422c85da25e1ed0ba715153188a86c2fe771ccc94f1a1d7822738f0ab40ee46",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample33_step1000000.npy",
+      "sha256": "83ba04efbac06d3b4a76329b4afefc3704371842714edc3d35114c99a05c9bf3",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample33_step1000000.npy",
+      "sha256": "32db6393a95de939edbb53a63755e99d3a19f1cf1b61bb50b9e34443e0409209",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample33_step1000000.npy",
+      "sha256": "651ca565f515aa1a77c84c4fe893c6786ff973433bb669670d71fa7a25921abf",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample33_step1000000.npy",
+      "sha256": "0b76fc4a50b21de0956f9188a92bab9e263169d155333507316dc51ad4a065c9",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample33_step1000000.npy",
+      "sha256": "cbeaaf9ab6315796e438c713f045c282ff4e2a0eff21ea1a4f82427dd6b2760f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample33_step1000000.npy",
+      "sha256": "6d588025d6cf1a08e036dbc3cc71ede6d129691e316c7343bc3773b00aeb9a76",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample33_step1000000.npy",
+      "sha256": "bcf7bd4a2c057cd521c6cd0c75b57d15d409121fe0d9b78a391ef10598cdf1af",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample33_step1000000.npy",
+      "sha256": "0b4f651a961fc832b82ccbd71b3ae7b9cee1c9a44e5e8896dcca01deaa1edd26",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample33_step1000000.npy",
+      "sha256": "f75d763a6452e83b0db1cfd33c6a01622fac89a3d0a553f66bddd56b60bfd106",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample33_step1000000.npy",
+      "sha256": "ce4d2a5f51636a28a3a54930d2e621b07af63720b3e74968c8321100b6d7834b",
+      "rows": 156
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample34_step1000000.npy",
+      "sha256": "aaf31608825670ef9ed1e77eabd3f8a58af84e7063d3058d062c72a35d69b41b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample34_step1000000.npy",
+      "sha256": "ea436bed8969f55a4b54a340ee09f014443be62f6ac10a5bb605d40f9e97fca1",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample34_step1000000.npy",
+      "sha256": "855cbc18bf254abb54faf74c28540bc1584e680b61e8f595380893d2f6fb7a91",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample34_step1000000.npy",
+      "sha256": "67051aa242a25a23d8e3e1c6fbecbdc2160fcece086f037dbc55a8f274cffb2f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample34_step1000000.npy",
+      "sha256": "71e2642f71a4aa5c2f4b58a578506f934381a2861822dca7de87f2403056f6a9",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample34_step1000000.npy",
+      "sha256": "5e3de742f66710bc5d9f728f8954d913c7a7ac6e260d52c63fc140c848926041",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample34_step1000000.npy",
+      "sha256": "94f31db1ea4086b64395332a789d9d7a4ca8e8da29b0fbf6afc6025e801f8c37",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample34_step1000000.npy",
+      "sha256": "3015071974a874ddff81e074dad73be170cf6b8bf3d530ecf1ba50834afae112",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample34_step1000000.npy",
+      "sha256": "b4684010b23168f4550a190ec28986d82e0f594cfc60573edfe27a2778587dff",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample34_step1000000.npy",
+      "sha256": "dbea7323d8add6a69e18ceae4c085979abc2407f67f92e7dffdbc320be8c5001",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample35_step1000000.npy",
+      "sha256": "0ad5f8b9d5738d04fb192999ba26b757156c093b10183df5049a3d5da6db2c41",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample35_step1000000.npy",
+      "sha256": "18636023c1f62c3c1abe98370614b5c7017a35a3426a25b4842c2d1096f47a62",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample35_step1000000.npy",
+      "sha256": "4a47533392b509a21446b64205a282179e445f149370bb3a0052166e3f9886e2",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample35_step1000000.npy",
+      "sha256": "de2b7cc5146b00594798f001e4125c29f85d0c2e721f8631bf5152423e510099",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample35_step1000000.npy",
+      "sha256": "9b717d8bcd46fbe3e76240b11e0ed0d61fe9296251cc474582e3c6976ef2b2d0",
+      "rows": 50
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample35_step1000000.npy",
+      "sha256": "af90326f23aac59cebe3cd1e769e0ff34cf4c5838e96800e77207e561e107bf0",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample35_step1000000.npy",
+      "sha256": "020d20f64baa226259b9bb5612de666ac9976091d3a931587e61b017b382a505",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample35_step1000000.npy",
+      "sha256": "17a140467d2d12981b4a8f227667f25266eac154bb7c519966ea0041dc721665",
+      "rows": 76
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample35_step1000000.npy",
+      "sha256": "6b2e54d60979256f53881df4dbbece29aef28087d14e77fbf5113dd33a2157db",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample35_step1000000.npy",
+      "sha256": "0409bebbdc50b2941ef781263f641bfde1cd0acf4a1118c63573544f8f33a7ce",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample36_step1000000.npy",
+      "sha256": "8162f8ac67baef868d38ad90abbcea38a2368181ea03eeb70f1da9bb30578175",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample36_step1000000.npy",
+      "sha256": "50a4c8bffdbaa417c091948cc58455002227fa4d8d48deab4aaab89ddd4bd865",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample36_step1000000.npy",
+      "sha256": "2afa462c6353bea85fd1ef4252eb039a2675ce3f96842d9bdb574cd985ac6984",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample36_step1000000.npy",
+      "sha256": "6d9e0ab2081b7deb6af2d7f6a87876083fd21c6eb83366070cff162560aa51f4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample36_step1000000.npy",
+      "sha256": "c2836c1cd71ae9eec825613e778daa2f6fd0f690ee6ceaefa7f6d1abf038676b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample36_step1000000.npy",
+      "sha256": "652229a28b5f1955a82b2258ecfbc2d010a309d170a48fec98afde01593aae5f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample36_step1000000.npy",
+      "sha256": "98f15f7bb682cfd98833ef5fd4b683dfb065a17dc05334a29886d960ea3a6e0a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample36_step1000000.npy",
+      "sha256": "b14f5f2dd95f20bf5a63297a716a183d9f9436819d58fe9b68d10467210ea2c8",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample36_step1000000.npy",
+      "sha256": "144ccb778966fd2d20744de3e2c9f493399ca61878af1b8032ba471917072f31",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample36_step1000000.npy",
+      "sha256": "9749ef9898489e253d8c4efa0657524131df1992b4d3d1a7daf6c4f99d2bc6df",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample37_step1000000.npy",
+      "sha256": "994d555000ee83842d4cd416aa175f3b2b48a10adcb6ea283b89444d3dd0e349",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample37_step1000000.npy",
+      "sha256": "d12ddb5c69680309a74b654ee4aa429996e568a06ac188df7ae6794aa9a66f73",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample37_step1000000.npy",
+      "sha256": "a4ae586ef4e6644f0e4820d107ad3d8faffeccb3a46371e72a07e89a7a559306",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample37_step1000000.npy",
+      "sha256": "d5cf958977f9e3f023e1100a9f82f4efdb13b9c0c668c6a38c2a662d723afcde",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample37_step1000000.npy",
+      "sha256": "10c772203d15a63dec067439589cc9da5b6bba2d0662538d4875dc316713aa59",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample37_step1000000.npy",
+      "sha256": "fbffefe5ea133923bda25e40ba1748a73d0acd4d007ccccd303f837f9822ecfc",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample37_step1000000.npy",
+      "sha256": "fcbac852e470504610483b4e52392cd8acab002c74fad9d1942319a26b690932",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample37_step1000000.npy",
+      "sha256": "9256191d4b52dd9106cddc5305f05cea8c2ffe9d839c5daf5ca683f1f52e81fe",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample37_step1000000.npy",
+      "sha256": "0441afae3ec541e1faacfa1a1f64a897dd84e4d46c0d276668a850c5b9b1c3e5",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample37_step1000000.npy",
+      "sha256": "a7b9959d126e3bf38cd17c5991bd2b24e2e1a0fcf0350b9ef0a4f083a926d262",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample38_step1000000.npy",
+      "sha256": "138d28ccdf5384020a5ae595aa9ae93c121e4a8b5b66f69990252553f1ed94ca",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample38_step1000000.npy",
+      "sha256": "490acfd8319f1d2b7be3b2bf065c4669b16ed7088a791e4c6c9c9fc2e130148b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample38_step1000000.npy",
+      "sha256": "210b91987cf9e34535eb20ba67d6c79aa3271a07be63e83855e5c2fb839b3fcb",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample38_step1000000.npy",
+      "sha256": "74ab9a6403a3a17cbcca174f5b17e2019a2655061b9610560166252eca23616a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample38_step1000000.npy",
+      "sha256": "eb182fdeab98bd2464b0e8f74b927b3ea42a14ed3b307f1614a3befde19cbe48",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample38_step1000000.npy",
+      "sha256": "4fa948f89b817f5225cdff447363b34a9b6f41721345c58c04018df12cea9ad8",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample38_step1000000.npy",
+      "sha256": "dafe8e6dd96da97e0ae6edb1791f7463553228e00c90bf19f45171687908d9e8",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample38_step1000000.npy",
+      "sha256": "a0c4f97879a2d27132ac35a90020feaeb88a4374750092a454310fc4b2fb4473",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample38_step1000000.npy",
+      "sha256": "e4c6a34c43bb728a3a03514436434ad449033d8d359fd944280f2b41a02949cc",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample38_step1000000.npy",
+      "sha256": "c252d82c6b172c06f0cf2fe5d978ddd288f8e2388fc4b37d3416191ae2a0fef8",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample39_step1000000.npy",
+      "sha256": "bb53d3f140d0d033c86d0a738eb0a1b5b1fc5fc1d05b602ede52ce332c3317d5",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample39_step1000000.npy",
+      "sha256": "42049cc105ac0117f33cc9077359a9d353bd41d7fe80f6df940983f80731fa5a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample39_step1000000.npy",
+      "sha256": "ce69cfd16b9301cf4bcb8c5921d38933fbdac30f56023f287cd87465880a48f6",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample39_step1000000.npy",
+      "sha256": "2e1b149ebd2cd571f6d2f99ed1ea7524361760b7901cf1e07419e4132e56e3c7",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample39_step1000000.npy",
+      "sha256": "05edbb88c52abdedfc3fb97f875fecb7f0a5a7158120e8355f5dfbb9a3d1da81",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample39_step1000000.npy",
+      "sha256": "20ffb47a61b484e1647b1f102fac9592094e871d0e04f8d356058fcdb4d06d6d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample39_step1000000.npy",
+      "sha256": "d4fa9f2ace9512f7306ad8b00bb543557da388cacd3729107ffc5317ee52207f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample39_step1000000.npy",
+      "sha256": "f8bd544e93042ab5cb98d2f10d93a5054f97ee0c05bf6bb349ea754db7ab393e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample39_step1000000.npy",
+      "sha256": "d1ce78bf1e10ac6f96cab66ec661c4478b91869765d22eb4239dda96e9bb366b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample39_step1000000.npy",
+      "sha256": "bfd5e5f052b1b48a0903e762f524ef0b6cff8665519051f3290a0646318b2870",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample40_step1000000.npy",
+      "sha256": "426bc275ae7ed87dbe6b625103455f4b5c5013c414c534116c33f9e53e5d9f21",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample40_step1000000.npy",
+      "sha256": "ef3bae1eb56b24845ab8f663cc1ee4842ab3d679d2ad2ba3505712a0a59ecd4f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample40_step1000000.npy",
+      "sha256": "16408cb9ab394e8792cb82f81420c90579982f1a63ec1e336b12e550bd9fc2a8",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample40_step1000000.npy",
+      "sha256": "bbce61600b119287e6d9f00858785e167e052341f8fba9f404f82f6a86a152be",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample40_step1000000.npy",
+      "sha256": "375326f3297bdf1489037284290ff0f5bd26c0c900c096d20a1a692613cbcc7d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample40_step1000000.npy",
+      "sha256": "adefcb914b37219e8b5ca674dc00c7dac91c253ec6a407ebaa9e9748f6372b5f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample40_step1000000.npy",
+      "sha256": "91af1ff15c965e304b0a98c564e82bef4e385cfeb3cde075d33cfee8d9be2ed8",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample40_step1000000.npy",
+      "sha256": "602948eb21d3de5a2132dbcbc9b3bbf459c6f855ca75d9412b45426c32325e92",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample40_step1000000.npy",
+      "sha256": "538a968b2d89d51edf2e208f640f4fb5a3d35a69f16ec1c7dfe8f9b76465b16a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample40_step1000000.npy",
+      "sha256": "415d1500a4fe21600192236078e5996ee70b2247823a497849d2c26bded5fd8d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample41_step1000000.npy",
+      "sha256": "908381612a98c872a6dfd63c376d8875da7eb7c42d2a1c3a97e3eb0cbafab7e2",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample41_step1000000.npy",
+      "sha256": "74d86f175b6f691101e94608d174c43fc225cc8e82112e44238b6ea7a6099a53",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample41_step1000000.npy",
+      "sha256": "c2a8563b0622c7503fac99ee9f67c8b0b938b6e599254e6862c9e10ba9e3d9a4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample41_step1000000.npy",
+      "sha256": "81215a69e9d3f769be2a3e4f7ee6d0d9025994d83bb242a5eb77f2441a474597",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample41_step1000000.npy",
+      "sha256": "e761fbf4b2a768a9f39610f37c8a14cd2b1e16969b2627646119ebd9d3872cfe",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample41_step1000000.npy",
+      "sha256": "65587507fc9f81c7f2ffc6c07c955e4efd03897599519a4cbe9d4cb799c2c8b3",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample41_step1000000.npy",
+      "sha256": "4229ae5f90e467414b584c43c89916e2dcd79f4f8f71826f29005cf245dc16b4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample41_step1000000.npy",
+      "sha256": "81077acef8e5ee4393f6f875441c82f6c311a10061c06a4fd7510093e79e2f11",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample41_step1000000.npy",
+      "sha256": "2ce4acc0f4378a272f54a992cb27be2a92525a63d7d3a1129ba6a6280b8388f4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample41_step1000000.npy",
+      "sha256": "3b25997c762172ff14bc048baf84597c26721403fb6283cc78e20d1d4f1e4333",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample42_step1000000.npy",
+      "sha256": "e7f0cf639c43238861ca360ea3d2b60dd1b826873013e40d9c14c5e5c9f64ae6",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample42_step1000000.npy",
+      "sha256": "04e26be91193d48a37a5438905c8231a359d69239e1ae24b2dc5f64df80dff35",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample42_step1000000.npy",
+      "sha256": "4de9b691ef1bfbc9fee4b9b764ad79ad7f2717f34ff89c3a4b40becf5ed57e03",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample42_step1000000.npy",
+      "sha256": "bded93eb23b4f0c0b582fab70797e046693a067d5dd28ac820964a028ae89da1",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample42_step1000000.npy",
+      "sha256": "139b04a1545fee0bc0e73eb75bd498c1ae116cadfa20c06afe34a74d2cdb3ea1",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample42_step1000000.npy",
+      "sha256": "c606080235bf145ffd7bc6973d2b5ac74f00324478573a21a2bfba921f794d8b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample42_step1000000.npy",
+      "sha256": "316bd5a92b836b81862b422b4aac4a02db91ee905364b3ec20809569606a809e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample42_step1000000.npy",
+      "sha256": "a54a268061ddec7a225c0ab4c1cc1c07657f6f01551c7491a04b2432ecc93ea3",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample42_step1000000.npy",
+      "sha256": "751004f1be712a26428f8e63c813f9a79dc49236a214f850be4c73ccbdb61c43",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample42_step1000000.npy",
+      "sha256": "3bbf3794883cc34f714cbee977aa33648fd7e680edeb5cca3f85dca3231fa833",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample43_step1000000.npy",
+      "sha256": "d24532939e1a95a25f98ed73ae42ca60754320d0e48a4a511aaa958b362828ff",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample43_step1000000.npy",
+      "sha256": "2ec50e04f81eccf8b645e3384e76af15c73b01350cc610f46d67942bbfadc949",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample43_step1000000.npy",
+      "sha256": "3b246b9c54d06a0f369ad70aa8170f7a9eb5a1eb80f34e024e8e63e2a1e71a71",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample43_step1000000.npy",
+      "sha256": "ce96790e6d94206b57077f09d8460328e5343a757e54a8303e2f942c175f523a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample43_step1000000.npy",
+      "sha256": "64215e9a9a9314ea4f1b8d5474481713c9b4b5a5fbb8563ca4600962df4d4ccb",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample43_step1000000.npy",
+      "sha256": "f132c6d91730e7ee7e73321310fcd73337a6c26c893d431e510419266189e972",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample43_step1000000.npy",
+      "sha256": "b4a76192e310171d7a494b366e0f99d70193e507071b3c7b00b881155a7b80da",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample43_step1000000.npy",
+      "sha256": "289b19e138051a41dbb627ce91b3f47aab5fab8095b85de8e115f210bd145cec",
+      "rows": 115
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample43_step1000000.npy",
+      "sha256": "9f9b158268260fad4b087e20eec0a28edaeb3462d603ad12c093974328456791",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample43_step1000000.npy",
+      "sha256": "33f850858f7dd491223787ec6114bd4a85a201f6a54877a8f1dd3512c75403e6",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample44_step1000000.npy",
+      "sha256": "de6cbf3ae79fa38409deb5c2300da084f57efd9495034a14a77ae409522509af",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample44_step1000000.npy",
+      "sha256": "db0e9a2b2d77769136575829c47ee660ed912967400541577127d953e51977d5",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample44_step1000000.npy",
+      "sha256": "8b57ef2143c462c1fa8b42f360434ed8b9a51d1a6574e0b8c36ecb777965bf4f",
+      "rows": 197
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample44_step1000000.npy",
+      "sha256": "e7c102e8efe8933c7df40f4af35645b44e576fafa822326f2d572a621951248f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample44_step1000000.npy",
+      "sha256": "7ce38ff53f287724fdaeeb6cdced6b7b0a9fe1fa287c8fcfb244d8fc4334eb5a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample44_step1000000.npy",
+      "sha256": "a7add2583c4005ee12c773f512fbd15ff3c1a857b872443beab0cd0d3e33e190",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample44_step1000000.npy",
+      "sha256": "9f75b62ad1175259ee9011f4903a5bb2034571d81717042392bd1dbce1990a8e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample44_step1000000.npy",
+      "sha256": "d76b280b456a69967e7ae5d43e5647f2a00de42d5a41aade73b9d40d05ba4311",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample44_step1000000.npy",
+      "sha256": "4e0218de2a538e1aea48e34d52ba77fa6c53ddf635b9c45deb5e32099dce3b9b",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample44_step1000000.npy",
+      "sha256": "dab81e548fb9a89d4ab8f72d2f604432e9359cd6c714ecccd98bafa5bb47d403",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample45_step1000000.npy",
+      "sha256": "978eed55c1dee45f647a9278b685034933f83a075f37656bbbff24f7442c70a0",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample45_step1000000.npy",
+      "sha256": "70b10756268518419325686a7ddeff126f22df6ba0e51530823c8fe8819bdf82",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample45_step1000000.npy",
+      "sha256": "46a26f59b6c6cad85bbe674ca1c6dc528f49a912da4911b693cb1a423530131a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample45_step1000000.npy",
+      "sha256": "6f2145ac9a1d8bfd44305f6917be90488f43414a9adbe95591401427b6b41ac3",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample45_step1000000.npy",
+      "sha256": "2a08701a8b353f5ca8879a5c9358e10aa4e91fdb1c52ae875f798de8fd02549f",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample45_step1000000.npy",
+      "sha256": "e673432c7f382d3f24a114395a7d96c0f553ab9a9e815b4176a3c5b89304a1c0",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample45_step1000000.npy",
+      "sha256": "add2adc05cd67096a183fb737df1a3416e2845f46b2c5b0480505970c606355a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample45_step1000000.npy",
+      "sha256": "798bae5e52e566d6140f22d4f118c1ae67ce8363ee06f2c3f0439bee61ea4b99",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample45_step1000000.npy",
+      "sha256": "bbdfb167466d2e802570d20bf87e28336b09c0c01de6bb9d5bd3e1dad68026d7",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample45_step1000000.npy",
+      "sha256": "4c7cc1a073545696caf4672491ee0670cfcb55538f3a342ceb091a81d78a725e",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample46_step1000000.npy",
+      "sha256": "5ecabd3258600abe6b62953391018c8a68ad4592913d695e5c1af415b9b8b61a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample46_step1000000.npy",
+      "sha256": "bd89d5a06f8c69a5c8ad03d787a947ef89dc2eeba8373c4c638a541d1d66f2bc",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample46_step1000000.npy",
+      "sha256": "fa2dedd5876ec8613747e334e02d527bdbc8f38cd42856b17f691b9d9604e9c4",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample46_step1000000.npy",
+      "sha256": "bfc84f77e762c0c1e9db28280a88e25ecc77e7cd602a0b2d8c51913a209e0b71",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample46_step1000000.npy",
+      "sha256": "84ab58d71e60e3811def7cc12cfc83c381372223568695621fdcad46d0238574",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample46_step1000000.npy",
+      "sha256": "76292d57f2253775cac16a7ecc1ebc776d47bc39d933ad38ce964cc94fd308be",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample46_step1000000.npy",
+      "sha256": "8c4c71eee0cafae3aa4e90499f7e1fa8f3551aad04fc7698fc60172f841f6ac3",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample46_step1000000.npy",
+      "sha256": "f8fc51a172eb972e1fcf57690797d12c310e773b5ef8cc87690da8ec4faa3636",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample46_step1000000.npy",
+      "sha256": "f47fd38098fc37391e244a54a504381f643f896802b230e4e55470f729299a30",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample46_step1000000.npy",
+      "sha256": "3f0c928bd62de4539446f723237f0671d19ad7b08b33f19cfadd81d0180cd202",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample47_step1000000.npy",
+      "sha256": "ed737a51ee2921f144404e7bff68e3904d33dad8082a5b38237bbeda820ec332",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample47_step1000000.npy",
+      "sha256": "9e4a1ccc720abd21f936c47a860c689e2603b50539c218a0b507622d0287dd0a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample47_step1000000.npy",
+      "sha256": "4f76ca414c8e0b9bea55fb738ea30b6c47110abb73832acc2eb5ffe9c4051210",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample47_step1000000.npy",
+      "sha256": "471d90993c6b196c5e9e80064da4fd2c701c4a37944e29285fc71c52cd6e2d2a",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample47_step1000000.npy",
+      "sha256": "f1a97d3decce6aa0481b92d1fc643ca8a059cef408c5573bb80e1158420ee2dd",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample47_step1000000.npy",
+      "sha256": "1d769f7a7524f5999d1716c59fd99b43aeac330cea7c160c90b68afc43f4a996",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample47_step1000000.npy",
+      "sha256": "bc88da355ada36a9147c96acf1ffadb0225452076e8f38a7e5430c151b3a3ab8",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample47_step1000000.npy",
+      "sha256": "a918ed0b3bfae6481775f9ae93e17195434f18f4064994f6682fe71bc8816eb0",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample47_step1000000.npy",
+      "sha256": "44ead5c8bebd7c72d33fbc1c29a99c05481823032be29169ad7170b48db3eccb",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample47_step1000000.npy",
+      "sha256": "d5c287111f61ab9249d887f7e4c55a7b81a04adb754ab5cdf8215e7ab19ad7dd",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample48_step1000000.npy",
+      "sha256": "51cec2e7e599bf45f8cc76cc46d5071105175c888657a770efcaf01e96fd74aa",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample48_step1000000.npy",
+      "sha256": "e1d5278c4f137cbd50138fc2b461351fe406e46be9367c773174a14da83fd5e0",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample48_step1000000.npy",
+      "sha256": "23cb6538fff44ed789fadb0c1806397c696963045384ab54968ec8aa7b99706d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample48_step1000000.npy",
+      "sha256": "6018aed61d4869cb6e1b1b7dc6f6e3ed68f88cbecff48a78cde55265c944c418",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample48_step1000000.npy",
+      "sha256": "f355acf93ad5fc2c337e0f1caeff60cc4a7a73b6fa9c5f5a5aeb74ed74dffc98",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample48_step1000000.npy",
+      "sha256": "70c1ec24e3dc087ff6cbd20478cecaa45395edc88c32cada6f2c60e56c5dde7c",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample48_step1000000.npy",
+      "sha256": "cc11ca0bc068b3e8f4b79032d18a7deecea55bae3e8e85e6d527241688cd06cb",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample48_step1000000.npy",
+      "sha256": "1e15453639ce2d2a94e8e1c7c0e9b65ba2124ea548bd9eebc586802aabf75b2d",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample48_step1000000.npy",
+      "sha256": "e809c4f50fd644691f851ddea81603dfb311756b1ab35cb5cc908f8ff0c943f2",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample48_step1000000.npy",
+      "sha256": "5f8495296bae7a499206fe13ed4bf3c105a0e7f0d8af0b13e8990c9d66a2ac25",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx4/trj_evalsample49_step1000000.npy",
+      "sha256": "faec93bcb5372e5ab4aea5e2ca21c51c16a7a31525449bc2303906a7e98c4c40",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx9/trj_evalsample49_step1000000.npy",
+      "sha256": "b50ebfc60246b87a1405eb1822fd8c07f66f26af22e930d5c125aa2cd4a3ffbb",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx3/trj_evalsample49_step1000000.npy",
+      "sha256": "29dc3d4fac1a99811e8f85aaa702aad0ba27e49ca832b1b4cbf61fcc87701ddc",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx7/trj_evalsample49_step1000000.npy",
+      "sha256": "816330d17ced4ed23302570f7efb1f9cfa06f66813228c7888d84847c488b8dc",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx0/trj_evalsample49_step1000000.npy",
+      "sha256": "83f78f4a89d646f3fe5ce026feeea289e3eb06acca603fa9193f1b8c09bf7f75",
+      "rows": 77
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx2/trj_evalsample49_step1000000.npy",
+      "sha256": "2871ce37c0573f0611f8afaf1097bf5baa98f9d179a092f6cc6d26f4a57377d8",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx8/trj_evalsample49_step1000000.npy",
+      "sha256": "b84ced654144496f7d3acf3b0d23363c4230a74a5db721053e2302d0b9a8eb22",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx5/trj_evalsample49_step1000000.npy",
+      "sha256": "461cda1033dd049f213a898e3c2de9a437c46edf7d44e60ec1f6967ca9f75cf2",
+      "rows": 55
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx1/trj_evalsample49_step1000000.npy",
+      "sha256": "c9eb4adb6707f2c3fb2a84268c71ca10734dd46e9a55bb402cb7eeec1bbbba9c",
+      "rows": 200
+    },
+    {
+      "path": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params/goal_idx6/trj_evalsample49_step1000000.npy",
+      "sha256": "b85d131f1dedb99bad9193a579b677604de576b0c6b5580fea7ef30d16bbaf0e",
+      "rows": 200
+    }
+  ],
+  "training_contract": {
+    "data_dir": "/root/tievnas2/YinCH/GENTLE-consistant/data/walker-rand-params",
+    "n_trj": 50,
+    "train_epoch": 1000000.0
+  },
+  "historical_limit": "Original run did not save RMS or filesystem enumeration order; reconstruction uses the unchanged source files and current native glob order; compare shared RMS explicitly",
+  "published_stats_max_abs_difference": {
+    "mean": 6.661338147750939e-15,
+    "var": 4.334310688136611e-13,
+    "count": 0.0
+  },
+  "published_stats_close": true,
+  "normalizer_sha256": "578726bce4b42bb8348ea4e83a9b5b925a12d293d7784bbd9c802e2323f0fc11"
+}

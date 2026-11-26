@@ -1,0 +1,19 @@
+{
+  "kind": "backend_reference_only",
+  "environment": "cheetah-vel",
+  "backend": {
+    "engine_version": 150,
+    "engine_directory": "/root/.mujoco/mjpro150",
+    "binding": "mujoco_py",
+    "python_distribution_version": "1.50.1.68",
+    "engine_library": "/root/.mujoco/mjpro150/bin/libmujoco150.so",
+    "engine_library_sha256": "22032a9775ddfb6ab04cb207fbcca76ce88b2e27d743dd6fc331efc6de4be706",
+    "binding_source": "/root/miniconda3/envs/gentle/lib/python3.8/site-packages/mujoco_py/__init__.py",
+    "engine_version_verified": true,
+    "reference_sources_sha256": "ab523e5d1cf821880d8207fb67b8583a4d587b536e64cf815977a1b04d65b903",
+    "xml_path": "/root/miniconda3/envs/gentle/lib/python3.8/site-packages/gym/envs/mujoco/assets/half_cheetah.xml",
+    "xml_sha256": "11797a5d69e8ac955e89ca6fdd3a0087f1c990094fda401ac51420de1b6c5494",
+    "task_manifest_sha256": "3579b64aa277d1ca4135b8ed5c1cb45ee170abfef7e6c64dd559a677a408ec81",
+    "task_source": "manifest supplied directly to constructor; no task sampling"
+  }
+}
